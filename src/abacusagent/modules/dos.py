@@ -59,11 +59,14 @@ def abacus_dos_run(
     fig_paths = plot_dos_pdos(metrics_nscf["work_path"], metrics_nscf["work_path"])
     fig_paths = [Path(p).absolute() for p in fig_paths]
 
-    return {
-        "results_scf": metrics_scf,
-        "results_nscf": metrics_nscf,
-        "fig_paths": fig_paths
-    }
+    return_results = {"results_scf": metrics_scf,
+                      "results_nscf": metrics_nscf,
+                      'dos_picture': fig_paths[0]}
+    
+    for i in range(1, len(fig_paths)):
+        return_results[f'pdos_atom{i}'] = fig_paths[i]
+
+    return return_results
 
 def abacus_dos_run_scf(abacus_inputs_path: Path,
                        force_run: bool = False) -> Dict[str, Any]:
