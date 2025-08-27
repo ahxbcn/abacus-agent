@@ -134,8 +134,6 @@ def abacus_phonon_dispersion(
             "phonon_work_path": Path(work_path).absolute(),
             "band_plot": Path(band_plot_path).absolute(),
             "dos_plot": Path(dos_plot_path).absolute(),
-            'band_yaml': Path(yaml_path).absolute(),
-            'dos_dat_file': Path(dos_dat_path).absolute(),
             "entropy": float(thermal['entropy'][0]),
             "free_energy": float(thermal['free_energy'][0]),
             "heat_capacity": float(thermal['heat_capacity'][0]),
@@ -143,16 +141,4 @@ def abacus_phonon_dispersion(
             "max_frequency_K": float(np.max(freqs) * THz_TO_K),
         }
     except Exception as e:
-        return {
-            "phonon_work_path": None,
-            "band_plot": None,
-            "dos_plot": None,
-            'band_yaml': None,
-            'dos_dat_file': None,
-            "entropy": None,
-            "free_energy": None,
-            "heat_capacity": None,
-            "max_frequency_THz": None,
-            "max_frequency_K": None,
-            "message": f"Calculating phonon spectrum failed: {e}"
-        }
+        return {"message": f"Calculating phonon spectrum failed: {e}"}

@@ -96,10 +96,7 @@ def generate_bulk_structure(element: str,
             "structure_file": Path(structure_file).absolute(),
         }
     except Exception as e:
-        return {
-            "structure_file": None,
-            "message": f"Generating bulk structure failed: {e}"
-        }
+        return {"message": f"Generating bulk structure failed: {e}"}
 
 @mcp.tool()
 def generate_bulk_structure_from_wyckoff_position(
@@ -147,8 +144,7 @@ def generate_bulk_structure_from_wyckoff_position(
 
         return {"structure_file": crys_file_name}
     except Exception as e:
-        return {"structure_file": None,
-                "message": f"Generating bulk structure from Wyckoff position failed: {e}"}
+        return {"message": f"Generating bulk structure from Wyckoff position failed: {e}"}
 
 @mcp.tool()
 def generate_molecule_structure(
@@ -221,7 +217,4 @@ def generate_molecule_structure(
             "structure_file": Path(stru_file_path).absolute(),
         }
     except Exception as e:
-        return {
-            "structure_file": None,
-            "message": f"Generating molecule structure failed: {e}"
-        }
+        return {"message": f"Generating molecule structure failed: {e}"}
