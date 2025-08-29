@@ -1,5 +1,6 @@
 import json
 import os, glob
+import argparse
 
 def get_chat_messages(prompt_text):
     """
@@ -193,7 +194,24 @@ def collect_evalset(agent_path):
     
     return evalset
 
-def collect_results(results_path):
+def get_json_plan(llm_response):
+    """Extract JSON object from LLM response text."""
+    try:
+        # Find the first and last curly braces
+        start_index = llm_response.find('{')
+        end_index = llm_response.rfind('}') + 1
+        
+        if start_index == -1 or end_index == -1:
+            raise ValueError("No JSON object found in the response.")
+        
+        json_str = llm_response[start_index:end_index]
+        json_data = json.loads(json_str)
+        return json_data
+    except (ValueError, json.JSONDecodeError) as e:
+        print(f"Error extracting JSON: {e}")
+        return None
+
+def collect_results(results_path, parse_json_plan=False):
     results = {}
     
     for i in glob.glob(os.path.join(results_path, "*.evalset_result.json")):
@@ -216,27 +234,84 @@ def collect_results(results_path):
                     "test_results":[]
                      
                 }
+            
+            if parse_json_plan:
+                """
+                parse plan made by LLM in the final response, which is in json format. The following prompt should be used to generate the plan:
+                
+                Please output your plan in json format like below (DO NOT USE JSONLINE FORMAT, use json array in a legal json file):
+                {
+                    "tool_use_and_parameters": [
+                        {
+                            "step": 1,
+                            "tool_function": "tool_function_name",
+                            "parameters": {
+                                "param1": "value1",
+                                "param2": "value2"
+                            },
+                            "reason": "the reason why you use this tool function and parameters"
+                        },
+                        {
+                            "step": 2,
+                            "tool_function": "tool_function_name",
+                            "parameters": {
+                                "param1": "value1",
+                                "param2": "value2"
+                            },
+                            "reason": "the reason why you use this tool function and parameters"
+                        }
+                    ]
+                }
+                """
+                llm_response_json_plan = eval_set["eval_metric_result_per_invocation"][0]["actual_invocation"]["final_response"]["parts"][0]["text"]
+                parsed_plan = get_json_plan(llm_response_json_plan)["tool_use_and_parameters"]
+                ref_llm_response_json_plan = eval_set["eval_metric_result_per_invocation"][0]["expected_invocation"]["final_response"]["parts"][0]["text"]
+                parsed_ref_plan = get_json_plan(ref_llm_response_json_plan)["tool_use_and_parameters"]
+                results[eval_name]['test_results'].append({
+                    "file": i,
+                    "final_response": llm_response_json_plan,
+                    "planned_tool_uses": [{
+                        "name": p["tool_function"],
+                        "args": p["parameters"]
+                    } for p in parsed_plan],
+                })
+                results[eval_name]["ref_planned_tool_uses"] = [{
+                    "name": p["tool_function"],
+                    "args": p["parameters"]
+                } for p in parsed_ref_plan]
 
-            results[eval_name]["test_results"].append({
-                "file": i,
-                "final_response": eval_set["eval_metric_result_per_invocation"][0]["actual_invocation"]["final_response"]["parts"][0]["text"],
-                "tool_uses": [{
-                    "name": inter["name"],
-                    "args": inter["args"]
-                } for inter in eval_set["eval_metric_result_per_invocation"][0]["actual_invocation"]["intermediate_data"]["tool_uses"]]
-            })
-            
-            results[eval_name]["test_results"][-1]["response_correctness"] = evaluate_answer(
-                user_content=results[eval_name]["user_content"],
-                ref_response=results[eval_name]["ref_final_response"],
-                test_response=results[eval_name]["test_results"][-1]["final_response"]
+                results[eval_name]["test_results"][-1]["response_correctness"] = evaluate_answer(
+                    user_content=results[eval_name]["user_content"],
+                    ref_response=results[eval_name]["ref_final_response"],
+                    test_response=results[eval_name]["test_results"][-1]["final_response"]
+                    )
+                
+                results[eval_name]["test_results"][-1]["metrics"] = calculate_metrics(
+                    results[eval_name]["test_results"][-1]["response_correctness"],
+                    results[eval_name]["ref_planned_tool_uses"],
+                    results[eval_name]["test_results"][-1]["planned_tool_uses"]
                 )
-            
-            results[eval_name]["test_results"][-1]["metrics"] = calculate_metrics(
-                results[eval_name]["test_results"][-1]["response_correctness"],
-                results[eval_name]["ref_tool_uses"],
-                results[eval_name]["test_results"][-1]["tool_uses"]
-            )
+            else:
+                results[eval_name]["test_results"].append({
+                    "file": i,
+                    "final_response": eval_set["eval_metric_result_per_invocation"][0]["actual_invocation"]["final_response"]["parts"][0]["text"],
+                    "tool_uses": [{
+                        "name": inter["name"],
+                        "args": inter["args"]
+                    } for inter in eval_set["eval_metric_result_per_invocation"][0]["actual_invocation"]["intermediate_data"]["tool_uses"]]
+                })
+                
+                results[eval_name]["test_results"][-1]["response_correctness"] = evaluate_answer(
+                    user_content=results[eval_name]["user_content"],
+                    ref_response=results[eval_name]["ref_final_response"],
+                    test_response=results[eval_name]["test_results"][-1]["final_response"]
+                    )
+                
+                results[eval_name]["test_results"][-1]["metrics"] = calculate_metrics(
+                    results[eval_name]["test_results"][-1]["response_correctness"],
+                    results[eval_name]["ref_tool_uses"],
+                    results[eval_name]["test_results"][-1]["tool_uses"]
+                )
             
     return results
 
@@ -288,11 +363,17 @@ def summary_results(results):
     r["total"]["Total_Run"] = total_run_times
     return r
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--parse-json-plan", action="store_true", help="Parse the JSON response from the LLM response in benchmark results.")
+    return parser.parse_args()
+
 if __name__ == "__main__":
     # Please set the environment variables LLM_API_KEY, LLM_BASE_URL, LLM_MODEL
     # to use the OpenAI API to compare the responsed.
+    args = parse_args()
     
-    results = collect_results(".")
+    results = collect_results(".", args.parse_json_plan)
     metrics = summary_results(results)
     json.dump(results, open("results.json", "w"), indent=4, ensure_ascii=False)
     json.dump(metrics, open("metrics.json", "w"), indent=4, ensure_ascii=False)
