@@ -236,7 +236,33 @@ def collect_results(results_path, parse_json_plan=False):
                 }
             
             if parse_json_plan:
-                #TODO: parse the json response
+                """
+                parse plan made by LLM in the final response, which is in json format. The following prompt should be used to generate the plan:
+                
+                Please output your plan in json format like below (DO NOT USE JSONLINE FORMAT, use json array in a legal json file):
+                {
+                    "tool_use_and_parameters": [
+                        {
+                            "step": 1,
+                            "tool_function": "tool_function_name",
+                            "parameters": {
+                                "param1": "value1",
+                                "param2": "value2"
+                            },
+                            "reason": "the reason why you use this tool function and parameters"
+                        },
+                        {
+                            "step": 2,
+                            "tool_function": "tool_function_name",
+                            "parameters": {
+                                "param1": "value1",
+                                "param2": "value2"
+                            },
+                            "reason": "the reason why you use this tool function and parameters"
+                        }
+                    ]
+                }
+                """
                 llm_response_json_plan = eval_set["eval_metric_result_per_invocation"][0]["actual_invocation"]["final_response"]["parts"][0]["text"]
                 parsed_plan = get_json_plan(llm_response_json_plan)["tool_use_and_parameters"]
                 ref_llm_response_json_plan = eval_set["eval_metric_result_per_invocation"][0]["expected_invocation"]["final_response"]["parts"][0]["text"]
@@ -347,8 +373,7 @@ if __name__ == "__main__":
     # to use the OpenAI API to compare the responsed.
     args = parse_args()
     
-    #results = collect_results(".", args.parse_json_plan)
-    results = collect_results(".", True)
+    results = collect_results(".", args.parse_json_plan)
     metrics = summary_results(results)
     json.dump(results, open("results.json", "w"), indent=4, ensure_ascii=False)
     json.dump(metrics, open("metrics.json", "w"), indent=4, ensure_ascii=False)
