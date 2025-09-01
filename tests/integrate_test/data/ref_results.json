@@ -121,5 +121,25 @@
             "B0": 18.995907024224003,
             "B0_deriv": 4.5405237260803615
         }
+    },
+    "test_abacus_phonon_dispersion_nspin1": 
+    {
+        "result": {
+            "entropy": 34.27791643853491,
+            "free_energy": 9.719805286625483,
+            "heat_capacity": 36.163381863807714,
+            "max_frequency_THz": 18.36540344775355, 
+            "max_frequency_K": 881.3997884259676
+        }
+    },
+    "test_abacus_phonon_dispersion_nspin2": 
+    {
+        "result": {
+            "entropy": 24.74311174292432,
+            "free_energy": 0.8417257767254287,
+            "heat_capacity": 22.46405771015644,
+            "max_frequency_THz": 9.534280521120381, 
+            "max_frequency_K": 457.5730044818178
+        }
     }
 }
