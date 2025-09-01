@@ -151,5 +151,17 @@
             "vib_entropy": 0.0003803556727265372,
             "vib_free_energy": 0.18347896292569157
         }
+    },
+    "test_abacus_run_md_nve":
+    {
+        "result": {}
+    },
+    "test_abacus_run_md_nvt":
+    {
+        "result": {}
+    },
+    "test_abacus_run_md_npt":
+    {
+        "result": {}
     }
 }
