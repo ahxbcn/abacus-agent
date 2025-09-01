@@ -37,5 +37,29 @@
             "bader_charges": [0.930, -0.930],
             "atom_labels": ["Na", "Cl"]
         }
+    },
+    "test_abacus_cal_band_pyatb_nspin1": 
+    {
+        "result": {
+            "band_gap": 0.6702
+        }
+    },
+    "test_abacus_cal_band_pyatb_nspin2": 
+    {
+        "result": {
+            "band_gap": 0.0
+        }
+    },
+    "test_abacus_cal_band_nscf_nspin1": 
+    {
+        "result": {
+            "band_gap": 0.5804
+        }
+    },
+    "test_abacus_cal_band_nscf_nspin2": 
+    {
+        "result": {
+            "band_gap": 0.0
+        }
     }
 }

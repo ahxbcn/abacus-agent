@@ -395,7 +395,7 @@ def abacus_cal_band(abacus_inputs_dir: Path,
             plot_output = abacus_plot_band_nscf(work_path, energy_min, energy_max)
 
             return {'band_gap': plot_output['band_gap'],
-                    'band_output_dir': Path(work_path).absolute(),
+                    'band_calc_dir': Path(work_path).absolute(),
                     'band_picture': Path(plot_output['band_picture']).absolute(),
                     "message": "The band structure is computed via a non-self-consistent field (NSCF) calculation using ABACUS, \
                                 following a converged self-consistent field (SCF) calculation."}
