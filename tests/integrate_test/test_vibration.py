@@ -42,10 +42,9 @@ class TestAbacusVibrationAnalysis(unittest.TestCase):
         
         self.assertIsInstance(outputs['vib_analysis_work_dir'], get_path_type())
 
-        for freq_output, freq_ref in zip(outputs['real_frequencies'], ref_results['real_frequencies']):
+        for freq_output, freq_ref in zip(outputs['frequencies'], ref_results['frequencies']):
             self.assertAlmostEqual(freq_output, freq_ref, places=2)
-        for imag_freq_output, imag_freq_ref in zip(outputs['imaginary_frequencies'], ref_results['imaginary_frequencies']):
-            self.assertEqual(imag_freq_output, imag_freq_ref)
+
         self.assertAlmostEqual(outputs['zero_point_energy'], ref_results['zero_point_energy'], places=4)
         self.assertAlmostEqual(outputs['vib_entropy'], ref_results['vib_entropy'], places=4)
         self.assertAlmostEqual(outputs['vib_free_energy'], ref_results['vib_free_energy'], places=4)
