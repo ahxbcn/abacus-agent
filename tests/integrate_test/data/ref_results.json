@@ -1,0 +1,41 @@
+{
+    "test_abacus_calculation_scf": {
+        "result": {
+            "normal_end": true,
+            "converge": true,
+            "energy": -212.6212324126491
+        }
+    },
+    "test_abacus_do_relax_relax_cell": {
+        "result": {
+            "normal_end": true,
+            "relax_converge": true,
+            "relax_steps": 3,
+            "largest_gradient": [0.0, 0.0, 0.0],
+            "largest_gradient_stress": [19.232719, 27.120458, 0.181105]
+        }
+    },
+    "test_abacus_do_relax_not_relax_cell":
+    {
+        "result": {
+            "normal_end": true,
+            "relax_converge": true,
+            "relax_steps": 4,
+            "largest_gradient": [0.0549695, 5.00836, 0.0154149, 0.000125427]
+        }
+    },
+    "test_abacus_badercharge_run_nspin1": 
+    {
+        "result": {
+            "bader_charges": [0.930, -0.930],
+            "atom_labels": ["Na", "Cl"]
+        }
+    },
+    "test_abacus_badercharge_run_nspin2": 
+    {
+        "result": {
+            "bader_charges": [0.930, -0.930],
+            "atom_labels": ["Na", "Cl"]
+        }
+    }
+}
