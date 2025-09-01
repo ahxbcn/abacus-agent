@@ -141,5 +141,15 @@
             "max_frequency_THz": 9.534280521120381, 
             "max_frequency_K": 457.5730044818178
         }
+    },
+    "test_abacus_vibration_analysis_h2":
+    {
+        "result": {
+            "real_frequencies": [83.47082119114941, 83.47082119115237, 4293.5374023360655],
+            "imaginary_frequencies": ["0.050159882295798514i", "0.05015987951926836i", "0.005149307147273863i"],
+            "zero_point_energy": 0.2765209954303826,
+            "vib_entropy": 0.0003803556727265372,
+            "vib_free_energy": 0.18347896292569157
+        }
     }
 }

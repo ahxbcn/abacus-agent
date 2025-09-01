@@ -35,6 +35,7 @@ def set_ase_abacus_calculator(abacus_inputs_dir: Path,
     abacus_stru = AbacusStru.ReadStru(os.path.join(abacus_inputs_dir, stru_file))
 
     # Read KPT
+    # TODO: If gamma_only is set and kspacing is not set, absense of KPT file will raise an error
     if 'gamma_only' in input_params.keys():
         kpts = {'gamma_only': input_params['gamma_only']}
     if 'kspacing' in input_params.keys():
