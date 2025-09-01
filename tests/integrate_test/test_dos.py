@@ -9,7 +9,7 @@ from abacusagent.modules.dos import abacus_dos_run
 
 initilize_test_env()
 
-class TestAbacusDoRelax(unittest.TestCase):
+class TestAbacusDosRun(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.TemporaryDirectory()
         self.addCleanup(self.test_dir.cleanup)

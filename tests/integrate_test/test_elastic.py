@@ -9,7 +9,7 @@ from abacusagent.modules.elastic import abacus_cal_elastic
 
 initilize_test_env()
 
-class TestAbacusDoRelax(unittest.TestCase):
+class TestAbacusCalElastic(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.TemporaryDirectory()
         self.addCleanup(self.test_dir.cleanup)
