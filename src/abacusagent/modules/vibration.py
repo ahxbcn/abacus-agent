@@ -35,9 +35,10 @@ def set_ase_abacus_calculator(abacus_inputs_dir: Path,
     abacus_stru = AbacusStru.ReadStru(os.path.join(abacus_inputs_dir, stru_file))
 
     # Read KPT
+    # TODO: If gamma_only is set and kspacing is not set, absense of KPT file will raise an error
     if 'gamma_only' in input_params.keys():
         kpts = {'gamma_only': input_params['gamma_only']}
-    if 'kspacing' in input_params.keys():
+    elif 'kspacing' in input_params.keys():
         kpts = {'kspacing': input_params['kspacing']}
     else:
         kpt_file = input_params.get('kpt_file', 'KPT')
@@ -100,8 +101,8 @@ def abacus_vibration_analysis(abacus_inputs_dir: Path,
         temperature (float): Temperature used to calculate thermodynamic quantities. Units in Kelvin.
     Returns:
         A dictionary containing the following keys:
-        - 'real_frequencies': List of real frequencies from vibrational analysis. Units in cm^{-1}.
-        - 'imaginary_frequencies': Imaginary frequencies will be a string ended with 'i'. Units in cm^{-1}.
+        - 'frequencies': List of real frequencies from vibrational analysis. Imaginary frequencies are represented by negative 
+            values. Units in cm^{-1}.
         - 'zero_point_energy': Zero-point energy summed over all modes. Units in eV.
         - 'vib_entropy': Vibrational entropy using harmonic approximation. Units in eV/K.
         - 'vib_free_energy': Vibrational Helmholtz free energy using harmonic approximation. Units in eV.
@@ -140,7 +141,7 @@ def abacus_vibration_analysis(abacus_inputs_dir: Path,
         real_freq_mask, imag_freq_mask, complex_freq_mask = identify_complex_types(frequencies)
         real_freq, imag_freq = np.real(frequencies[real_freq_mask]).tolist(), frequencies[imag_freq_mask].tolist()
         for key, value in enumerate(imag_freq):
-            imag_freq[key] = str(value).replace('j', 'i')
+            imag_freq[key] = -value.imag # Represent imaginary frequency with negative number
         freqs = imag_freq + real_freq
 
         # Write animations of normal modes in ASE traj format
@@ -160,8 +161,7 @@ def abacus_vibration_analysis(abacus_inputs_dir: Path,
         entropy = thermo.get_entropy(temperature)
         free_energy = thermo.get_helmholtz_energy(temperature)
 
-        return {'real_frequencies': real_freq,
-                'imaginary_frequencies': imag_freq,
+        return {'frequencies': freqs,
                 'zero_point_energy': float(zero_point_energy),
                 'vib_entropy': float(entropy),
                 'vib_free_energy': float(free_energy),

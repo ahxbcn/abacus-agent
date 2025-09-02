@@ -159,7 +159,7 @@ def abacus_dos_run_scf(abacus_inputs_dir: Path,
         "scf_normal_end": rs["normal_end"],
         "scf_steps": rs["scf_steps"],
         "scf_converge": rs["converge"],
-        "scf_energies": rs["energies"]
+        "scf_energy": rs["energy"]
     }
 
 def abacus_dos_run_nscf(abacus_inputs_dir: Path,
