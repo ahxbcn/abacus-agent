@@ -37,12 +37,16 @@ class TestAbacusRunMd(unittest.TestCase):
         shutil.copytree(self.abacus_inputs_dir_h2, test_work_dir)
         shutil.copy2(self.stru_h2_relaxed, test_work_dir / "STRU")
 
+        md_nstep = 5
         outputs = abacus_run_md(test_work_dir,
                                 md_type = 'nve',
-                                md_nstep = 10,
+                                md_nstep = md_nstep,
                                 md_dt = 1.0,
                                 md_tfirst = 300)
+        print(outputs)
         
+        self.assertTrue(outputs['normal_end'])
+        self.assertEqual(outputs['traj_frame_nums'], md_nstep+1)
         self.assertIsInstance(outputs['md_work_path'], get_path_type())
         self.assertIsInstance(outputs['md_traj_file'], get_path_type())
     
@@ -57,13 +61,16 @@ class TestAbacusRunMd(unittest.TestCase):
         shutil.copytree(self.abacus_inputs_dir_nacl, test_work_dir)
         shutil.copy2(self.stru_nacl_md, test_work_dir / "STRU")
 
+        md_nstep = 5
         outputs = abacus_run_md(test_work_dir,
                                 md_type = 'nvt',
-                                md_nstep = 10,
+                                md_nstep = md_nstep,
                                 md_dt = 1.0,
                                 md_tfirst = 300,
                                 md_thermostat = 'nhc')
         
+        self.assertTrue(outputs['normal_end'])
+        self.assertEqual(outputs['traj_frame_nums'], md_nstep+1)
         self.assertIsInstance(outputs['md_work_path'], get_path_type())
         self.assertIsInstance(outputs['md_traj_file'], get_path_type())
     
@@ -78,14 +85,17 @@ class TestAbacusRunMd(unittest.TestCase):
         shutil.copytree(self.abacus_inputs_dir_nacl, test_work_dir)
         shutil.copy2(self.stru_nacl_md, test_work_dir / "STRU")
 
+        md_nstep = 5
         outputs = abacus_run_md(test_work_dir,
                                 md_type = 'npt',
-                                md_nstep = 10,
+                                md_nstep = md_nstep,
                                 md_dt = 1.0,
                                 md_tfirst = 300,
                                 md_thermostat = 'nhc',
                                 md_pmode = 'iso')
         
+        self.assertTrue(outputs['normal_end'])
+        self.assertEqual(outputs['traj_frame_nums'], md_nstep+1)
         self.assertIsInstance(outputs['md_work_path'], get_path_type())
         self.assertIsInstance(outputs['md_traj_file'], get_path_type())
     

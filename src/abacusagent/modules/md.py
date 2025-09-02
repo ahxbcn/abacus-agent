@@ -1,8 +1,6 @@
 import os
 from pathlib import Path
 from typing import Dict, Any, List, Literal
-import re
-from pprint import pprint
 
 import numpy as np
 from ase import Atoms
@@ -11,6 +9,7 @@ from abacustest.lib_prepare.abacus import ReadInput, WriteInput, AbacusStru
 
 from abacusagent.init_mcp import mcp
 from abacusagent.modules.util.comm import generate_work_path, link_abacusjob, run_abacus
+from abacusagent.modules.abacus import abacus_collect_data
 
 
 def get_last_md_stru(md_stru_outputdir: Path) -> Path:
@@ -85,7 +84,7 @@ def convert_md_dump_to_ase_traj(md_dump_path: Path, traj_filename: str="md_traj.
         traj_writer.write(md_step)
     traj_writer.close()
     
-    return Path(traj_filename).absolute()
+    return Path(traj_filename).absolute(), len(md_steps)
 
 @mcp.tool()
 def abacus_run_md(
@@ -180,9 +179,13 @@ def abacus_run_md(
 
         run_abacus(work_path)
 
+        metrics = abacus_collect_data(work_path)['collected_metrics']
         suffix = input_params.get('suffix', 'ABACUS')
+        md_traj_file, traj_frame_nums = convert_md_dump_to_ase_traj(Path(os.path.join(work_path, f'OUT.{suffix}/MD_dump')).absolute())
         return {'md_work_path': work_path,
-                'md_traj_file': convert_md_dump_to_ase_traj(Path(os.path.join(work_path, f'OUT.{suffix}/MD_dump')).absolute())}
+                'md_traj_file': md_traj_file,
+                'traj_frame_nums': traj_frame_nums,
+                'normal_end': metrics['normal_end']}
 
     except Exception as e:
         return {"message": f"Error occured during the running md: {e}"}
