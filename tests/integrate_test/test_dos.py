@@ -17,8 +17,10 @@ class TestAbacusDosRun(unittest.TestCase):
         self.abacus_inputs_dir_nacl_prim = Path(__file__).parent / 'abacus_inputs_dirs/NaCl-prim/'
         self.stru_dos_nacl_prim = self.abacus_inputs_dir_nacl_prim / "STRU_dos"
         self.input_dos_nacl_prim = self.abacus_inputs_dir_nacl_prim / "INPUT_nspin1"
+        self.input_dos_pw_nacl_prim = self.abacus_inputs_dir_nacl_prim / "INPUT_pw_nspin1"
         self.abacus_inputs_dir_fe_bcc_prim = Path(__file__).parent / 'abacus_inputs_dirs/Fe-BCC-prim/'
         self.stru_dos_fe_bcc_prim = self.abacus_inputs_dir_fe_bcc_prim / "STRU_dos"
+        self.input_dos_pw_fe_bcc_prim = self.abacus_inputs_dir_fe_bcc_prim / "INPUT_pw_nspin2_gammaonly"
 
         self.original_cwd = os.getcwd()
         os.chdir(self.test_path)
@@ -178,6 +180,51 @@ class TestAbacusDosRun(unittest.TestCase):
 
         self.assertIsInstance(dos_fig_path, get_path_type())
         self.assertIsInstance(pdos_fig_path, get_path_type())
+        self.assertTrue(outputs['scf_normal_end'])
+        self.assertTrue(outputs['scf_converge'])
+        self.assertTrue(outputs['nscf_normal_end'])
+        self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'])
+    
+    def test_abacus_dos_run_pw_nspin1(self):
+        """
+        Test the abacus_dos_run function with nspin=1 case with pw basis
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+
+        test_work_dir = self.test_path / test_func_name
+        shutil.copytree(self.abacus_inputs_dir_nacl_prim, test_work_dir)
+        shutil.copy2(self.stru_dos_nacl_prim, test_work_dir / "STRU")
+        shutil.copy2(self.input_dos_pw_nacl_prim, test_work_dir / "INPUT")
+
+        outputs = abacus_dos_run(test_work_dir)
+
+        dos_fig_path = outputs['dos_fig_path']
+
+        self.assertIsInstance(dos_fig_path, get_path_type())
+        self.assertTrue(outputs['scf_normal_end'])
+        self.assertTrue(outputs['scf_converge'])
+        self.assertTrue(outputs['nscf_normal_end'])
+        self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'])
+
+    def test_abacus_dos_run_pw_nspin2(self):
+        """
+        Test the abacus_dos_run function with nspin=2 case with pw basis
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+
+        test_work_dir = self.test_path / test_func_name
+        shutil.copytree(self.abacus_inputs_dir_fe_bcc_prim, test_work_dir)
+        shutil.copy2(self.stru_dos_fe_bcc_prim, test_work_dir / "STRU")
+        shutil.copy2(self.input_dos_pw_fe_bcc_prim, test_work_dir / "INPUT")
+
+        outputs = abacus_dos_run(test_work_dir)
+        print(outputs)
+
+        dos_fig_path = outputs['dos_fig_path']
+
+        self.assertIsInstance(dos_fig_path, get_path_type())
         self.assertTrue(outputs['scf_normal_end'])
         self.assertTrue(outputs['scf_converge'])
         self.assertTrue(outputs['nscf_normal_end'])
