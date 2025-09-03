@@ -78,9 +78,10 @@ def abacus_dos_run(
         
     Returns:
         Dict[str, Any]: A dictionary containing:
+            - dos_fig_path: Path to the plotted DOS.
+            - pdos_fig_path: Path to the plotted PDOS if avaliable.
             - results_scf: Results of the SCF calculation, including: work path, normal end status, SCF steps, convergence status, and energies.
             - results_nscf: Results of the NSCF calculation, including work path and normal end status.
-            - fig_paths: List of paths to the generated figures for DOS and PDOS. DOS will be saved as "DOS.png" and PDOS will be saved as "species_atom_index_pdos.png" in the output directory.
     """
     try:
         is_valid, msg = check_abacus_inputs(abacus_inputs_dir)
@@ -92,7 +93,8 @@ def abacus_dos_run(
         nspin = input_params.get("nspin", 1)
         if nspin in [4]:
             raise ValueError("Currently DOS calculation can only be plotted using for nspin=1 and nspin=2")
-
+        
+        #TODO: Check DOS calculation for pw basis set.
         metrics_scf = abacus_dos_run_scf(abacus_inputs_dir)
         metrics_nscf = abacus_dos_run_nscf(metrics_scf["scf_work_path"],
                                            dos_edelta_ev=dos_edelta_ev,

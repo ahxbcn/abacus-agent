@@ -42,7 +42,7 @@ def abacus_eos(
     scale_stepsize: float = 0.02
 ):
     """
-    Use Birch-Murnaghan equation of state (EOS) to calculate the EOS data.
+    Use Birch-Murnaghan equation of state (EOS) to calculate the EOS data. The shape of fitted crystal is limited to cubic now.
 
     Args:
         abacus_inputs_dir (Path): Path to the ABACUS input files, which contains the INPUT, STRU, KPT, and pseudopotential or orbital files.
