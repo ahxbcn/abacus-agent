@@ -59,8 +59,8 @@ def abacus_dos_run(
     
     This function will firstly run a SCF calculation with out_chg set to 1, 
     then run a NSCF calculation with init_chg set to 'file' and out_dos set to 1 or 2.
-    If the INPUT parameter "basis" is "PW", then out_dos will be set to 1, and only DOS will be calculated.
-    If the INPUT parameter "basis" is "LCAO", then out_dos will be set to 2, and both DOS and PDOS will be calculated.
+    If the INPUT parameter "basis_type" is "PW", then out_dos will be set to 1, and only DOS will be calculated and plotted.
+    If the INPUT parameter "basis_type" is "LCAO", then out_dos will be set to 2, and both DOS and PDOS will be calculated and plotted.
     
     Args:
         abacus_inputs_dir: Path to the ABACUS input files, which contains the INPUT, STRU, KPT, and pseudopotential or orbital files.
@@ -79,7 +79,7 @@ def abacus_dos_run(
     Returns:
         Dict[str, Any]: A dictionary containing:
             - dos_fig_path: Path to the plotted DOS.
-            - pdos_fig_path: Path to the plotted PDOS if avaliable.
+            - pdos_fig_path: Path to the plotted PDOS. Only for LCAO basis.
             - results_scf: Results of the SCF calculation, including: work path, normal end status, SCF steps, convergence status, and energies.
             - results_nscf: Results of the NSCF calculation, including work path and normal end status.
     """
@@ -94,7 +94,6 @@ def abacus_dos_run(
         if nspin in [4]:
             raise ValueError("Currently DOS calculation can only be plotted using for nspin=1 and nspin=2")
         
-        #TODO: Check DOS calculation for pw basis set.
         metrics_scf = abacus_dos_run_scf(abacus_inputs_dir)
         metrics_nscf = abacus_dos_run_nscf(metrics_scf["scf_work_path"],
                                            dos_edelta_ev=dos_edelta_ev,
@@ -570,11 +569,11 @@ def plot_dos_pdos(scf_job_path: Path,
         else:
             print(f"Warning: PDOS calculation not supported for PW basis type, skipping PDOS plotting")
     elif os.path.exists(pdos_file) and not os.path.exists(basref_file):
-        print(f"Warning: PDOS file exists but basref file not found - {basref_file}, skipping PDOS plotting")
+        print(f"Warning: PDOS file exists but Orbital file not found - {basref_file}, skipping PDOS plotting")
     elif not os.path.exists(pdos_file) and os.path.exists(basref_file):
-        print(f"Warning: Basref file exists but PDOS file not found - {pdos_file}, skipping PDOS plotting")
+        print(f"Warning: Orbital file exists but PDOS file not found - {pdos_file}, skipping PDOS plotting")
     else:
-        print("Warning: Both PDOS and basref files not found, skipping PDOS plotting")
+        print("Warning: Both PDOS and Orbital files not found, skipping PDOS plotting")
 
     print("Plots generated:")
     for file in all_plot_files:

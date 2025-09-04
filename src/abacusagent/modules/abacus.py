@@ -422,9 +422,7 @@ def abacus_collect_data(
     name of collected metrics must be selected from the list below.
 
     Args:
-        abacus_outputs_dir (str): Path to the directory containing the ABACUS job output files. Only work directory for
-                                  abacus_calculation_scf, abacus_do_relax and abacus_dos_run can be used. DO NOT use work
-                                  directory of any other tool functions.
+        abacus_outputs_dir (str): Path to the directory containing the ABACUS job output files. 
         metrics (List[str]): List of metric names to collect.  
                   metric_name  description
                       version: the version of ABACUS
