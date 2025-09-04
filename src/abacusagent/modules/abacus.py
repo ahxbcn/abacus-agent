@@ -30,7 +30,11 @@ def abacus_prepare(
     afm: bool = False,
     extra_input: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    """Prepare input files for ABACUS calculation.
+    """
+    Prepare mandatory input files for ABACUS calculation from a structure file.
+    This function does not perform any actual calculation, but is necessary to use this function
+    to prepare a directory containing necessary input files for ABACUS calculation. 
+    If user provides ABACUS input files by him/herself, this function should not be used.
     
     Args:
         stru_file (Path): Structure file in cif, poscar, or abacus/stru format.
@@ -40,7 +44,7 @@ def abacus_prepare(
             'relax': Geometry relaxation calculation, which will relax the atomic position to the minimum energy configuration.
             'cell-relax': Cell relaxation calculation, which will relax the cell parameters and atomic positions to the minimum energy configuration.
             'md': Molecular dynamics calculation, which will perform molecular dynamics simulation.
-        lcao (bool): Whether to use LCAO basis set, default is True. If True, the orbital library path must be provided.
+        lcao (bool): Whether to use LCAO basis set, default is True.
         nspin (int): The number of spins, can be 1 (no spin), 2 (spin polarized), or 4 (non-collinear spin). Default is 1.
         soc (bool): Whether to use spin-orbit coupling, if True, nspin should be 4.
         dftu (bool): Whether to use DFT+U, default is False.
@@ -49,7 +53,7 @@ def abacus_prepare(
             For example, {"Fe": ["d", 4], "O": ["p", 1]} means applying DFT+U to Fe 3d orbital with U=4 eV and O 2p orbital with U=1 eV.
         init_mag ( dict or None): The initial magnetic moment for magnetic elements, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the initial magnetic moment.
         afm (bool): Whether to use antiferromagnetic calculation, default is False. If True, half of the magnetic elements will be set to negative initial magnetic moment.
-        extra_input: Extra input parameters for ABACUS. 
+        extra_input: Extra input parameters in the prepared INPUT file. 
     
     Returns:
         A dictionary containing the job path.
@@ -170,8 +174,8 @@ def abacus_modify_input(
             - Value: A list with one or two elements:  
                 - One-element form: float, representing the Hubbard U value (orbital will be inferred).  
                 - Two-element form: [orbital, U], where `orbital` is one of {'p', 'd', 'f'}, and `U` is a float.
-        extra_input: Additional key-value pairs to update the INPUT file.
-        remove_input: A list of param names to be removed in the INPUT file
+        extra_input: Additional key-value pairs to update the INPUT file. If the name of the key is already in the INPUT file, the value will be updated.
+        remove_input: A list of parameter names to be removed in the INPUT file
 
     Returns:
         A dictionary containing:
@@ -414,9 +418,11 @@ def abacus_collect_data(
                           = ["normal_end", "converge", "energy", "total_time"]
 ) -> Dict[str, Any]:
     """
-    Collect results after ABACUS calculation and dump to a json file.
+    Collect results of the given metrics listed below after ABACUS calculation.
+    name of collected metrics must be selected from the list below.
+
     Args:
-        abacus_outputs_dir (str): Path to the directory containing the ABACUS job output files.
+        abacus_outputs_dir (str): Path to the directory containing the ABACUS job output files. 
         metrics (List[str]): List of metric names to collect.  
                   metric_name  description
                       version: the version of ABACUS

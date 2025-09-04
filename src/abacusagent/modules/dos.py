@@ -59,8 +59,8 @@ def abacus_dos_run(
     
     This function will firstly run a SCF calculation with out_chg set to 1, 
     then run a NSCF calculation with init_chg set to 'file' and out_dos set to 1 or 2.
-    If the INPUT parameter "basis" is "PW", then out_dos will be set to 1, and only DOS will be calculated.
-    If the INPUT parameter "basis" is "LCAO", then out_dos will be set to 2, and both DOS and PDOS will be calculated.
+    If the INPUT parameter "basis_type" is "PW", then out_dos will be set to 1, and only DOS will be calculated and plotted.
+    If the INPUT parameter "basis_type" is "LCAO", then out_dos will be set to 2, and both DOS and PDOS will be calculated and plotted.
     
     Args:
         abacus_inputs_dir: Path to the ABACUS input files, which contains the INPUT, STRU, KPT, and pseudopotential or orbital files.
@@ -78,9 +78,10 @@ def abacus_dos_run(
         
     Returns:
         Dict[str, Any]: A dictionary containing:
+            - dos_fig_path: Path to the plotted DOS.
+            - pdos_fig_path: Path to the plotted PDOS. Only for LCAO basis.
             - results_scf: Results of the SCF calculation, including: work path, normal end status, SCF steps, convergence status, and energies.
             - results_nscf: Results of the NSCF calculation, including work path and normal end status.
-            - fig_paths: List of paths to the generated figures for DOS and PDOS. DOS will be saved as "DOS.png" and PDOS will be saved as "species_atom_index_pdos.png" in the output directory.
     """
     try:
         is_valid, msg = check_abacus_inputs(abacus_inputs_dir)
@@ -92,7 +93,7 @@ def abacus_dos_run(
         nspin = input_params.get("nspin", 1)
         if nspin in [4]:
             raise ValueError("Currently DOS calculation can only be plotted using for nspin=1 and nspin=2")
-
+        
         metrics_scf = abacus_dos_run_scf(abacus_inputs_dir)
         metrics_nscf = abacus_dos_run_nscf(metrics_scf["scf_work_path"],
                                            dos_edelta_ev=dos_edelta_ev,
@@ -108,10 +109,11 @@ def abacus_dos_run(
                                   nspin,
                                   pdos_mode)
 
-        return_dict = {
-            "dos_fig_path": fig_paths[0],
-            'pdos_fig_path': fig_paths[1],
-        }
+        return_dict = {"dos_fig_path": fig_paths[0]}
+        try:
+            return_dict['pdos_fig_path'] = fig_paths[1]
+        except:
+            pass # Do nothing if PDOS file is not plotted 
 
         return_dict.update(metrics_scf)
         return_dict.update(metrics_nscf)
@@ -384,7 +386,7 @@ def plot_pdos_species_shell(shifted_energy, orbitals, output_dir, nspin, dpi):
         
         #ax.set_ylim(bottom=0)
     
-    axes[-1].set_xlabel('Energy/', fontsize=10)
+    axes[-1].set_xlabel('Energy/eV', fontsize=10)
 
     plt.tight_layout()
     pdos_pic_file = os.path.join(output_dir, 'PDOS.png')
@@ -525,9 +527,10 @@ def plot_dos_pdos(scf_job_path: Path,
     """
     input_param = ReadInput(os.path.join(nscf_job_path, "INPUT"))
     input_dir = os.path.join(nscf_job_path, "OUT." + input_param.get("suffix","ABACUS"))
+    basis_type = input_param.get('basis_type', 'pw')
 
     # Construct file paths based on input directory
-    input_file = os.path.join(input_dir, "PDOS")
+    pdos_file = os.path.join(input_dir, "PDOS")
     log_file = os.path.join(input_dir, "running_nscf.log")
     basref_file = os.path.join(input_dir, "Orbital")
     dos_file = [os.path.join(input_dir, "DOS1_smearing.dat")]
@@ -536,7 +539,7 @@ def plot_dos_pdos(scf_job_path: Path,
         dos_file += [os.path.join(input_dir, "DOS2_smearing.dat")]
     
     # Validate input files exist
-    for file_path in [input_file, log_file, basref_file, dos_file[0]]:
+    for file_path in [log_file, dos_file[0]]:
         if not os.path.exists(file_path):
             print(f"Error: File not found - {file_path}")
             raise FileNotFoundError(f"Required file not found: {file_path}")
@@ -546,22 +549,34 @@ def plot_dos_pdos(scf_job_path: Path,
             raise FileNotFoundError(f"Required file not found: {dos_file[1]}")
     
 
-    energy_values, orbitals = parse_pdos_file(input_file)
     fermi_level = collect_metrics(scf_job_path, ['efermi'])['efermi']
-    label_map = parse_basref_file(basref_file)
     
     # Plot DOS and get file path
     dos_plot_file = plot_dos(dos_file, fermi_level, dos_output, nspin, dpi)
+    all_plot_files = [dos_plot_file]
     
-    # Plot PDOS and get file paths
-    pdos_plot_file = plot_pdos(energy_values, orbitals, fermi_level, label_map, output_dir, nspin, mode, dpi)
-    
-    # Combine file paths into a single list
-    all_plot_files = [dos_plot_file, pdos_plot_file]
-    
+    print("DOS file plotted")
+
+    # Plot PDOS (only for LCAO basis - PW basis doesn't support PDOS in ABACUS LTSv3.10)
+    if os.path.exists(pdos_file) and os.path.exists(basref_file):
+        if basis_type != 'pw':
+            label_map = parse_basref_file(basref_file)
+            energy_values, orbitals = parse_pdos_file(pdos_file)
+            pdos_plot_file = plot_pdos(energy_values, orbitals, fermi_level, label_map, output_dir, nspin, mode, dpi)
+            
+            # Combine file paths into a single list
+            all_plot_files.append(pdos_plot_file)
+        else:
+            print(f"Warning: PDOS calculation not supported for PW basis type, skipping PDOS plotting")
+    elif os.path.exists(pdos_file) and not os.path.exists(basref_file):
+        print(f"Warning: PDOS file exists but Orbital file not found - {basref_file}, skipping PDOS plotting")
+    elif not os.path.exists(pdos_file) and os.path.exists(basref_file):
+        print(f"Warning: Orbital file exists but PDOS file not found - {pdos_file}, skipping PDOS plotting")
+    else:
+        print("Warning: Both PDOS and Orbital files not found, skipping PDOS plotting")
+
     print("Plots generated:")
     for file in all_plot_files:
         print(f"- {file}")
         
     return all_plot_files
-

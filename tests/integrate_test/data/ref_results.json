@@ -98,6 +98,18 @@
             "scf_energy": -3220.427369911483
         }
     },
+    "test_abacus_dos_run_pw_nspin1":
+    {
+        "result": {
+            "scf_energy": -1688.713546837392
+        }
+    },
+    "test_abacus_dos_run_pw_nspin2":
+    {
+        "result": {
+            "scf_energy": -3228.693783965023
+        }
+    },
     "test_abacus_cal_elastic_si_prim":
     {
         "result": {

@@ -1,0 +1,13 @@
+INPUT_PARAMETERS
+calculation 	scf
+ecutwfc 	100
+scf_thr 	1e-05
+scf_nmax 	100
+smearing_method 	gauss
+smearing_sigma 	0.015
+mixing_type 	broyden
+mixing_beta 	0.2
+basis_type 	pw
+ks_solver 	dav_subspace
+gamma_only      1
+nspin 	2
