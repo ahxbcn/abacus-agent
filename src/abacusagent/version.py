@@ -1,7 +1,7 @@
 import subprocess
 import os
 
-BASE_VERSION = "v0.1.0"
+BASE_VERSION = "v0.2.0"
 
 def _no_need_subversion():
     try:
