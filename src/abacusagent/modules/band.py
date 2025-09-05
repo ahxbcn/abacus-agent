@@ -402,4 +402,4 @@ def abacus_cal_band(abacus_inputs_dir: Path,
         else:
             raise ValueError(f"Calculation mode {mode} not in ('pyatb', 'nscf')")
     except Exception as e:
-        return {'messsage': f"Calculating band failed: {e}"}
+        return {'message': f"Calculating band failed: {e}"}

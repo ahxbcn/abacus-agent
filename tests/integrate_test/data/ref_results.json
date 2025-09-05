@@ -62,6 +62,24 @@
             "band_gap": 0.0
         }
     },
+    "test_abacus_cal_band_pyatb_pw": 
+    {
+        "result": {
+            "message": "Calculating band failed: Pyatb mode is not supported for PW basis. Please use 'nscf' mode instead."
+        }
+    },
+    "test_abacus_cal_band_nscf_pw_nspin1": 
+    {
+        "result": {
+            "band_gap": 0.5583
+        }
+    },
+    "test_abacus_cal_band_nscf_pw_nspin2": 
+    {
+        "result": {
+            "band_gap": 0.0
+        }
+    },
     "test_abacus_dos_run_species": 
     {
         "result": {
