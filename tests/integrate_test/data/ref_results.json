@@ -1,0 +1,197 @@
+{
+    "test_abacus_calculation_scf": {
+        "result": {
+            "normal_end": true,
+            "converge": true,
+            "energy": -212.6212324126491
+        }
+    },
+    "test_abacus_do_relax_relax_cell": {
+        "result": {
+            "normal_end": true,
+            "relax_converge": true,
+            "relax_steps": 3,
+            "largest_gradient": [0.0, 0.0, 0.0],
+            "largest_gradient_stress": [19.232719, 27.120458, 0.181105]
+        }
+    },
+    "test_abacus_do_relax_not_relax_cell":
+    {
+        "result": {
+            "normal_end": true,
+            "relax_converge": true,
+            "relax_steps": 4,
+            "largest_gradient": [0.0549695, 5.00836, 0.0154149, 0.000125427]
+        }
+    },
+    "test_abacus_badercharge_run_nspin1": 
+    {
+        "result": {
+            "bader_charges": [0.930, -0.930],
+            "atom_labels": ["Na", "Cl"]
+        }
+    },
+    "test_abacus_badercharge_run_nspin2": 
+    {
+        "result": {
+            "bader_charges": [0.930, -0.930],
+            "atom_labels": ["Na", "Cl"]
+        }
+    },
+    "test_abacus_cal_band_pyatb_nspin1": 
+    {
+        "result": {
+            "band_gap": 0.6702
+        }
+    },
+    "test_abacus_cal_band_pyatb_nspin2": 
+    {
+        "result": {
+            "band_gap": 0.0
+        }
+    },
+    "test_abacus_cal_band_nscf_nspin1": 
+    {
+        "result": {
+            "band_gap": 0.5804
+        }
+    },
+    "test_abacus_cal_band_nscf_nspin2": 
+    {
+        "result": {
+            "band_gap": 0.0
+        }
+    },
+    "test_abacus_cal_band_pyatb_pw": 
+    {
+        "result": {
+            "message": "Calculating band failed: Pyatb mode is not supported for PW basis. Please use 'nscf' mode instead."
+        }
+    },
+    "test_abacus_cal_band_nscf_pw_nspin1": 
+    {
+        "result": {
+            "band_gap": 0.5583
+        }
+    },
+    "test_abacus_cal_band_nscf_pw_nspin2": 
+    {
+        "result": {
+            "band_gap": 0.0
+        }
+    },
+    "test_abacus_dos_run_species": 
+    {
+        "result": {
+            "scf_energy": -1688.5908919
+        }
+    },
+    "test_abacus_dos_run_species_shell": 
+    {
+        "result": {
+            "scf_energy": -1688.5908919
+        }
+    },
+    "test_abacus_dos_run_species_orbital": 
+    {
+        "result": {
+            "scf_energy": -1688.5908919
+        }
+    },
+    "test_abacus_dos_run_species_nspin2": 
+    {
+        "result": {
+            "scf_energy": -3220.427369911483
+        }
+    },
+    "test_abacus_dos_run_species_shell_nspin2": 
+    {
+        "result": {
+            "scf_energy": -3220.427369911483
+        }
+    },
+    "test_abacus_dos_run_species_orbital_nspin2": 
+    {
+        "result": {
+            "scf_energy": -3220.427369911483
+        }
+    },
+    "test_abacus_dos_run_pw_nspin1":
+    {
+        "result": {
+            "scf_energy": -1688.713546837392
+        }
+    },
+    "test_abacus_dos_run_pw_nspin2":
+    {
+        "result": {
+            "scf_energy": -3228.693783965023
+        }
+    },
+    "test_abacus_cal_elastic_si_prim":
+    {
+        "result": {
+            "elastic_tensor": [[112.52866370100037, 186.4920636728006, 149.58784495160054, 52.35257766160018, 0.0, 0.0], 
+                               [167.98341593440057, 131.03733348100042, 149.58785530040055, -26.189682495000095, 45.33066025400016, -32.036729146200116], 
+                               [167.98341597780063, 131.03733342940046, 149.58785529980045, -26.189682564600087, -45.33066037380015, 32.03672922980011], 
+                               [154.93534577879998, -52.200659693600024, -104.1306408299, 73.2265804774, 0.0, 0.0], 
+                               [-0.46194834079999847, 103.19663438510003, -104.13064079950003, -36.6436901792, 63.3973322095, 89.65960380920001], 
+                               [-0.4619483611999965, -104.13018973480001, 103.19618329940002, 36.64496669100001, 63.404224003800024, 89.65473012850003]],
+            "bulk_modulus": 149.5361979720227,
+            "shear_modulus": 39.08813446687997,
+            "young_modulus": 107.86584380090542,
+            "poisson_ratio": 0.3797773323296093
+        }
+    },
+    "test_abacus_eos_nacl_cubic":
+    {
+        "result": {
+            "E0": -6773.5543006369235,
+            "V0": 211.5655744695652,
+            "B0": 18.995907024224003,
+            "B0_deriv": 4.5405237260803615
+        }
+    },
+    "test_abacus_phonon_dispersion_nspin1": 
+    {
+        "result": {
+            "entropy": 34.27791643853491,
+            "free_energy": 9.719805286625483,
+            "heat_capacity": 36.163381863807714,
+            "max_frequency_THz": 18.36540344775355, 
+            "max_frequency_K": 881.3997884259676
+        }
+    },
+    "test_abacus_phonon_dispersion_nspin2": 
+    {
+        "result": {
+            "entropy": 24.74311174292432,
+            "free_energy": 0.8417257767254287,
+            "heat_capacity": 22.46405771015644,
+            "max_frequency_THz": 9.534280521120381, 
+            "max_frequency_K": 457.5730044818178
+        }
+    },
+    "test_abacus_vibration_analysis_h2":
+    {
+        "result": {
+            "frequencies": [-0.050159882295798514, -0.05015987951926836, -0.005149307147273863,
+                            83.47082119114941, 83.47082119115237, 4293.5374023360655],
+            "zero_point_energy": 0.2765209954303826,
+            "vib_entropy": 0.0003803556727265372,
+            "vib_free_energy": 0.18347896292569157
+        }
+    },
+    "test_abacus_run_md_nve":
+    {
+        "result": {}
+    },
+    "test_abacus_run_md_nvt":
+    {
+        "result": {}
+    },
+    "test_abacus_run_md_npt":
+    {
+        "result": {}
+    }
+}

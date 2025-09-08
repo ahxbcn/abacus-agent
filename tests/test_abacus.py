@@ -21,6 +21,8 @@ class TestAbacusPrepare(unittest.TestCase):
         self.orb_path = (self.data_dir / "orb").resolve()
         self.stru_file1 = (self.data_dir / "STRU").resolve()
         self.stru_file2 = (self.data_dir / "POSCAR").resolve()
+        os.environ["ABACUS_PP_PATH"] = str(self.pp_path)
+        os.environ["ABACUS_ORB_PATH"] = str(self.orb_path)
         
         self.original_cwd = os.getcwd()
         os.chdir(self.test_path)
@@ -40,22 +42,17 @@ class TestAbacusPrepare(unittest.TestCase):
         
         outputs = abacus_prepare(str(self.stru_file1.absolute()),
             stru_type = "abacus/stru",
-            pp_path= self.pp_path,
-            orb_path = self.orb_path,
             job_type= "scf",
             lcao= True
         )
-        self.assertTrue(os.path.exists(outputs["job_path"]))
-        self.assertTrue(os.path.exists(outputs["job_path"] / "INPUT"))
-        self.assertTrue(os.path.exists(outputs["job_path"] / "STRU"))
-        self.assertTrue(os.path.exists(outputs["job_path"] / "As_ONCV_PBE-1.0.upf"))
-        self.assertTrue(os.path.exists(outputs["job_path"] / "As_gga_8au_100Ry_2s2p1d.orb"))
-        self.assertTrue(os.path.exists(outputs["job_path"] / "Ga_ONCV_PBE-1.0.upf"))
-        self.assertTrue(os.path.exists(outputs["job_path"] / "Ga_gga_9au_100Ry_2s2p2d.orb"))
+        self.assertTrue(os.path.exists(outputs["abacus_inputs_dir"]))
+        self.assertTrue(os.path.exists(outputs["abacus_inputs_dir"] / "INPUT"))
+        self.assertTrue(os.path.exists(outputs["abacus_inputs_dir"] / "STRU"))
+        self.assertTrue(os.path.exists(outputs["abacus_inputs_dir"] / "As_ONCV_PBE-1.0.upf"))
+        self.assertTrue(os.path.exists(outputs["abacus_inputs_dir"] / "As_gga_8au_100Ry_2s2p1d.orb"))
+        self.assertTrue(os.path.exists(outputs["abacus_inputs_dir"] / "Ga_ONCV_PBE-1.0.upf"))
+        self.assertTrue(os.path.exists(outputs["abacus_inputs_dir"] / "Ga_gga_9au_100Ry_2s2p2d.orb"))
         
-        input_files = ["INPUT", "STRU", "As_ONCV_PBE-1.0.upf", "As_gga_8au_100Ry_2s2p1d.orb",
-                       "Ga_ONCV_PBE-1.0.upf", "Ga_gga_9au_100Ry_2s2p2d.orb","struinfo.txt"]
-        self.assertCountEqual(outputs["input_files"], input_files)
         self.assertTrue("input_content" in outputs)
         
 
@@ -115,18 +112,19 @@ class TestAbacusModifyInput(unittest.TestCase):
                                       extra_input=extra_input)
 
         modified_input_param = ReadInput("INPUT")
+        
         self.assertEqual(modified_input_param['vdw_method'], extra_input['vdw_method'])
         self.assertEqual(modified_input_param['nspin'], extra_input['nspin'])
         self.assertEqual(modified_input_param['ecutwfc'], original_input_param['ecutwfc'])
 
         self.assertEqual(modified_input_param['dft_plus_u'], 1)
-        orbital_corr_modified = modified_input_param['orbital_corr'].split()
-        orbital_corr_ref = ['2', '-1', '-1', '1']
-        self.assertEqual(len(orbital_corr_modified), len(orbital_corr_ref))
+        orbital_corr_modified = modified_input_param['orbital_corr']
+        orbital_corr_ref = [2,-1,-1, 1]
+        self.assertEqual(orbital_corr_modified, orbital_corr_ref)
         for i in range(len(orbital_corr_modified)):
             self.assertEqual(orbital_corr_modified[i], orbital_corr_ref[i])
         
-        hubbard_u_modified = modified_input_param['hubbard_u'].split()
+        hubbard_u_modified = modified_input_param['hubbard_u']
         for i in range(len(hubbard_u_modified)):
             hubbard_u_modified[i] = float(hubbard_u_modified[i])
         hubbard_u_ref = [3.0, 0.0, 0.0, 0.5]

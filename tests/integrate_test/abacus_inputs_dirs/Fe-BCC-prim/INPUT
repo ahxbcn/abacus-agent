@@ -1,0 +1,15 @@
+INPUT_PARAMETERS
+calculation 	scf
+ecutwfc 	100
+scf_thr 	1e-05
+scf_nmax 	100
+smearing_method 	gauss
+smearing_sigma 	0.015
+mixing_type 	broyden
+mixing_beta 	0.2
+basis_type 	lcao
+ks_solver 	genelpa
+kspacing 	0.20
+nspin 	2
+onsite_radius 	3
+out_mul 	1

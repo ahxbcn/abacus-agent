@@ -11,6 +11,11 @@ ENVS = {
     "ABACUSAGENT_HOST": "localhost",
     "ABACUSAGENT_PORT": "50001", 
     "ABACUSAGENT_MODEL": "dp",  # fastmcp, abacus, dp
+    
+    # LLM settings
+    "LLM_MODEL": "",
+    "LLM_API_KEY": "",
+    "LLM_BASE_URL": "",
 
     # bohrium settings
     "BOHRIUM_USERNAME": "",
@@ -24,6 +29,8 @@ ENVS = {
     "ABACUS_COMMAND": "abacus",  # abacus executable command
     "ABACUS_PP_PATH": "",  # abacus pseudopotential library path
     "ABACUS_ORB_PATH": "",  # abacus orbital library path
+    "ABACUS_SOC_PP_PATH": "",  # abacus SOC pseudopotential library path
+    "ABACUS_SOC_ORB_PATH": "",  # abacus SOC orbital library path
     
     "_comments":{
         "ABACUS_WORK_PATH": "The working directory for AbacusAgent, where all temporary files will be stored.",
@@ -32,6 +39,9 @@ ENVS = {
         "ABACUSAGENT_HOST": "The host address for the AbacusAgent server.",
         "ABACUSAGENT_PORT": "The port number for the AbacusAgent server.",
         "ABACUSAGENT_MODEL": "The model to use for AbacusAgent, can be 'fastmcp', 'test', or 'dp'.",
+        "LLM_MODEL": "The model name for the LLM to use. Like: openai/qwen-turbo, deepseek/deepseek-chat",
+        "LLM_API_KEY": "The API key for the LLM service.",
+        "LLM_BASE_URL": "The base URL for the LLM service, if applicable.",
         "BOHRIUM_USERNAME": "The username for Bohrium.",        
         "BOHRIUM_PASSWORD": "The password for Bohrium.",
         "BOHRIUM_PROJECT_ID": "The project ID for Bohrium.",
@@ -40,7 +50,9 @@ ENVS = {
         "BOHRIUM_ABACUS_COMMAND": "The command to run Abacus on Bohrium",
         "ABACUS_COMMAND": "The command to execute Abacus on local machine.",
         "ABACUS_PP_PATH": "The path to the pseudopotential library for Abacus.",
-        "ABACUS_ORB_PATH": "The path to the orbital library for Abacus.",
+        "ABACUS_ORB_PATH": "The path to the orbital library for ABACUS_PP_PATH",
+        "ABACUS_SOC_PP_PATH": "The path to the SOC pseudopotential library for Abacus.",
+        "ABACUS_SOC_ORB_PATH": "The path to the orbital library for ABACUS_SOC_PP_PATH.",
         "_comments": "This dictionary contains the default environment variables for AbacusAgent."
     }
 }
@@ -90,6 +102,8 @@ def set_envs(transport_input=None, model_input=None, port_input=None, host_input
     if update_envjson:
         # write envjson to ~/.abacusagent/env.json
         os.makedirs(os.path.dirname(envjson_file), exist_ok=True)
+        del envjson["_comments"]  # remove comments before writing
+        envjson["_comments"] = ENVS["_comments"]  # add comments from ENVS
         json.dump(
             envjson,
             open(envjson_file, "w"),
@@ -97,14 +111,19 @@ def set_envs(transport_input=None, model_input=None, port_input=None, host_input
         )
     return envjson
     
-def create_workpath():
+def create_workpath(work_path=None):
     """
     Create the working directory for AbacusAgent, and change the current working directory to it.
+    
+    Args:
+        work_path (str, optional): The path to the working directory. If None, a default path will be used.
     
     Returns:
         str: The path to the working directory.
     """
-    work_path = os.environ.get("ABACUSAGENT_WORK_PATH", "/tmp/abacusagent") + f"/{time.strftime('%Y%m%d%H%M%S')}"
+    if work_path is None:
+        work_path = os.environ.get("ABACUSAGENT_WORK_PATH", "/tmp/abacusagent") + f"/{time.strftime('%Y%m%d%H%M%S')}"
+        
     os.makedirs(work_path, exist_ok=True)
     cwd = os.getcwd()
     os.chdir(work_path)

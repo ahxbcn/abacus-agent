@@ -1,19 +1,18 @@
 import os
 import json
 from pathlib import Path
-from typing import Literal, Optional, TypedDict, Dict, Any, List, Tuple, Union
-from abacustest.lib_model.model_013_inputs import PrepInput
-from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteInput
+from typing import Literal, Optional,  Dict, Any
+from abacustest.lib_prepare.abacus import ReadInput, WriteInput
 from abacustest.lib_collectdata.collectdata import RESULT
-from abacustest.collectdata import parse_value
+from abacustest.lib_model.comm import check_abacus_inputs
 
 from abacusagent.init_mcp import mcp
-from abacusagent.modules.util.comm import run_abacus, link_abacusjob, generate_work_path
+from abacusagent.modules.util.comm import run_abacus, link_abacusjob, generate_work_path, collect_metrics
 
 
 @mcp.tool()
 def abacus_do_relax(
-    abacus_inputs_path: Path,
+    abacus_inputs_dir: Path,
     force_thr_ev: Optional[float] = None,
     stress_thr_kbar: Optional[float] = None,
     max_steps: Optional[int] = None,
@@ -23,10 +22,11 @@ def abacus_do_relax(
     relax_new: Optional[bool] = None,
 ) -> Dict[str, Any]:
     """
-    Specially modify the ABACUS input for relaxation calculations.
+    Perform relaxation calculations using ABACUS based on the provided input files. The results of the relaxation and 
+    the new ABACUS input files containing final relaxed structure will be returned.
     
     Args:
-        abacus_inputs_path: Path to the ABACUS input files, which contains the INPUT, STRU, KPT, and pseudopotential or orbital files.
+        abacus_inputs_dir: Path to the ABACUS input files, which contains the INPUT, STRU, KPT, and pseudopotential or orbital files.
         force_thr_ev: Force convergence threshold in eV/Å, default is 0.01.
         stress_thr_kbar: Stress convergence threshold in kbar, default is 1.0, this is only used when relax_cell is True.
         max_steps: Maximum number of relaxation steps, default is 100.
@@ -47,42 +47,77 @@ def abacus_do_relax(
     Returns:
         A dictionary containing:
         - job_path: The job path of the relaxation calculation.
+        - new_abacus_inputs_dir: The path to the new ABACUS input files using relaxed structure in STRU file from the relaxation results.
+                                  Property calculation should be performed using this new ABACUS input files.
         - result: The result of the relaxation calculation with a dictionary containing:
             - normal_end: Whether the relaxation calculation ended normally.
             - relax_steps: The number of relaxation steps taken.
             - largest_gradient: The largest force gradient during the relaxation.
             - relax_converge: Whether the relaxation converged.
             - energies: The energies at each step of the relaxation.
-    Raises:
-        FileNotFoundError: If the job directory does not exist or does not contain necessary files.
-        RuntimeError: If the ABACUS calculation fails or returns an error.
+    
+    For example:
+        # only relax the atomic positions
+        >>> abacus_do_relax(
+                abacus_inputs_dir="/path/to/abacus/inputs",
+                force_thr_ev=0.01,
+                max_steps=100,
+                relax_cell=False)
+        # relax the cell parameters and atomic positions
+        >>> abacus_do_relax(
+                abacus_inputs_dir="/path/to/abacus/inputs",
+                force_thr_ev=0.01,
+                stress_thr_kbar=1.0,
+                max_steps=100,
+                relax_cell=True)
+        # relax the cell parameters and atomic positions with fixed volume
+        >>> abacus_do_relax(
+                abacus_inputs_dir="/path/to/abacus/inputs",
+                force_thr_ev=0.01,
+                stress_thr_kbar=1.0,
+                max_steps=100,
+                relax_cell=True,
+                fixed_axes="volume") 
+        
+        When the relaxation is not converged, please try to use other relaxation methods.
     """
-    work_path = generate_work_path()
-    link_abacusjob(    src=abacus_inputs_path,
-                        dst=work_path,
-                        copy_files=["INPUT", "STRU", "KPT"])
-    
-    prepare_relax_inputs(
-        work_path=work_path,
-        force_thr_ev=force_thr_ev,
-        stress_thr_kbar=stress_thr_kbar,
-        max_steps=max_steps,
-        relax_cell=relax_cell,
-        fixed_axes=fixed_axes,
-        relax_method=relax_method,
-        relax_new=relax_new,
-    )
-    
-    run_abacus(work_path)
-    
-    results = relax_postprocess(work_path)
+    try:
+        is_valid, msg = check_abacus_inputs(abacus_inputs_dir)
+        if not is_valid:
+            raise RuntimeError(f"Invalid ABACUS input files: {msg}")
+        
+        abacus_inputs_dir = Path(abacus_inputs_dir).absolute()
+        work_path = Path(generate_work_path()).absolute()
+        link_abacusjob(src=abacus_inputs_dir,
+                       dst=work_path,
+                       copy_files=["INPUT", "STRU", "KPT"])
 
-    return {
-        "job_path": Path(work_path).absolute(),
-        "result": results
-    }
+        prepare_relax_inputs(
+            work_path=work_path,
+            force_thr_ev=force_thr_ev,
+            stress_thr_kbar=stress_thr_kbar,
+            max_steps=max_steps,
+            relax_cell=relax_cell,
+            fixed_axes=fixed_axes,
+            relax_method=relax_method,
+            relax_new=relax_new,
+        )
 
-@mcp.tool()
+        run_abacus(work_path)
+
+        results = relax_postprocess(work_path)
+
+        new_abacus_inputs_dir = abacus_prepare_inputs_from_relax_results(work_path)['job_path']
+
+        return {
+            "job_path": Path(work_path).absolute(),
+            "new_abacus_inputs_dir": Path(new_abacus_inputs_dir).absolute(),
+            "result": results
+        }
+    except Exception as e:
+        return {"message": f"Relaxation calculation failed: {e}"}
+
+#@mcp.tool()
 def abacus_prepare_inputs_from_relax_results(
     relax_jobpath: Path
 )-> Dict[str, Any]:
@@ -99,31 +134,38 @@ def abacus_prepare_inputs_from_relax_results(
         - 'input_content': The content of the generated INPUT file.
         - 'input_files': A list of files in the job directory.
     """
-    rs = RESULT(path=relax_jobpath, fmt="abacus")
-    final_stru = os.path.join(relax_jobpath, f"OUT.{rs['suffix']}", "STRU_ION_D") # the structure file of the last relax step
-    
-    if not os.path.isfile(final_stru):
-        raise FileNotFoundError(f"We can not find the structure file of last relax step {final_stru}. \
-            Please check the path and ensure the relaxation calculation has completed successfully.")
-    
-    work_path = generate_work_path()
-    
-    link_abacusjob(
-        src=relax_jobpath,
-        dst=work_path,
-        copy_files=["INPUT", "STRU", "KPT"],
-        exclude=["OUT.*", "*.log", "*.out"],
-        exclude_directories=True
-    )
-    if os.path.isfile(work_path / "STRU"):
-        os.unlink(work_path / "STRU")
-    os.symlink(final_stru, work_path / "STRU")
+    try:
+        relax_jobpath = Path(relax_jobpath).absolute()
+        rs = RESULT(path=relax_jobpath, fmt="abacus")
+        final_stru = Path(os.path.join(relax_jobpath, f"OUT.{rs.SUFFIX}", "STRU_ION_D")).absolute() # the structure file of the last relax step
 
-    return {
-        "job_path": Path(work_path).absolute(),
-        "input_content": ReadInput(work_path / "INPUT"),
-        "input_files": [f.name for f in work_path.iterdir()]
-    }
+        if not os.path.isfile(final_stru):
+            raise FileNotFoundError(f"We can not find the structure file of last relax step {final_stru}. \
+                Please check the path and ensure the relaxation calculation has completed successfully.")
+
+        work_path = Path(generate_work_path()).absolute()
+
+        link_abacusjob(
+            src=relax_jobpath,
+            dst=work_path,
+            copy_files=["INPUT", "STRU", "KPT"],
+            exclude=["OUT.*", "*.log", "*.out", "*.json", "log"],
+            exclude_directories=True
+        )
+        if os.path.isfile(os.path.join(work_path, "STRU")):
+            os.unlink(os.path.join(work_path, "STRU"))
+        os.symlink(final_stru, os.path.join(work_path, "STRU"))
+
+        return {
+            "job_path": Path(work_path).absolute(),
+            "input_content": ReadInput(os.path.join(work_path, "INPUT")),
+        }
+    except Exception as e:
+        return {
+            "job_path": None,
+            "input_content": None,
+            "message": f"Prepare new ABACUS input files from relax or cell-relax calculation output files failed: {e}"
+        }
 
 
 def prepare_relax_inputs(
@@ -138,8 +180,9 @@ def prepare_relax_inputs(
     """
     Prepare the ABACUS input files for relaxation calculations.
     """
+    work_path = Path(work_path).absolute()
     
-    input_param = ReadInput(work_path+"/INPUT")
+    input_param = ReadInput(os.path.join(work_path, "INPUT"))
     
     # check calculation type
     if relax_cell is None and "calculation" not in input_param:
@@ -159,7 +202,7 @@ def prepare_relax_inputs(
         input_param["stress_thr"] = stress_thr_kbar
     
     if max_steps is not None:
-        input_param["max_steps"] = max_steps
+        input_param["relax_nmax"] = max_steps
         
     if fixed_axes is not None:
         input_param["fixed_axes"] = fixed_axes
@@ -175,15 +218,12 @@ def prepare_relax_inputs(
     if relax_new is not None:
         input_param["relax_new"] = relax_new
     
-    WriteInput(input_param, work_path+"/INPUT")
+    WriteInput(input_param, os.path.join(work_path, "INPUT"))
     
 
 def relax_postprocess(work_path: Path) -> Dict[str, Any]:
-    
-    rs = RESULT(path=work_path, fmt="abacus")
-    
-    metrics = ["normal_end", "relax_steps", "largest_gradient", "relax_converge", "energies"]
-    
-    results = parse_value(rs, metrics)
-    
-    return results
+    """Collect the key metrics from the relaxation results."""
+    return collect_metrics(work_path, 
+                          metrics_names=["normal_end", "relax_steps", "largest_gradient",
+                                         "largest_gradient_stress", "relax_converge", "energies"])
+

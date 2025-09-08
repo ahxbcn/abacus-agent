@@ -2,185 +2,134 @@ import os
 import json
 from pathlib import Path
 from typing import Literal, Optional, TypedDict, Dict, Any, List, Tuple, Union
+
+import numpy as np
+
 from abacustest.lib_model.model_013_inputs import PrepInput
 from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteInput
 from abacustest.lib_collectdata.collectdata import RESULT
+from abacustest.lib_model.comm import check_abacus_inputs
 
 from abacusagent.init_mcp import mcp
-from abacusagent.modules.util.comm import run_abacus, generate_work_path
-
-@mcp.tool()
-def generate_bulk_structure(element: str, 
-                           crystal_structure:Literal["sc", "fcc", "bcc","hcp","diamond", "zincblende", "rocksalt"]='fcc', 
-                           a:float =None, 
-                           c: float =None,
-                           cubic: bool =False,
-                           orthorhombic: bool =False,
-                           file_format: Literal["cif", "poscar"] = "cif",
-                           ) -> Dict[str, Any]:
-    """
-    Generate a bulk crystal structure using ASE's `bulk` function.
-    
-    Args:
-        element (str): The chemical symbol of the element (e.g., 'Cu', 'Si', 'NaCl').
-        crystal_structure (str): The type of crystal structure to generate. Options include:
-            - 'sc' (simple cubic), a is needed
-            - 'fcc' (face-centered cubic), a is needed
-            - 'bcc' (body-centered cubic), a is needed
-            - 'hcp' (hexagonal close-packed), a is needed, if c is None, c will be set to sqrt(8/3) * a.
-            - 'diamond' (diamond cubic structure), a is needed
-            - 'zincblende' (zinc blende structure), a is needed, two elements are needed, e.g., 'GaAs'
-            - 'rocksalt' (rock salt structure), a is needed, two elements are needed, e.g., 'NaCl'
-        a (float, optional): Lattice constant in Angstroms. Required for all structures.
-        c (float, optional): Lattice constant for the c-axis in Angstroms. Required for 'hcp' structure.
-        cubic (bool, optional): If constructing a cubic supercell for fcc, bcc, diamond, zincblende, or rocksalt structures.
-        orthorhombic (bool, optional): If constructing orthorhombic cell for 'hcp' structure.
-        file_format (str, optional): The format of the output file. Options are 'cif' or 'poscar'. Default is 'cif'.
-    
-    Notes: all crystal need the lattice constant a, which is the length of the unit cell (or conventional cell).
-
-    Returns:
-        structure_file: The path to generated structure file.
-        cell: The cell parameters of the generated structure as a list of lists.
-        coordinate: The atomic coordinates of the generated structure as a list of lists.
-    
-    Examples:
-    >>> # FCC Cu
-    >>> cu_fcc = generate_bulk_structure('Cu', 'fcc', a=3.6)
-    >>>
-    >>> # HCP Mg with custom c-axis
-    >>> mg_hcp = generate_bulk_structure('Mg', 'hcp', a=3.2, c=5.2, orthorhombic=True)
-    >>>
-    >>> # Diamond Si
-    >>> si_diamond = generate_bulk_structure('Si', 'diamond', a=5.43, cubic=True)
-    >>> # Zincblende GaAs
-    >>> gaas_zincblende = generate_bulk_structure('GaAs', 'zincblende', a=5.65, cubic=True)
-    
-    """
-    if a is None:
-        raise ValueError("Lattice constant 'a' must be provided for all crystal structures.")
-    
-    from ase.build import bulk
-    special_params = {}
-    
-    if crystal_structure == 'hcp':
-        if c is not None:
-            special_params['c'] = c
-        special_params['orthorhombic'] = orthorhombic
-    
-    if crystal_structure in ['fcc', 'bcc', 'diamond', 'zincblende']:
-        special_params['cubic'] = cubic
-    try:
-        structure = bulk(
-            name=element,
-            crystalstructure=crystal_structure,
-            a=a,
-            **special_params
-        )
-    except Exception as e:
-        raise ValueError(f"Generate structure failed: {str(e)}") from e
-    
-    work_path = generate_work_path(create=True)
-    
-    if file_format == "cif":
-        structure_file = f"{work_path}/{element}_{crystal_structure}.cif"
-        structure.write(structure_file, format="cif")
-    elif file_format == "poscar":
-        structure_file = f"{work_path}/{element}_{crystal_structure}.vasp"
-        structure.write(structure_file, format="vasp")
-    else:
-        raise ValueError("Unsupported file format. Use 'cif' or 'poscar'.")
-    
-    return {
-        "structure_file": Path(structure_file).absolute(),
-        "cell": structure.get_cell().tolist(),
-        "coordinate": structure.get_positions().tolist()
-    }
+from abacusagent.modules.util.comm import generate_work_path, run_abacus, collect_metrics
 
 
 @mcp.tool()
 def abacus_prepare(
     stru_file: Path,
     stru_type: Literal["cif", "poscar", "abacus/stru"] = "cif",
-    pp_path: Optional[str] = None,
-    orb_path: Optional[str] = None,
+    #pp_path: Optional[str] = None,
+    #orb_path: Optional[str] = None,
     job_type: Literal["scf", "relax", "cell-relax", "md"] = "scf",
     lcao: bool = True,
+    nspin: Literal[1, 2, 4] = 1,
+    soc: bool = False,
+    dftu: bool = False,
+    dftu_param: Optional[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]]] = None,
+    init_mag: Optional[Dict[str, float]] = None,
+    afm: bool = False,
     extra_input: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
-    Prepare input files for ABACUS calculation.
+    Prepare mandatory input files for ABACUS calculation from a structure file.
+    This function does not perform any actual calculation, but is necessary to use this function
+    to prepare a directory containing necessary input files for ABACUS calculation. 
+    If user provides ABACUS input files by him/herself, this function should not be used.
+    
     Args:
-        stru_file: Structure file in cif, poscar, or abacus/stru format.
-        stru_type: Type of structure file, can be 'cif', 'poscar', or 'abacus/stru'. 'cif' is the default. 'poscar' is the VASP POSCAR format. 'abacus/stru' is the ABACUS structure format.
-        pp_path: The pseudopotential library directory, if is None, will use the value of environment variable ABACUS_PP_PATH.
-        orb_path: The orbital library directory, if is None, will use the value of environment variable ABACUS_ORB_PATH.
-        job_type: The type of job to be performed, can be 'scf', 'relax', 'cell-relax', or 'md'. 'scf' is the default.
-        lcao: Whether to use LCAO basis set, default is True. If True, the orbital library path must be provided.
-        extra_input: Extra input parameters for ABACUS. 
+        stru_file (Path): Structure file in cif, poscar, or abacus/stru format.
+        stru_type (Literal["cif", "poscar", "abacus/stru"] = "cif"): Type of structure file, can be 'cif', 'poscar', or 'abacus/stru'. 'cif' is the default. 'poscar' is the VASP POSCAR format. 'abacus/stru' is the ABACUS structure format.
+        job_type (Literal["scf", "relax", "cell-relax", "md"] = "scf"): The type of job to be performed, can be:
+            'scf': Self-consistent field calculation, which is the default. 
+            'relax': Geometry relaxation calculation, which will relax the atomic position to the minimum energy configuration.
+            'cell-relax': Cell relaxation calculation, which will relax the cell parameters and atomic positions to the minimum energy configuration.
+            'md': Molecular dynamics calculation, which will perform molecular dynamics simulation.
+        lcao (bool): Whether to use LCAO basis set, default is True.
+        nspin (int): The number of spins, can be 1 (no spin), 2 (spin polarized), or 4 (non-collinear spin). Default is 1.
+        soc (bool): Whether to use spin-orbit coupling, if True, nspin should be 4.
+        dftu (bool): Whether to use DFT+U, default is False.
+        dftu_param (dict): The DFT+U parameters, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the U value.
+            Value can also be a list of two values, and the first value is the orbital (p, d, f) to apply DFT+U, and the second value is the U value.
+            For example, {"Fe": ["d", 4], "O": ["p", 1]} means applying DFT+U to Fe 3d orbital with U=4 eV and O 2p orbital with U=1 eV.
+        init_mag ( dict or None): The initial magnetic moment for magnetic elements, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the initial magnetic moment.
+        afm (bool): Whether to use antiferromagnetic calculation, default is False. If True, half of the magnetic elements will be set to negative initial magnetic moment.
+        extra_input: Extra input parameters in the prepared INPUT file. 
     
     Returns:
         A dictionary containing the job path.
-        - 'job_path': The absolute path to the job directory.
+        - 'abacus_inputs_dir': The absolute path to the generated ABACUS input directory, containing INPUT, STRU, pseudopotential and orbital files.
         - 'input_content': The content of the generated INPUT file.
-        - 'input_files': A list of files in the job directory.
     Raises:
         FileNotFoundError: If the structure file or pseudopotential path does not exist.
         ValueError: If LCAO basis set is selected but no orbital library path is provided.
         RuntimeError: If there is an error preparing input files.
     """
-    stru_file = Path(stru_file).absolute()
-    if not os.path.isfile(stru_file):
-        raise FileNotFoundError(f"Structure file {stru_file} does not exist.")
-    
-    # Check if the pseudopotential path exists
-    pp_path = pp_path if pp_path is not None else os.getenv("ABACUS_PP_PATH")
-    if pp_path is None or not os.path.exists(pp_path):
-        raise FileNotFoundError(f"Pseudopotential path {pp_path} does not exist.")
-    
-    orb_path = orb_path if orb_path is not None else os.getenv("ABACUS_ORB_PATH")
-    if orb_path is None and os.getenv("ABACUS_ORB_PATH") is not None:
-        orb_path = os.getenv("ABACUS_ORB_PATH")
-    
-    if lcao and orb_path is None:
-        raise ValueError("LCAO basis set is selected but no orbital library path is provided.")
-    
-    extra_input_file = None
-    if extra_input is not None:
-        # write extra input to the input file
-        extra_input_file = "INPUT.tmp"
-        WriteInput(extra_input, extra_input_file)
-    
-    work_path = generate_work_path()
-    pwd = os.getcwd()
-    os.chdir(work_path)
     try:
-        
-        _, job_path = PrepInput(
-            files=str(stru_file),
-            filetype=stru_type,
-            jobtype=job_type,
-            pp_path=pp_path,
-            orb_path=orb_path,
-            input_file=extra_input_file,
-            lcao=lcao
-        ).run()  
-    except Exception as e:
-        os.chdir(pwd)
-        raise RuntimeError(f"Error preparing input files: {e}")
-    
-    if len(job_path) == 0:
-        os.chdir(pwd)
-        raise RuntimeError("No job path returned from PrepInput.")
-    
-    input_content = ReadInput(os.path.join(job_path[0], "INPUT"))
-    input_files = os.listdir(job_path[0])
-    job_path = Path(job_path[0]).absolute()
-    os.chdir(pwd)
+        stru_file = Path(stru_file).absolute()
+        if not os.path.isfile(stru_file):
+            raise FileNotFoundError(f"Structure file {stru_file} does not exist.")
 
-    return {"job_path": job_path,
-            "input_content": input_content,
-            "input_files": input_files}
+        # Check if the pseudopotential path exists
+        if soc:
+            pp_path = os.environ.get("ABACUS_SOC_PP_PATH")
+            orb_path = os.environ.get("ABACUS_SOC_ORB_PATH")
+        else:
+            pp_path = os.environ.get("ABACUS_PP_PATH")
+            orb_path = os.environ.get("ABACUS_ORB_PATH")
+
+        if not os.path.exists(pp_path):
+            raise FileNotFoundError(f"Pseudopotential path {pp_path} does not exist.")
+
+        if lcao and not os.path.exists(orb_path):
+            raise FileNotFoundError(f"Orbital library path {orb_path} does not exist.")
+
+        work_path = generate_work_path()
+        pwd = os.getcwd()
+        os.chdir(work_path)
+        try:
+            extra_input_file = None
+            if extra_input is not None:
+                # write extra input to the input file
+                extra_input_file = Path("INPUT.tmp").absolute()
+                WriteInput(extra_input, extra_input_file)
+
+            _, abacus_inputs_dir = PrepInput(
+                files=str(stru_file),
+                filetype=stru_type,
+                jobtype=job_type,
+                pp_path=pp_path,
+                orb_path=orb_path,
+                input_file=extra_input_file,
+                lcao=lcao,
+                nspin=nspin,
+                soc=soc,
+                dftu=dftu,
+                dftu_param=dftu_param,
+                init_mag=init_mag,
+                afm=afm,
+                copy_pp_orb=True
+            ).run()  
+        except Exception as e:
+            os.chdir(pwd)
+            raise RuntimeError(f"Error preparing input files: {e}")
+
+        if len(abacus_inputs_dir) == 0:
+            os.chdir(pwd)
+            raise RuntimeError("No job path returned from PrepInput.")
+
+        input_content = ReadInput(os.path.join(abacus_inputs_dir[0], "INPUT"))
+        input_files = os.listdir(abacus_inputs_dir[0])
+        abacus_inputs_dir = Path(abacus_inputs_dir[0]).absolute()
+        os.chdir(pwd)
+
+        is_valid, msg = check_abacus_inputs(abacus_inputs_dir)
+        if not is_valid:
+            raise RuntimeError(f"Invalid ABACUS input files: {msg}")
+        
+        return {"abacus_inputs_dir": abacus_inputs_dir,
+                "input_content": input_content}
+    except Exception as e:
+        return {"message": f"Prepare ABACUS input files from given structure failed: {e}"}
 
 #@mcp.tool()
 def get_file_content(
@@ -211,7 +160,7 @@ def get_file_content(
 
 @mcp.tool()
 def abacus_modify_input(
-    abacusjob_dir: Path,
+    abacus_inputs_dir: Path,
     dft_plus_u_settings: Optional[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]]] = None,
     extra_input: Optional[Dict[str, Any]] = None,
     remove_input: Optional[List[str]] = None
@@ -219,103 +168,109 @@ def abacus_modify_input(
     """
     Modify keywords in ABACUS INPUT file.
     Args:
-        abacusjob (str): Path to the directory containing the ABACUS input files.
+        abacus_inputs_dir (str): Path to the directory containing the ABACUS input files.
         dft_plus_u_setting: Dictionary specifying DFT+U settings.  
             - Key: Element symbol (e.g., 'Fe', 'Ni').  
             - Value: A list with one or two elements:  
                 - One-element form: float, representing the Hubbard U value (orbital will be inferred).  
                 - Two-element form: [orbital, U], where `orbital` is one of {'p', 'd', 'f'}, and `U` is a float.
-        extra_input: Additional key-value pairs to update the INPUT file.
-        remove_input: A list of param names to be removed in the INPUT file
+        extra_input: Additional key-value pairs to update the INPUT file. If the name of the key is already in the INPUT file, the value will be updated.
+        remove_input: A list of parameter names to be removed in the INPUT file
 
     Returns:
         A dictionary containing:
-        - input_path: the path of the modified INPUT file.
+        - modified_abacus_inputs_dir: the path of the modified INPUT file.
         - input_content: the content of the modified INPUT file as a dictionary.
     Raises:
         FileNotFoundError: If path of given INPUT file does not exist
         RuntimeError: If write modified INPUT file failed
     """
-    input_file = os.path.join(abacusjob_dir, "INPUT")
-    if dft_plus_u_settings is not None:
-        stru_file = os.path.join(abacusjob_dir, "STRU")
-    if not os.path.isfile(input_file):
-        raise FileNotFoundError(f"INPUT file {input_file} does not exist.")
-    
-    # Update simple keys and their values
-    input_param = ReadInput(input_file)
-    if extra_input is not None:
-        for key, value in extra_input.items():
-            input_param[key] = value
- 
-    # Remove keys
-    if remove_input is not None:
-        for param in remove_input:
-            input_param.pop(param,None)
-       
-    # DFT+U settings
-    main_group_elements = [
-    "H", "He", 
-    "Li", "Be", "B", "C", "N", "O", "F", "Ne",
-    "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar",
-    "K", "Ca", "Ga", "Ge", "As", "Se", "Br", "Kr",
-    "Rb", "Sr", "In", "Sn", "Sb", "Te", "I", "Xe",
-    "Cs", "Ba", "Tl", "Pb", "Bi", "Po", "At", "Rn",
-    "Fr", "Ra", "Nh", "Fl", "Mc", "Lv", "Ts", "Og" ]
-    transition_metals = [
-    "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn",
-    "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd",
-    "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg",
-    "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn"]
-    lanthanides_and_acnitides = [
-    "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu",
-    "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr"]
-
-    orbital_corr_map = {'p': 1, 'd': 2, 'f': 3}
-    if dft_plus_u_settings is not None:
-        input_param['dft_plus_u'] = 1
-
-        stru = AbacusStru.ReadStru(stru_file)
-        elements = stru.get_element(number=False,total=False)
-        
-        orbital_corr_param, hubbard_u_param = '', ''
-        for element in elements:
-            if element not in dft_plus_u_settings:
-                orbital_corr_param += ' -1 '
-                hubbard_u_param += ' 0 '
-            else:
-                if type(dft_plus_u_settings[element]) is not float: # orbital_corr and hubbard_u are provided
-                    orbital_corr = orbital_corr_map[dft_plus_u_settings[element][0]]
-                    orbital_corr_param += f" {orbital_corr} "
-                    hubbard_u_param += f" {dft_plus_u_settings[element][1]} "
-                else: #Only hubbard_u is provided, use default orbital_corr
-                    if element in main_group_elements:
-                        default_orb_corr = 1
-                    elif element in transition_metals:
-                        default_orb_corr = 2
-                    elif element in lanthanides_and_acnitides:
-                        default_orb_corr = 3
-                    
-                    orbital_corr_param += f" {default_orb_corr} "
-                    hubbard_u_param += f" {dft_plus_u_settings[element]} "
-        
-        input_param['orbital_corr'] = orbital_corr_param.strip()
-        input_param['hubbard_u'] = hubbard_u_param.strip()
-
     try:
-        WriteInput(input_param, input_file)
-    except Exception as e:
-        raise RuntimeError("Error occured during writing modified INPUT file")
+        input_file = os.path.join(abacus_inputs_dir, "INPUT")
+        if dft_plus_u_settings is not None:
+            stru_file = os.path.join(abacus_inputs_dir, "STRU")
+        if not os.path.isfile(input_file):
+            raise FileNotFoundError(f"INPUT file {input_file} does not exist.")
 
-    return {'abacusjob_dir': abacusjob_dir,
-            'input_content': input_param}
+        # Update simple keys and their values
+        input_param = ReadInput(input_file)
+        if extra_input is not None:
+            for key, value in extra_input.items():
+                input_param[key] = value
+    
+        # Remove keys
+        if remove_input is not None:
+            for param in remove_input:
+                input_param.pop(param,None)
+
+        # DFT+U settings
+        main_group_elements = [
+        "H", "He", 
+        "Li", "Be", "B", "C", "N", "O", "F", "Ne",
+        "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar",
+        "K", "Ca", "Ga", "Ge", "As", "Se", "Br", "Kr",
+        "Rb", "Sr", "In", "Sn", "Sb", "Te", "I", "Xe",
+        "Cs", "Ba", "Tl", "Pb", "Bi", "Po", "At", "Rn",
+        "Fr", "Ra", "Nh", "Fl", "Mc", "Lv", "Ts", "Og" ]
+        transition_metals = [
+        "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn",
+        "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd",
+        "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg",
+        "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn"]
+        lanthanides_and_acnitides = [
+        "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu",
+        "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr"]
+
+        orbital_corr_map = {'p': 1, 'd': 2, 'f': 3}
+        if dft_plus_u_settings is not None:
+            input_param['dft_plus_u'] = 1
+
+            stru = AbacusStru.ReadStru(stru_file)
+            elements = stru.get_element(number=False,total=False)
+
+            orbital_corr_param, hubbard_u_param = '', ''
+            for element in elements:
+                if element not in dft_plus_u_settings:
+                    orbital_corr_param += ' -1 '
+                    hubbard_u_param += ' 0 '
+                else:
+                    if type(dft_plus_u_settings[element]) is not float: # orbital_corr and hubbard_u are provided
+                        orbital_corr = orbital_corr_map[dft_plus_u_settings[element][0]]
+                        orbital_corr_param += f" {orbital_corr} "
+                        hubbard_u_param += f" {dft_plus_u_settings[element][1]} "
+                    else: #Only hubbard_u is provided, use default orbital_corr
+                        if element in main_group_elements:
+                            default_orb_corr = 1
+                        elif element in transition_metals:
+                            default_orb_corr = 2
+                        elif element in lanthanides_and_acnitides:
+                            default_orb_corr = 3
+
+                        orbital_corr_param += f" {default_orb_corr} "
+                        hubbard_u_param += f" {dft_plus_u_settings[element]} "
+
+            input_param['orbital_corr'] = orbital_corr_param.strip()
+            input_param['hubbard_u'] = hubbard_u_param.strip()
+
+        WriteInput(input_param, input_file)
+
+        is_valid, msg = check_abacus_inputs(abacus_inputs_dir)
+        if not is_valid:
+            raise RuntimeError(f"Invalid ABACUS input files: {msg}")
+        
+        return {'modified_abacus_inputs_dir': abacus_inputs_dir,
+                'input_content': input_param}
+    except Exception as e:
+        return {'message': f"Modify ABACUS INPUT file failed: {e}"}
 
 @mcp.tool()
 def abacus_modify_stru(
-    abacusjob_dir: Path,
+    abacus_inputs_dir: Path,
     pp: Optional[Dict[str, str]] = None,
     orb: Optional[Dict[str, str]] = None,
     fix_atoms_idx: Optional[List[int]] = None,
+    cell: Optional[List[List[float]]] = None,
+    coord_change_type: Literal['scale', 'original'] = 'scale',
     movable_coords: Optional[List[bool]] = None,
     initial_magmoms: Optional[List[float]] = None,
     angle1: Optional[List[float]] = None,
@@ -324,12 +279,16 @@ def abacus_modify_stru(
     """
     Modify pseudopotential, orbital, atom fixation, initial magnetic moments and initial velocities in ABACUS STRU file.
     Args:
-        abacusjob (str): Path to the directory containing the ABACUS input files.
+        abacus_inputs_dir (str): Path to the directory containing the ABACUS input files.
         pp: Dictionary mapping element names to pseudopotential file paths.
             If not provided, the pseudopotentials from the original STRU file are retained.
         orb: Dictionary mapping element names to numerical orbital file paths.
             If not provided, the orbitals from the original STRU file are retained.
         fix_atoms_idx: List of indices of atoms to be fixed.
+        cell: New cell parameters to be set in the STRU file. Should be a list of 3 lists, each containing 3 floats.
+        coord_change_type: Type of coordinate change to apply.
+            - 'scale': Scale the coordinates by the cell parameters. Suitable for most cases.
+            - 'original': Use the original coordinates without scaling. Suitable for single atom or molecule in a large cell.
         movable_coords: For each fixed atom, specify which coordinates are allowed to move.
             Each entry is a list of 3 integers (0 or 1), where 1 means the corresponding coordinate (x/y/z) can move.
             Example: if `fix_atoms_idx = [1]` and `movable_coords = [[0, 1, 1]]`, the x-coordinate of atom 1 will be fixed.
@@ -342,92 +301,112 @@ def abacus_modify_stru(
 
     Returns:
         A dictionary containing:
-        - stru_path: the path of the modified ABACUS STRU file
+        - modified_abacus_inputs_dir: the path of the modified ABACUS STRU file
         - stru_content: the content of the modified ABACUS STRU file as a string.
     Raises:
         ValueError: If `stru_file` is not path of a file, or dimension of initial_magmoms, angle1 or angle2 is not equal with number of atoms,
           or length of fixed_atoms_idx and movable_coords are not equal, or element in movable_coords are not a list with 3 bool elements
         KeyError: If pseudopotential or orbital are not provided for a element
     """
-    stru_file = os.path.join(abacusjob_dir, "STRU")
-    if os.path.isfile(stru_file):
-        stru = AbacusStru.ReadStru(stru_file)
-    else:
-        raise ValueError(f"{stru_file} is not path of a file")
-    
-    # Set pp and orb
-    elements = stru.get_element(number=False,total=False)
-    if pp is not None:
-        pplist = []
-        for element in elements:
-            if element in pp:
-                pplist.append(pp[element])
-            else:
-                raise KeyError(f"Pseudopotential for element {element} is not provided")
-        
-        stru.set_pp(pplist)
+    try:
+        stru_file = os.path.join(abacus_inputs_dir, "STRU")
+        if os.path.isfile(stru_file):
+            stru = AbacusStru.ReadStru(stru_file)
+        else:
+            raise ValueError(f"{stru_file} is not path of a file")
 
-    if orb is not None:
-        orb_list = []
-        for element in elements:
-            if element in orb:
-                orb_list.append(orb[element])
-            else:
-                raise KeyError(f"Orbital for element {element} is not provided")
-
-        stru.set_orb(orb_list)
-    
-    # Set atomic magmom for every atom
-    natoms = len(stru.get_coord())
-    if initial_magmoms is not None:
-        if len(initial_magmoms) == natoms:
-            stru.set_atommag(initial_magmoms)
-        else:
-            raise ValueError("The dimension of given initial magmoms is not equal with number of atoms")
-    if angle1 is not None and angle2 is not None:
-        if len(initial_magmoms) == natoms:
-            stru.set_angle1(angle1)
-        else:
-            raise ValueError("The dimension of given angle1 of initial magmoms is not equal with number of atoms")
-        
-        if len(initial_magmoms) == natoms:
-            stru.set_angle2(angle2)
-        else:
-            raise ValueError("The dimension of given angle2 of initial magmoms is not equal with number of atoms")
-    
-    # Set atom fixations
-    # Atom fixations in fix_atoms and movable_coors will be applied to original atom fixation
-    if fix_atoms_idx is not None:
-        atom_move = stru.get_move()
-        for fix_idx, atom_idx in enumerate(fix_atoms_idx):
-            if fix_idx < 0 or fix_idx >= natoms:
-                raise ValueError("Given index of atoms to be fixed is not a integer >= 0 or < natoms")
-            
-            if len(fix_atoms_idx) == len(movable_coords):
-                if len(movable_coords[fix_idx]) == 3:
-                    atom_move[atom_idx] = movable_coords[fix_idx]
+        # Set pp and orb
+        elements = stru.get_element(number=False,total=False)
+        if pp is not None:
+            pplist = []
+            for element in elements:
+                if element in pp:
+                    pplist.append(pp[element])
                 else:
-                    raise ValueError("Elements of movable_coords should be a list with 3 bool elements")
-            else:
-                raise ValueError("Length of fix_atoms_idx and movable_coords should be equal")
+                    raise KeyError(f"Pseudopotential for element {element} is not provided")
 
-        stru._move = atom_move
-    
-    stru.write(stru_file)
-    stru_content = Path(stru_file).read_text(encoding='utf-8')
-    
-    return {'abacusjob_dir': Path(abacusjob_dir).absolute(),
-            'stru_content': stru_content 
-            }
+            stru.set_pp(pplist)
+
+        if orb is not None:
+            orb_list = []
+            for element in elements:
+                if element in orb:
+                    orb_list.append(orb[element])
+                else:
+                    raise KeyError(f"Orbital for element {element} is not provided")
+
+            stru.set_orb(orb_list)
+
+        # Set cell
+        if cell is not None:
+            if len(cell) != 3 or any(len(c) != 3 for c in cell):
+                raise ValueError("Cell should be a list of 3 lists, each containing 3 floats")
+
+            if np.allclose(np.linalg.det(np.array(cell)), 0) is True:
+                raise ValueError("Cell cannot be a singular matrix, please provide a valid cell")
+            if coord_change_type == "scale":
+                stru.set_cell(cell, bohr=False)
+            elif coord_change_type == "original":
+                stru.set_cell(cell, bohr=False, change_coord=False)
+            else:
+                raise ValueError("coord_change_type should be 'scale' or 'original'")
+
+        # Set atomic magmom for every atom
+        natoms = len(stru.get_coord())
+        if initial_magmoms is not None:
+            if len(initial_magmoms) == natoms:
+                stru.set_atommag(initial_magmoms)
+            else:
+                raise ValueError("The dimension of given initial magmoms is not equal with number of atoms")
+        if angle1 is not None and angle2 is not None:
+            if len(initial_magmoms) == natoms:
+                stru.set_angle1(angle1)
+            else:
+                raise ValueError("The dimension of given angle1 of initial magmoms is not equal with number of atoms")
+
+            if len(initial_magmoms) == natoms:
+                stru.set_angle2(angle2)
+            else:
+                raise ValueError("The dimension of given angle2 of initial magmoms is not equal with number of atoms")
+
+        # Set atom fixations
+        # Atom fixations in fix_atoms and movable_coors will be applied to original atom fixation
+        if fix_atoms_idx is not None:
+            atom_move = stru.get_move()
+            for fix_idx, atom_idx in enumerate(fix_atoms_idx):
+                if fix_idx < 0 or fix_idx >= natoms:
+                    raise ValueError("Given index of atoms to be fixed is not a integer >= 0 or < natoms")
+
+                if len(fix_atoms_idx) == len(movable_coords):
+                    if len(movable_coords[fix_idx]) == 3:
+                        atom_move[atom_idx] = movable_coords[fix_idx]
+                    else:
+                        raise ValueError("Elements of movable_coords should be a list with 3 bool elements")
+                else:
+                    raise ValueError("Length of fix_atoms_idx and movable_coords should be equal")
+
+            stru._move = atom_move
+
+        stru.write(stru_file)
+        stru_content = Path(stru_file).read_text(encoding='utf-8')
+
+        is_valid, msg = check_abacus_inputs(abacus_inputs_dir)
+        if not is_valid:
+            raise RuntimeError(f"Invalid ABACUS input files: {msg}")
+        
+        return {'modified_abacus_inputs_dir': Path(abacus_inputs_dir).absolute(),
+                'stru_content': stru_content}
+    except Exception as e:
+        return {'message': f"Modify ABACUS STRU file failed: {e}"}
 
 @mcp.tool()
 def abacus_collect_data(
-    abacusjob: Path,
+    abacus_outputs_dir: Path,
     metrics: List[Literal["version", "ncore", "omp_num", "normal_end", "INPUT", "kpt", "fft_grid",
                           "nbase", "nbands", "nkstot", "ibzk", "natom", "nelec", "nelec_dict", "point_group",
                           "point_group_in_space_group", "converge", "total_mag", "absolute_mag", "energy", 
                           "energy_ks", "energies", "volume", "efermi", "energy_per_atom", "force", "forces", 
-                          "stress", "virial", "pressure", "stresses", "virials", "pressures", "largest_gradient", 
+                          "stress", "virial", "pressure", "stresses", "virials", "pressures", "largest_gradient", "largest_gradient_stress",
                           "band", "band_weight", "band_plot", "band_gap", "total_time", "stress_time", "force_time", 
                           "scf_time", "scf_time_each_step", "step1_time", "scf_steps", "atom_mags", "atom_mag", 
                           "atom_elec", "atom_orb_elec", "atom_mag_u", "atom_elec_u", "drho", "drho_last", 
@@ -439,9 +418,11 @@ def abacus_collect_data(
                           = ["normal_end", "converge", "energy", "total_time"]
 ) -> Dict[str, Any]:
     """
-    Collect results after ABACUS calculation and dump to a json file.
+    Collect results of the given metrics listed below after ABACUS calculation.
+    name of collected metrics must be selected from the list below.
+
     Args:
-        abacusjob (str): Path to the directory containing the ABACUS job output files.
+        abacus_outputs_dir (str): Path to the directory containing the ABACUS job output files. 
         metrics (List[str]): List of metric names to collect.  
                   metric_name  description
                       version: the version of ABACUS
@@ -478,6 +459,7 @@ def abacus_collect_data(
                       virials: list of virial, the virial of each ION step. Dimension is [nstep,9]
                     pressures: list of pressure, the pressure of each ION step.
              largest_gradient: list, the largest gradient of each ION step. Unit in eV/Angstrom
+      largest_gradient_stress: list, the largest stress of each ION step. Unit in kbar
                          band: Band of system. Dimension is [nspin,nk,nband].
                   band_weight: Band weight of system. Dimension is [nspin,nk,nband].
                     band_plot: Will plot the band structure. Return the file name of the plot.
@@ -532,37 +514,30 @@ def abacus_collect_data(
         IOError: If read abacus result failed
         RuntimeError: If error occured during collectring data using abacustest
     """
-    abacusjob = Path(abacusjob)
     try:
-        abacusresult = RESULT(fmt="abacus", path=abacusjob)
-    except:
-        raise IOError("Read abacus result failed")
-    
-    collected_metrics = {}
-    for metric in metrics:
-        try:
-            collected_metrics[metric] = abacusresult[metric]
-        except Exception as e:
-            raise RuntimeError(f"Error during collecting {metric}")
-    
-    metric_file_path = os.path.join(abacusjob, "metrics.json")
-    with open(metric_file_path, "w", encoding="UTF-8") as f:
-        json.dump(collected_metrics, f, indent=4)
-    
-    return {'collected_metrics': collected_metrics}
+        collected_metrics = collect_metrics(abacusjob=abacus_outputs_dir, 
+                                            metrics_names=metrics,)
 
-@mcp.tool()
+        return {'collected_metrics': collected_metrics}
+    except Exception as e:
+        return {'message': f'Collectiong results from ABACUS output files failed: {e}'}
+
+#@mcp.tool()
 def run_abacus_onejob(
-    abacusjob: Path,
+    abacus_inputs_dir: Path,
 ) -> Dict[str, Any]:
     """
     Run one ABACUS job and collect data.
     Args:
-        abacusjob (str): Path to the directory containing the ABACUS input files.
+        abacus_inputs_dir (str): Path to the directory containing the ABACUS input files.
     Returns:
         the collected metrics from the ABACUS job.
     """
-    run_abacus(abacusjob)
+    try:
+        run_abacus(abacus_inputs_dir)
 
-    return {'abacusjob_dir': abacusjob,
-            'metrics': abacus_collect_data(abacusjob)}
+        return {'abacus_inputs_dir_dir': abacus_inputs_dir,
+                'metrics': abacus_collect_data(abacus_inputs_dir)}
+    except Exception as e:
+        return {'message': f"Run ABACUS using given input file failed: {e}"}
+

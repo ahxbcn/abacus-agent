@@ -34,24 +34,27 @@ def property_calculation_scf(
     """
 
     input_param = ReadInput(os.path.join(abacus_inputs_path, 'INPUT'))
-    basis = input_param.get("basis", "pw")
-    if mode == "auto":
-        if basis.lower() == "lcao":
-            mode = "pyatb"
-        else:
-            mode = "nscf"
-    
-    if basis == "pw" and mode == "pyatb":
-        raise ValueError("Pyatb mode is not supported for PW basis. Please use 'nscf' mode instead.")
-
-    if (mode == "nscf" and has_chgfile(abacus_inputs_path)) or (mode == "pyatb" and has_pyatb_matrix_files(abacus_inputs_path)):
-        print("Charge or matrix files already exist, skipping SCF calculation.")
+    basis_type = input_param.get("basis_type", "pw")
+    if (mode in ["pyatb", "auto"] and has_pyatb_matrix_files(abacus_inputs_path)):
+        print("Matrix files already exist, skipping SCF calculation.")
+        work_path = abacus_inputs_path
+    elif (mode in ["nscf", "auto"] and has_chgfile(abacus_inputs_path)):
+        print("Charge files already exist, skipping SCF calculation.")
         work_path = abacus_inputs_path
     else:
-        work_path = generate_work_path()
+        if mode == "auto":
+            if basis_type.lower() == "lcao":
+                mode = "pyatb"
+            else:
+                mode = "nscf"
+
+        if basis_type == "pw" and mode == "pyatb":
+            raise ValueError("Pyatb mode is not supported for PW basis. Please use 'nscf' mode instead.")
+
+        work_path = Path(generate_work_path()).absolute()
         link_abacusjob(src=abacus_inputs_path,
                        dst=work_path,
-                       copy_files=["INPUT"])
+                       copy_files=["INPUT", "STRU", "KPT"])
         if mode == "nscf":
             input_param["calculation"] = "scf"
             input_param["out_chg"] = 1
@@ -63,7 +66,7 @@ def property_calculation_scf(
             raise ValueError(f"Invalid mode: {mode}. Use 'nscf', 'pyatb', or 'auto'.")
         
         WriteInput(input_param, os.path.join(work_path, 'INPUT'))
-        run_abacus(work_path, input_param.get("suffix", "ABACUS"))
+        run_abacus(work_path, "abacus.log")
         
     rs = RESULT(path=work_path, fmt="abacus")
 
