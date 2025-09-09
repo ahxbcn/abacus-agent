@@ -5,7 +5,7 @@ from typing import Literal, Optional, TypedDict, Dict, Any, List, Tuple
 from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteInput, WriteKpt
 
 from abacusagent.init_mcp import mcp
-from abacusagent.modules.util.comm import run_abacus, run_command, get_physical_cores, collect_metrics
+from abacusagent.modules.util.comm import run_abacus, run_pyatb, collect_metrics
 from abacusagent.modules.util.pyatb import property_calculation_scf
 
 
@@ -206,7 +206,7 @@ def abacus_plot_band_nscf(abacusjob_dir: Path,
     return {'band_gap': band_gap,
             'band_picture': Path(os.path.join(abacusjob_dir, 'band.png')).absolute()}
 
-def write_pyatb_input(band_calc_path: Path, connect_line_points=30):
+def write_pyatb_input(band_calc_path: Path):
     """
     Write Input file for PYATB
     """
@@ -275,7 +275,6 @@ def write_pyatb_input(band_calc_path: Path, connect_line_points=30):
 def abacus_plot_band_pyatb(band_calc_path: Path,
                            energy_min: float = -10,
                            energy_max: float = 10,
-                           connect_line_points=30
 ) -> Dict[str, Any]:
     """
     Read result from self-consistent (scf) calculation of hybrid functional using uniform grid,
@@ -287,7 +286,6 @@ def abacus_plot_band_pyatb(band_calc_path: Path,
         band_calc_path (str): Absolute path to the band calculation directory.
         energy_min (float): Lower bound of $E - E_F$ in the plotted band.
         energy_max (float): Upper bound of $E - E_F$ in the plotted band.
-        connect_line_points (int): Number of inserted points between consecutive high-symmetry points in k-point path.
 
     Returns:
         dict: A dictionary containing:
@@ -303,15 +301,11 @@ def abacus_plot_band_pyatb(band_calc_path: Path,
     if nspin not in (1, 2):
         raise NotImplementedError("Band plot for nspin=4 is not supported yet")
     
-    if write_pyatb_input(band_calc_path, connect_line_points=connect_line_points) is not True:
+    if write_pyatb_input(band_calc_path) is not True:
         raise RuntimeError("Failed to write pyatb input file")
     
     # Use pyatb to plot band
-    physical_cores = get_physical_cores()
-    pyatb_command = f"cd {band_calc_path}; OMP_NUM_THREADS=1 mpirun -np {physical_cores} pyatb"
-    return_code, out, err = run_command(pyatb_command)
-    if return_code != 0:
-        raise RuntimeError(f"pyatb failed with return code {return_code}, out: {out}, err: {err}")
+    run_pyatb(band_calc_path)
 
     # read band gap
     band_gaps = []
@@ -339,7 +333,7 @@ def abacus_plot_band_pyatb(band_calc_path: Path,
 
 @mcp.tool()
 def abacus_cal_band(abacus_inputs_dir: Path,
-                    mode: Literal["nscf", "pyatb"] = "pyatb",
+                    mode: Literal["nscf", "pyatb", "auto"] = "auto",
                     energy_min: float = -10,
                     energy_max: float = 10
 ) -> Dict[str, float|str]:
@@ -348,8 +342,14 @@ def abacus_cal_band(abacus_inputs_dir: Path,
     PYATB or ABACUS NSCF calculation will be used according to parameters in INPUT.
     Args:
         abacus_inputs_dir (str): Absolute path to a directory containing the INPUT, STRU, KPT, and pseudopotential or orbital files.
-        mode: Method used to plot band. Should be `pyatb` or `nscf`. `nscf` means using `nscf` calculation in ABACUS, `pyatb` means using PYATB
-            to plot the band.
+        mode: Method used to plot band. Should be `auto`, `pyatb` or `nscf`. 
+            - `nscf` means using `nscf` calculation in ABACUS to calculate and plot the band
+            - `pyatb` means using PYATB to plot the band
+            - `auto` means deciding use `nscf` or `pyatb` mode according to the `basis_type` in INPUT file and files included in `abacus_inputs_dir`.
+                -- If charge files are in `abacus_input_dir`, `nscf` mode will be used.
+                -- If matrix files are in `abacus_input_dir`, `pyatb` mode will be used.
+                -- If no matrix file or charge file are in `abacus_input_dir`, will determine mode by `basis_type`. If `basis_type` is lcao, will use `pyatb` mode.
+                    If `basis_type` is pw, will use `nscf` mode.
         energy_min (float): Lower bound of $E - E_F$ in the plotted band.
         energy_max (float): Upper bound of $E - E_F$ in the plotted band.
     Returns:

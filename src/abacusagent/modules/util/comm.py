@@ -200,6 +200,20 @@ def run_abacus(job_paths: Union[str, List[str], Path, List[Path]],
     else:
         raise ValueError("Invalid ABACUSAGENT_SUBMIT_TYPE. Must be 'local' or 'bohrium'.")
             
+def run_pyatb(abacus_inputs_path):
+    """
+    Run the Abacus on the given job paths on local machine.
+    The abacus_inputs_path are limited to a single path now.
+    """
+    original_dir = os.getcwd()
+    os.chdir(abacus_inputs_path)
+    pyatb_command = os.getenv("PYATB_COMMAND", "OMP_NUM_THREADS=1 pyatb")
+    return_code, out, err = run_command(pyatb_command)
+    if return_code != 0:
+        raise RuntimeError(f"pyatb failed with return code {return_code}, out: {out}, err: {err}")
+    
+    os.chdir(original_dir)
+
 
 def link_abacusjob(src: str, 
                    dst: str, 
