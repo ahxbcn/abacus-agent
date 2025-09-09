@@ -233,7 +233,6 @@ def link_abacusjob(src: str,
     
     if dst.is_file():
         raise ValueError(f"{dst} is a file, not a directory.")
-    os.makedirs(dst, exist_ok=True)
     
     if include is None:
         include = ["*"]
@@ -247,6 +246,7 @@ def link_abacusjob(src: str,
     for pattern in exclude:
         exclude_files.extend(src.glob(pattern))
     
+    os.makedirs(dst, exist_ok=True)
     # Remove excluded files from included files
     include_files = [f for f in include_files if f not in exclude_files]
     if not include_files:
