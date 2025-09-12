@@ -80,8 +80,13 @@ def abacus_dos_run(
         Dict[str, Any]: A dictionary containing:
             - dos_fig_path: Path to the plotted DOS.
             - pdos_fig_path: Path to the plotted PDOS. Only for LCAO basis.
-            - results_scf: Results of the SCF calculation, including: work path, normal end status, SCF steps, convergence status, and energies.
-            - results_nscf: Results of the NSCF calculation, including work path and normal end status.
+            - scf_work_path: Path to the work directory of SCF calculation.
+            - scf_normal_end: If the SCF calculation ended normally.
+            - scf_steps: Number of steps of SCF iteration.
+            - scf_converge: If the SCF calculation converged.
+            - scf_energy: The calculated energy of SCF calculation.
+            - nscf_work_path: Path to the work directory of NSCF calculation.
+            - nscf_normal_end: If the SCF calculation ended normally.
     """
     try:
         is_valid, msg = check_abacus_inputs(abacus_inputs_dir)

@@ -25,7 +25,8 @@ def abacus_prepare(
     nspin: Literal[1, 2, 4] = 1,
     soc: bool = False,
     dftu: bool = False,
-    dftu_param: Optional[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]]] = None,
+    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
+                         Literal['auto']]] = None,
     init_mag: Optional[Dict[str, float]] = None,
     afm: bool = False,
     extra_input: Optional[Dict[str, Any]] = None,
@@ -48,9 +49,13 @@ def abacus_prepare(
         nspin (int): The number of spins, can be 1 (no spin), 2 (spin polarized), or 4 (non-collinear spin). Default is 1.
         soc (bool): Whether to use spin-orbit coupling, if True, nspin should be 4.
         dftu (bool): Whether to use DFT+U, default is False.
-        dftu_param (dict): The DFT+U parameters, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the U value.
-            Value can also be a list of two values, and the first value is the orbital (p, d, f) to apply DFT+U, and the second value is the U value.
-            For example, {"Fe": ["d", 4], "O": ["p", 1]} means applying DFT+U to Fe 3d orbital with U=4 eV and O 2p orbital with U=1 eV.
+        dftu_param (dict): The DFT+U parameters, should be 'auto' or a dict
+            If dft_param is set to 'auto', hubbard U parameters will be set to d-block and f-block elements automatically. For d-block elements, default U=4eV will
+                be set to d orbital. For f-block elements, default U=6eV will be set to f orbital.
+            If dft_param is a dict, the keys should be name of elements and the value has two choices:
+                - A float number, which is the Hubbard U value of the element. The corrected orbital will be infered from the name of the element.
+                - A list containing two elements: the corrected orbital (should be 'p', 'd' or 'f') and the Hubbard U value.
+                For example, {"Fe": ["d", 4], "O": ["p", 1]} means applying DFT+U to Fe 3d orbital with U=4 eV and O 2p orbital with U=1 eV.
         init_mag ( dict or None): The initial magnetic moment for magnetic elements, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the initial magnetic moment.
         afm (bool): Whether to use antiferromagnetic calculation, default is False. If True, half of the magnetic elements will be set to negative initial magnetic moment.
         extra_input: Extra input parameters in the prepared INPUT file. 

@@ -142,6 +142,8 @@ def abacus_run_md(
         A dictionary containing:
             - md_work_path (Path): The working directory of the molecular dynamics calculation.
             - md_traj_file (Path): The path to the ASE trajectory file containing the MD steps.
+            - traj_frame_nums (int): Number of frames in returned trajectory file.
+            - normal_end (bool): Whether the ab-initio molecular dynamics calculation ended normally.
     """
     try:
         work_path = Path(generate_work_path()).absolute()

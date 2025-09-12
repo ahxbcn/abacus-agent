@@ -52,7 +52,7 @@ def prepare_deformed_stru_inputs(
     """
     Prepare ABACUS inputs directories from deformed structures and prepared inputs templates
     """
-    abacusjob_dirs = []
+    abacus_inputs_dirs = []
     copy_files = []
     for item in os.listdir(input_stru_dir):
         if os.path.isfile(os.path.join(input_stru_dir, item)):
@@ -64,18 +64,18 @@ def prepare_deformed_stru_inputs(
 
     stru_counts = 1
     for deformed_stru in deformed_strus:
-        abacusjob_dir = os.path.join(work_path, f'deformed-stru-{stru_counts:0>3d}')
-        os.mkdir(abacusjob_dir)
+        abacus_inputs_dir = os.path.join(work_path, f'deformed-stru-{stru_counts:0>3d}')
+        os.mkdir(abacus_inputs_dir)
         for item in copy_files:
-            shutil.copy(os.path.join(input_stru_dir, item), abacusjob_dir)
+            shutil.copy(os.path.join(input_stru_dir, item), abacus_inputs_dir)
         
         # Write deformed structure to ABACUS STRU format
-        dump_poscar_name = os.path.join(abacusjob_dir, 'deformed-STRU-POSCAR-' + time.strftime("%Y%m%d%H%M%S"))
+        dump_poscar_name = os.path.join(abacus_inputs_dir, 'deformed-STRU-POSCAR-' + time.strftime("%Y%m%d%H%M%S"))
         deformed_stru.to(dump_poscar_name, fmt='vasp/poscar')
 
         deformed_stru_poscar = dpdata.System(dump_poscar_name, fmt='vasp/poscar')
         os.remove(dump_poscar_name)
-        first_dump_stru_name = os.path.join(abacusjob_dir, 'deformed-STRU-unmodified')
+        first_dump_stru_name = os.path.join(abacus_inputs_dir, 'deformed-STRU-unmodified')
         deformed_stru_poscar.to('abacus/stru', first_dump_stru_name)
 
         deformed_stru_abacus = AbacusStru.ReadStru(first_dump_stru_name)
@@ -83,12 +83,12 @@ def prepare_deformed_stru_inputs(
         deformed_stru_abacus.set_pp(original_stru.get_pp())
         deformed_stru_abacus.set_orb(original_stru.get_orb())
         deformed_stru_abacus.set_atommag(original_stru.get_atommag())
-        deformed_stru_abacus.write(os.path.join(abacusjob_dir, "STRU"))
+        deformed_stru_abacus.write(os.path.join(abacus_inputs_dir, "STRU"))
 
-        abacusjob_dirs.append(Path(abacusjob_dir).absolute())
+        abacus_inputs_dirs.append(Path(abacus_inputs_dir).absolute())
         stru_counts += 1
 
-    return abacusjob_dirs
+    return abacus_inputs_dirs
 
 def collected_stress_to_pymatgen_stress(stress: List[float]):
     """
@@ -113,11 +113,12 @@ def abacus_cal_elastic(
         shear_strain (float): Shear strain to calculate elastic constants, default is 0.01.
     Returns:
         A dictionary containing the following keys:
-        elastic_constants (np.array in (6,6) dimension): Calculated elastic constants in Voigt notation. Units in GPa.
-        bulk_modulus (float): Calculated bulk modulus in GPa.
-        shear_modulus (float): Calculated shear modulus in GPa.
-        young_modulus (float): Calculated Young's modulus in GPa.
-        poisson_ratio (float): Calculated Poisson's ratio.
+        - elastic_cal_dir (Path): Work path of running abacus_cal_elastic. 
+        - elastic_constants (np.array in (6,6) dimension): Calculated elastic constants in Voigt notation. Units in GPa.
+        - bulk_modulus (float): Calculated bulk modulus in GPa.
+        - shear_modulus (float): Calculated shear modulus in GPa.
+        - young_modulus (float): Calculated Young's modulus in GPa.
+        - poisson_ratio (float): Calculated Poisson's ratio.
     Raises:
         RuntimeError: If ABACUS calculation when calculating stress for input structure or deformed structures fails.
     """
