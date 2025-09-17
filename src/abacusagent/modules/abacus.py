@@ -93,6 +93,8 @@ def abacus_prepare(
         os.chdir(work_path)
         try:
             extra_input_file = None
+            if 'out_chg' not in extra_input.keys():
+                extra_input['out_chg'] = -1
             if extra_input is not None:
                 # write extra input to the input file
                 extra_input_file = Path("INPUT.tmp").absolute()

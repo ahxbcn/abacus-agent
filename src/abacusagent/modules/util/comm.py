@@ -271,6 +271,8 @@ def link_abacusjob(src: str,
               )
     else:
         for file in include_files:
+            if file == dst:
+                continue
             if exclude_directories and os.path.isdir(file):
                 continue
             
