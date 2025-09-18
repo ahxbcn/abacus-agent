@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Literal, Optional, TypedDict, Dict, Any, List
 
 from abacusagent.init_mcp import mcp
-from abacusagent.modules.submodules.eos import abacus_cal_eos as _abacus_cal_eos
+from abacusagent.modules.submodules.eos import abacus_eos as _abacus_eos
 
 @mcp.tool()
 def abacus_eos(
@@ -32,4 +32,4 @@ def abacus_eos(
             - "B0" (float): Bulk modulus (in GPa) at equilibrium volume.
             - "B0_deriv" (float): Pressure derivative of the bulk modulus.
     """
-    return _abacus_cal_eos(abacus_inputs_dir, stru_scale_number, stru_scale_type, scale_stepsize)
+    return _abacus_eos(abacus_inputs_dir, stru_scale_number, stru_scale_type, scale_stepsize)
