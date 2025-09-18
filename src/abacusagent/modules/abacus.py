@@ -267,4 +267,4 @@ def abacus_collect_data(
         IOError: If read abacus result failed
         RuntimeError: If error occured during collectring data using abacustest
     """
-    return _abacus_collect_data(abacus_outputs_dir)
+    return _abacus_collect_data(abacus_outputs_dir, metrics)
