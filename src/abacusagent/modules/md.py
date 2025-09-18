@@ -1,90 +1,8 @@
-import os
 from pathlib import Path
 from typing import Dict, Any, List, Literal
 
-import numpy as np
-from ase import Atoms
-from ase.io.trajectory import TrajectoryWriter
-from abacustest.lib_prepare.abacus import ReadInput, WriteInput, AbacusStru
-
 from abacusagent.init_mcp import mcp
-from abacusagent.modules.util.comm import generate_work_path, link_abacusjob, run_abacus
-from abacusagent.modules.abacus import abacus_collect_data
-
-
-def get_last_md_stru(md_stru_outputdir: Path) -> Path:
-    if md_stru_outputdir.exists() and md_stru_outputdir.is_dir():
-        stru_files = [file.name for file in md_stru_outputdir.iterdir() if file.is_file()]
-    
-    last_frame_idx = 0
-    last_stru = Path(os.path.join(md_stru_outputdir, "STRU_MD_0")).absolute()
-    for stru_file in stru_files:
-        frame_idx = int(stru_file.split('_')[-1])
-        if frame_idx > last_frame_idx:
-            last_frame_idx = frame_idx
-            last_stru = Path(os.path.join(md_stru_outputdir, stru_file)).absolute()
-    
-    return last_stru
-
-def convert_md_dump_to_ase_traj(md_dump_path: Path, traj_filename: str="md_traj.traj"):
-    def list_to_ndarray(lst):
-        for i in range(len(lst)):
-            lst[i] = float(lst[i])
-        return np.array(lst)
-
-    md_step_line_num = []
-    with open(md_dump_path) as fin:
-        for line_number, lines in enumerate(fin, start=1):
-            if 'MDSTEP:' in lines:
-                md_step_line_num.append(line_number)
-    
-    md_steps = []
-    md_dump_file = open(md_dump_path)
-    for i in range(len(md_step_line_num)):
-        if i != len(md_step_line_num) - 1:
-            md_step_data = []
-            for j in range(md_step_line_num[i+1]-md_step_line_num[i]):
-                md_step_data.append(md_dump_file.readline())
-        else:
-            md_step_data = md_dump_file.readlines()
-        
-        for idx, line in enumerate(md_step_data):
-            if 'LATTICE_CONSTANT: ' in line:
-                words = line.split()
-                lattice_constant = float(words[1])
-            
-            if 'LATTICE_VECTORS' in line:
-                a, b, c = md_step_data[idx+1].split(), md_step_data[idx+2].split(), md_step_data[idx+3].split()
-                lattice_vectors = [a, b, c]
-                for j1 in range(len(lattice_vectors)):
-                    for j2 in range(len(lattice_vectors[j1])):
-                        lattice_vectors[j1][j2] = float(lattice_vectors[j1][j2])
-                
-                lattice_vectors = np.array(lattice_vectors) * lattice_constant
-            
-            elements, positions, forces, velocities = [], [], [], []
-            if 'INDEX    LABEL' in line:
-                for coord_line in md_step_data[idx+1:]:
-                    if coord_line.strip() != '':
-                        words = coord_line.split()
-                        elements.append(words[1])
-                        positions.append(list_to_ndarray(words[2:5]))
-                        forces.append(list_to_ndarray(words[5:8]))
-                        velocities.append(list_to_ndarray(words[8:]))
-
-            if len(elements) != 0 and len(positions) != 0:
-                md_step = Atoms(symbols = elements,
-                                positions=positions,
-                                cell=lattice_vectors,
-                                velocities=velocities)
-                md_steps.append(md_step)
-    
-    traj_writer = TrajectoryWriter(Path(os.path.join(md_dump_path.parent, traj_filename)).absolute(), mode="a", atoms=md_step)
-    for md_step in md_steps:
-        traj_writer.write(md_step)
-    traj_writer.close()
-    
-    return Path(traj_filename).absolute(), len(md_steps)
+from abacusagent.modules.submodules.md import abacus_run_md as _abacus_run_md
 
 @mcp.tool()
 def abacus_run_md(
@@ -145,49 +63,16 @@ def abacus_run_md(
             - traj_frame_nums (int): Number of frames in returned trajectory file.
             - normal_end (bool): Whether the ab-initio molecular dynamics calculation ended normally.
     """
-    try:
-        work_path = Path(generate_work_path()).absolute()
-        link_abacusjob(src=abacus_inputs_dir, dst=work_path, copy_files=['INPUT', 'STRU'], exclude_directories=True)
-        input_params = ReadInput(os.path.join(work_path, "INPUT"))
-
-        input_params['calculation'] = 'md'
-        for keyword, value in {
-            'md_type': md_type,
-            'md_nstep': md_nstep,
-            'md_dt': md_dt,
-            'md_tfirst': md_tfirst,
-            'md_tlast': md_tlast,
-            'md_thermostat': md_thermostat,
-            'md_pmode': md_pmode,
-            'md_pcouple': md_pcouple,
-            'md_dumpfreq': md_dumpfreq,
-            'md_seed': md_seed
-        }.items():
-            input_params[keyword] = value
-
-        if 'init_vel' in input_params.keys():
-            if md_tfirst > 0:
-                input_params.pop('init_vel')
-            else:
-                stru_file = os.path.join(work_path, input_params.get('stru_file', 'STRU'))
-                stru = AbacusStru.ReadStru(stru_file)
-                if None in stru._velocity:
-                    raise ValueError("Use md_tfirst < 0 should provide initial velocities in STRU")
-
-        if input_params['calculation'] not in ['nvt', 'npt']:
-            input_params.pop('md_tlast')
-
-        WriteInput(input_params, os.path.join(work_path, "INPUT"))
-
-        run_abacus(work_path)
-
-        metrics = abacus_collect_data(work_path)['collected_metrics']
-        suffix = input_params.get('suffix', 'ABACUS')
-        md_traj_file, traj_frame_nums = convert_md_dump_to_ase_traj(Path(os.path.join(work_path, f'OUT.{suffix}/MD_dump')).absolute())
-        return {'md_work_path': work_path,
-                'md_traj_file': md_traj_file,
-                'traj_frame_nums': traj_frame_nums,
-                'normal_end': metrics['normal_end']}
-
-    except Exception as e:
-        return {"message": f"Error occured during the running md: {e}"}
+    return _abacus_run_md(
+        abacus_inputs_dir,
+        md_type,
+        md_nstep,
+        md_dt,
+        md_tfirst,
+        md_tlast,
+        md_thermostat,
+        md_pmode,
+        md_pcouple,
+        md_dumpfreq,
+        md_seed
+    )

@@ -193,5 +193,17 @@
     "test_abacus_run_md_npt":
     {
         "result": {}
+    },
+    "test_run_abacus_calculation_dos":
+    {
+        "result": {
+            "scf_energy": -230.133277086824
+        }
+    },
+    "test_run_abacus_calculation_dos_relax":
+    {
+        "result": {
+            "scf_energy": -230.1492835634546
+        }
     }
 }
