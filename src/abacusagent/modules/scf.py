@@ -1,15 +1,8 @@
-import os
 from pathlib import Path
 from typing import Literal, Optional, TypedDict, Dict, Any, List, Tuple, Union
 
-from abacustest.lib_model.model_013_inputs import PrepInput
-from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteInput
-from abacustest.lib_collectdata.collectdata import RESULT
-from abacustest.lib_model.comm import check_abacus_inputs
-
 from abacusagent.init_mcp import mcp
-from abacusagent.modules.util.comm import generate_work_path, link_abacusjob, run_abacus, collect_metrics
-
+from abacusagent.modules.submodules.scf import abacus_calculation_scf as _abacus_calculation_scf
 
 @mcp.tool()
 def abacus_calculation_scf(
@@ -24,23 +17,4 @@ def abacus_calculation_scf(
         A dictionary containing the path to output file of ABACUS calculation, and a dictionary containing whether the SCF calculation
         finished normally, the SCF is converged or not, the converged SCF energy and total time used.
     """
-    try:
-        is_valid, msg = check_abacus_inputs(abacus_inputs_dir)
-        if not is_valid:
-            raise RuntimeError(f"Invalid ABACUS input files: {msg}")
-        
-        work_path = Path(generate_work_path()).absolute()
-        link_abacusjob(src=abacus_inputs_dir, dst=work_path, copy_files=['INPUT', 'STRU'])
-        input_params = ReadInput(os.path.join(work_path, "INPUT"))
-
-        input_params['calculation'] = 'scf'
-        WriteInput(input_params, os.path.join(work_path, "INPUT"))
-
-        run_abacus(work_path)
-
-        return_dict = {'scf_work_dir': Path(work_path).absolute()}
-        return_dict.update(collect_metrics(work_path, metrics_names=['normal_end', 'converge', 'energy', 'total_time']))
-
-        return return_dict
-    except Exception as e:
-        return {"message": f"Performing SCF calculation failed: {e}"}
+    return _abacus_calculation_scf(abacus_inputs_dir)

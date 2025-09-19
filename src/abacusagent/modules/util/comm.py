@@ -200,6 +200,20 @@ def run_abacus(job_paths: Union[str, List[str], Path, List[Path]],
     else:
         raise ValueError("Invalid ABACUSAGENT_SUBMIT_TYPE. Must be 'local' or 'bohrium'.")
             
+def run_pyatb(abacus_inputs_path):
+    """
+    Run the Abacus on the given job paths on local machine.
+    The abacus_inputs_path are limited to a single path now.
+    """
+    original_dir = os.getcwd()
+    os.chdir(abacus_inputs_path)
+    pyatb_command = os.getenv("PYATB_COMMAND", "OMP_NUM_THREADS=1 pyatb")
+    return_code, out, err = run_command(pyatb_command)
+    if return_code != 0:
+        raise RuntimeError(f"pyatb failed with return code {return_code}, out: {out}, err: {err}")
+    
+    os.chdir(original_dir)
+
 
 def link_abacusjob(src: str, 
                    dst: str, 
@@ -233,7 +247,6 @@ def link_abacusjob(src: str,
     
     if dst.is_file():
         raise ValueError(f"{dst} is a file, not a directory.")
-    os.makedirs(dst, exist_ok=True)
     
     if include is None:
         include = ["*"]
@@ -247,6 +260,7 @@ def link_abacusjob(src: str,
     for pattern in exclude:
         exclude_files.extend(src.glob(pattern))
     
+    os.makedirs(dst, exist_ok=True)
     # Remove excluded files from included files
     include_files = [f for f in include_files if f not in exclude_files]
     if not include_files:
@@ -257,6 +271,8 @@ def link_abacusjob(src: str,
               )
     else:
         for file in include_files:
+            if file == dst:
+                continue
             if exclude_directories and os.path.isdir(file):
                 continue
             

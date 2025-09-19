@@ -1,12 +1,18 @@
+from ase import Atoms
+from ase.io import read, write
+from ase.build import molecule
+from ase.data import chemical_symbols
+from ase.collections import g2
+from pymatgen.core import Structure, Lattice
+
 from pathlib import Path
 from typing import Literal, Optional, Dict, Any, List, Tuple, Union
 
 from abacusagent.init_mcp import mcp
-from abacusagent.modules.submodules.structure_generator import generate_bulk_structure as _generate_bulk_structure
-from abacusagent.modules.submodules.structure_generator import generate_molecule_structure as _generate_molecule_structure
-from abacusagent.modules.submodules.structure_generator import generate_bulk_structure_from_wyckoff_position as _generate_bulk_structure_from_wyckoff_position
+from abacusagent.modules.util.comm import generate_work_path 
 
-@mcp.tool()
+
+#@mcp.tool()
 def generate_bulk_structure(element: str, 
                            crystal_structure:Literal["sc", "fcc", "bcc","hcp","diamond", "zincblende", "rocksalt"]='fcc', 
                            a:float =None, 
@@ -54,9 +60,45 @@ def generate_bulk_structure(element: str,
     >>> gaas_zincblende = generate_bulk_structure('GaAs', 'zincblende', a=5.65, cubic=True)
     
     """
-    return _generate_bulk_structure(element, crystal_structure, a, c, cubic, orthorhombic, file_format)
+    try:
+        if a is None:
+            raise ValueError("Lattice constant 'a' must be provided for all crystal structures.")
 
-@mcp.tool()
+        from ase.build import bulk
+        special_params = {}
+
+        if crystal_structure == 'hcp':
+            if c is not None:
+                special_params['c'] = c
+            special_params['orthorhombic'] = orthorhombic
+
+        if crystal_structure in ['fcc', 'bcc', 'diamond', 'zincblende']:
+            special_params['cubic'] = cubic
+
+        structure = bulk(
+            name=element,
+            crystalstructure=crystal_structure,
+            a=a,
+            **special_params
+        )
+        work_path = generate_work_path(create=True)
+
+        if file_format == "cif":
+            structure_file = f"{work_path}/{element}_{crystal_structure}.cif"
+            structure.write(structure_file, format="cif")
+        elif file_format == "poscar":
+            structure_file = f"{work_path}/{element}_{crystal_structure}.vasp"
+            structure.write(structure_file, format="vasp")
+        else:
+            raise ValueError("Unsupported file format. Use 'cif' or 'poscar'.")
+
+        return {
+            "structure_file": Path(structure_file).absolute(),
+        }
+    except Exception as e:
+        return {"message": f"Generating bulk structure failed: {e}"}
+
+#@mcp.tool()
 def generate_bulk_structure_from_wyckoff_position(
     a: float,
     b: float,
@@ -84,9 +126,27 @@ def generate_bulk_structure_from_wyckoff_position(
 
     Raises:
     """
-    return _generate_bulk_structure_from_wyckoff_position(a, b, c, alpha, beta, gamma, spacegroup, wyckoff_positions, crystal_name, format)
+    try:
+        lattice = Lattice.from_parameters(a=a, b=b, c=c, alpha=alpha, beta=beta, gamma=gamma)
 
-@mcp.tool()
+        crys_stru = Structure.from_spacegroup(
+            sg=spacegroup,
+            lattice=lattice,
+            species=[wyckoff_position[0] for wyckoff_position in wyckoff_positions],
+            coords=[wyckoff_position[1] for wyckoff_position in wyckoff_positions],
+            tol=0.001,
+        )
+
+        work_path = generate_work_path(create=True)
+        
+        crys_file_name = Path(f"{work_path}/{crystal_name}.{format}").absolute()
+        write(crys_file_name, crys_stru.to_ase_atoms(), format)
+
+        return {"structure_file": crys_file_name}
+    except Exception as e:
+        return {"message": f"Generating bulk structure from Wyckoff position failed: {e}"}
+
+#@mcp.tool()
 def generate_molecule_structure(
     molecule_name: Literal['PH3', 'P2', 'CH3CHO', 'H2COH', 'CS', 'OCHCHO', 'C3H9C', 'CH3COF',
                            'CH3CH2OCH3', 'HCOOH', 'HCCl3', 'HOCl', 'H2', 'SH2', 'C2H2', 'C4H4NH',
@@ -134,4 +194,27 @@ def generate_molecule_structure(
         - cell: The cell parameters of the generated structure as a list of lists.
         - coordinate: The atomic coordinates of the generated structure as a list of lists.
     """
-    return _generate_molecule_structure(molecule_name, cell, vacuum, output_file_format)
+    try:
+        if output_file_format == "poscar":
+            output_file_format = "vasp"  # ASE uses 'vasp' format for POSCAR files
+        if molecule_name in g2.names:
+            atoms = molecule(molecule_name)
+            atoms.set_cell(cell)
+            atoms.center(vacuum=vacuum)
+        elif molecule_name in chemical_symbols and molecule_name != "X":
+            atoms = Atoms(symbol=molecule_name, positions=[[0, 0, 0]], cell=cell)
+
+        work_path = generate_work_path(create=True)
+        
+        if output_file_format == "abacus":
+            stru_file_path = Path(f"{work_path}/{molecule_name}.stru").absolute()
+        else:
+            stru_file_path = Path(f"{work_path}/{molecule_name}.{output_file_format}").absolute()
+
+        atoms.write(stru_file_path, format=output_file_format)
+
+        return {
+            "structure_file": Path(stru_file_path).absolute(),
+        }
+    except Exception as e:
+        return {"message": f"Generating molecule structure failed: {e}"}
