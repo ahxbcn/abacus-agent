@@ -205,5 +205,11 @@
         "result": {
             "scf_energy": -230.1492835634546
         }
+    },
+    "test_run_abacus_calculation_dos_dft_functional":
+    {
+        "result": {
+            "scf_energy": -229.6779298720992
+        }
     }
 }

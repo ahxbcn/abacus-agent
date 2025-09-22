@@ -69,3 +69,26 @@ class TestToolWrapper(unittest.TestCase):
         self.assertTrue(outputs['scf_converge'])
         self.assertTrue(outputs['nscf_normal_end'])
         self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'])
+    
+    def test_run_abacus_calculation_dos_dft_functional(self):
+        """
+        Test the abacus_calculation_scf function using DFT functional.
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+        test_work_dir = self.test_path / test_func_name
+        os.makedirs(test_work_dir, exist_ok=True)
+        shutil.copy2(self.stru_scf, test_work_dir / "STRU")
+        
+        outputs = run_abacus_calculation(test_work_dir / "STRU", dft_functional="PBEsol")
+        print(outputs)
+
+        dos_fig_path = outputs['dos_fig_path']
+        pdos_fig_path = outputs['pdos_fig_path']
+
+        self.assertIsInstance(dos_fig_path, get_path_type())
+        self.assertIsInstance(pdos_fig_path, get_path_type())
+        self.assertTrue(outputs['scf_normal_end'])
+        self.assertTrue(outputs['scf_converge'])
+        self.assertTrue(outputs['nscf_normal_end'])
+        self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'])
