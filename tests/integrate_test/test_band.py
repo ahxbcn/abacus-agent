@@ -20,6 +20,7 @@ class TestAbacusCalBand(unittest.TestCase):
         self.abacus_inputs_dir_si_prim = Path(__file__).parent / 'abacus_inputs_dirs/Si-prim/'
         self.abacus_inputs_dir_fe_bcc_prim = Path(__file__).parent / 'abacus_inputs_dirs/Fe-BCC-prim/'
         self.si_stru_band = self.abacus_inputs_dir_si_prim / "STRU_band"
+        self.si_stru_band_supercell = self.abacus_inputs_dir_si_prim / "STRU_band_supercell"
         self.fe_stru_band = self.abacus_inputs_dir_fe_bcc_prim / "STRU_band"
 
         self.original_cwd = os.getcwd()
@@ -103,6 +104,27 @@ class TestAbacusCalBand(unittest.TestCase):
         self.assertIsInstance(band_calc_dir, get_path_type())
         self.assertIsInstance(band_picture, get_path_type())
         self.assertAlmostEqual(outputs['band_gap'], ref_results['band_gap'], places=4)
+    
+    def test_abacus_cal_band_pyatb_supercell(self):
+        """
+        Test plot band structure in PYATB mode in supercell case.
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+
+        test_work_dir = self.test_path / test_func_name
+        shutil.copytree(self.abacus_inputs_dir_si_prim, test_work_dir)
+        shutil.copy2(self.si_stru_band_supercell, test_work_dir / "STRU")
+
+        outputs = abacus_cal_band(test_work_dir, mode='pyatb')
+        print(outputs)
+
+        band_calc_dir = outputs['band_calc_dir']
+        band_picture = outputs['band_picture']
+        self.assertIsInstance(band_calc_dir, get_path_type())
+        self.assertIsInstance(band_picture, get_path_type())
+        self.assertAlmostEqual(outputs['band_gap'], ref_results['band_gap'], places=4)
+    
 
 class TestAbacusCalBandPw(unittest.TestCase):
     """
@@ -115,6 +137,7 @@ class TestAbacusCalBandPw(unittest.TestCase):
         self.abacus_inputs_dir_si_prim = Path(__file__).parent / 'abacus_inputs_dirs/Si-prim/'
         self.abacus_inputs_dir_fe_bcc_prim = Path(__file__).parent / 'abacus_inputs_dirs/Fe-BCC-prim/'
         self.si_stru_band = self.abacus_inputs_dir_si_prim / "STRU_band"
+        self.si_stru_band_supercell = self.abacus_inputs_dir_si_prim / "STRU_band_supercell"
         self.input_pw_si = self.abacus_inputs_dir_si_prim / "INPUT_pw"
         self.fe_stru_band = self.abacus_inputs_dir_fe_bcc_prim / "STRU_band"
         self.input_pw_fe= self.abacus_inputs_dir_fe_bcc_prim / "INPUT_pw"
@@ -138,7 +161,6 @@ class TestAbacusCalBandPw(unittest.TestCase):
         shutil.copy2(self.input_pw_si, test_work_dir / "INPUT")
 
         outputs = abacus_cal_band(test_work_dir, mode='pyatb')
-        print(outputs)
         self.assertEqual(outputs['message'], ref_results['message'])
 
     def test_abacus_cal_band_nscf_pw_nspin1(self):
@@ -154,7 +176,6 @@ class TestAbacusCalBandPw(unittest.TestCase):
         shutil.copy2(self.input_pw_si, test_work_dir / "INPUT")
 
         outputs = abacus_cal_band(test_work_dir, mode='nscf')
-        print(outputs)
 
         band_calc_dir = outputs['band_calc_dir']
         band_picture = outputs['band_picture']
@@ -173,6 +194,26 @@ class TestAbacusCalBandPw(unittest.TestCase):
         shutil.copytree(self.abacus_inputs_dir_fe_bcc_prim, test_work_dir)
         shutil.copy2(self.fe_stru_band, test_work_dir / "STRU")
         shutil.copy2(self.input_pw_fe, test_work_dir / "INPUT")
+
+        outputs = abacus_cal_band(test_work_dir, mode='nscf')
+
+        band_calc_dir = outputs['band_calc_dir']
+        band_picture = outputs['band_picture']
+        self.assertIsInstance(band_calc_dir, get_path_type())
+        self.assertIsInstance(band_picture, get_path_type())
+        self.assertAlmostEqual(outputs['band_gap'], ref_results['band_gap'], places=4)
+
+    def test_abacus_cal_band_nscf_supercell(self):
+        """
+        Test plot band structure in NSCF mode using PW basis in supercell case.
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+
+        test_work_dir = self.test_path / test_func_name
+        shutil.copytree(self.abacus_inputs_dir_si_prim, test_work_dir)
+        shutil.copy2(self.si_stru_band_supercell, test_work_dir / "STRU")
+        shutil.copy2(self.input_pw_si, test_work_dir / "INPUT")
 
         outputs = abacus_cal_band(test_work_dir, mode='nscf')
 

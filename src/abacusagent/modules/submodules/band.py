@@ -364,8 +364,9 @@ def abacus_cal_band(abacus_inputs_dir: Path,
         new_stru, point_coords, path, kpath = original_stru.get_kline(point_number=30,
                                                                       new_stru_file=original_stru_file,
                                                                       kpt_file=band_kpt_file)
-
-        scf_output = property_calculation_scf(abacus_inputs_dir, mode)
+        
+        force_run = True if original_stru.get_natoms() != new_stru.get_natoms() else False
+        scf_output = property_calculation_scf(abacus_inputs_dir, mode, always_run=force_run)
         work_path, mode = scf_output["work_path"], scf_output["mode"]
         if mode == 'pyatb':
             # Obtain band using PYATB
