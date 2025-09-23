@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Literal
 
 from abacusagent.modules.util.comm import generate_work_path, link_abacusjob, run_abacus, has_chgfile, collect_metrics
-from abacusagent.modules.util.chemical_elements import max_angular_momentum_of_elements
+from abacusagent.modules.util.chemical_elements import MAX_ANGULAR_MOMENTUM_OF_ELEMENTS
 
 
 angular_momentum_map = ['s', 'p', 'd', 'f', 'g']
@@ -357,8 +357,8 @@ def plot_pdos_species_shell(shifted_energy, orbitals, output_dir, nspin, dpi):
             species_shells[species] = {}  # Initialize species kind
         
         angular_momentum = angular_momentum_map[orbital['l']]
-        # The orbital corresponding to polarization orbitals are not included in the PDOS plot
-        if angular_momentum_map.index(angular_momentum) <= angular_momentum_map.index(max_angular_momentum_of_elements[orbital['species']]):
+        # The orbital with higher angular momentum than in realistic atoms will be ignored.
+        if angular_momentum_map.index(angular_momentum) <= angular_momentum_map.index(MAX_ANGULAR_MOMENTUM_OF_ELEMENTS[orbital['species']]):
             if angular_momentum not in species_shells[species].keys():
                 species_shells[species][angular_momentum] = orbital['data'] # Initialize DOS for angular momentum of a species
             else:
@@ -427,8 +427,8 @@ def plot_pdos_species_orbital(shifted_energy, orbitals, output_dir, nspin, label
             species_orbitals[species] = {}
         
         angular_momentum = angular_momentum_map[orbital['l']]
-        # The orbital corresponding to polarization orbitals are not included in the PDOS plot
-        if angular_momentum_map.index(angular_momentum) <= angular_momentum_map.index(max_angular_momentum_of_elements[orbital['species']]):
+        # The orbital with higher angular momentum than in realistic atoms will be ignored.
+        if angular_momentum_map.index(angular_momentum) <= angular_momentum_map.index(MAX_ANGULAR_MOMENTUM_OF_ELEMENTS[orbital['species']]):
             if angular_momentum not in species_orbitals[species].keys():
                 species_orbitals[species][angular_momentum] = {}
             

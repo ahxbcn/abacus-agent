@@ -1,22 +1,15 @@
-s_block_elements = ['H', 'He']
-p_block_elements = ["Li", "Be", "B", "C", "N", "O", "F", "Ne",
-                    "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar",
-                    "K", "Ca", "Ga", "Ge", "As", "Se", "Br", "Kr",
-                    "Rb", "Sr", "In", "Sn", "Sb", "Te", "I", "Xe",
-                    "Cs", "Ba", "Tl", "Pb", "Bi", "Po", "At", "Rn",
-                    "Fr", "Ra", "Nh", "Fl", "Mc", "Lv", "Ts", "Og" ]
-d_and_ds_block_elements = ["Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn",
-                           "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd",
-                           "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg",
-                           "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn"]
-f_block_elements = ["La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu",
-                    "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr"]
-max_angular_momentum_of_elements = {}
-for element in s_block_elements:
-    max_angular_momentum_of_elements[element] = 's'
-for element in p_block_elements:
-    max_angular_momentum_of_elements[element] = 'p'
-for element in d_and_ds_block_elements:
-    max_angular_momentum_of_elements[element] = 'd'
-for element in f_block_elements:
-    max_angular_momentum_of_elements[element] = 'f'
+MAX_ANGULAR_MOMENTUM_OF_ELEMENTS = {
+    "H": "s", "He": "s",
+    "Li": "p", "Be": "p", "B": "p", "C": "p", "N": "p", "O": "p", "F": "p", "Ne": "p",
+    "Na": "p", "Mg": "p", "Al": "p", "Si": "p", "P": "p", "S": "p", "Cl": "p", "Ar": "p",
+    "K": "p", "Ca": "p", "Ga": "p", "Ge": "p", "As": "p", "Se": "p", "Br": "p", "Kr": "p",
+    "Rb": "p", "Sr": "p", "In": "p", "Sn": "p", "Sb": "p", "Te": "p", "I": "p", "Xe": "p",
+    "Cs": "p", "Ba": "p", "Tl": "p", "Pb": "p", "Bi": "p", "Po": "p", "At": "p", "Rn": "p",
+    "Fr": "p", "Ra": "p", "Nh": "p", "Fl": "p", "Mc": "p", "Lv": "p", "Ts": "p", "Og": "p",
+    "Sc": "d", "Ti": "d", "V": "d", "Cr": "d", "Mn": "d", "Fe": "d", "Co": "d", "Ni": "d", "Cu": "d", "Zn": "d",
+    "Y": "d", "Zr": "d", "Nb": "d", "Mo": "d", "Tc": "d", "Ru": "d", "Rh": "d", "Pd": "d", "Ag": "d", "Cd": "d",
+    "Hf": "d", "Ta": "d", "W": "d", "Re": "d", "Os": "d", "Ir": "d", "Pt": "d", "Au": "d", "Hg": "d",
+    "Rf": "d", "Db": "d", "Sg": "d", "Bh": "d", "Hs": "d", "Mt": "d", "Ds": "d", "Rg": "d", "Cn": "d",
+    "La": "f", "Ce": "f", "Pr": "f", "Nd": "f", "Pm": "f", "Sm": "f", "Eu": "f", "Gd": "f", "Tb": "f", "Dy": "f", "Ho": "f", "Er": "f", "Tm": "f", "Yb": "f", "Lu": "f",
+    "Ac": "f", "Th": "f", "Pa": "f", "U": "f", "Np" : "f", "Pu": "f", "Am": "f", "Cm": "f", "Bk": "f", "Cf": "f", "Es": "f", "Fm": "f", "Md": "f", "No": "f", "Lr": "f",
+}
