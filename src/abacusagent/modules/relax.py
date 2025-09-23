@@ -87,5 +87,6 @@ def abacus_do_relax(
                            relax_cell=relax_cell,
                            fixed_axes=fixed_axes,
                            relax_method=relax_method,
+                           relax_new=relax_new
     )
     

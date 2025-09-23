@@ -62,6 +62,12 @@
             "band_gap": 0.0
         }
     },
+    "test_abacus_cal_band_pyatb_supercell": 
+    {
+        "result": {
+            "band_gap": 0.6702
+        }
+    },
     "test_abacus_cal_band_pyatb_pw": 
     {
         "result": {
@@ -78,6 +84,12 @@
     {
         "result": {
             "band_gap": 0.0
+        }
+    },
+    "test_abacus_cal_band_nscf_supercell": 
+    {
+        "result": {
+            "band_gap": 0.5583
         }
     },
     "test_abacus_dos_run_species": 
@@ -204,6 +216,12 @@
     {
         "result": {
             "scf_energy": -230.1492835634546
+        }
+    },
+    "test_run_abacus_calculation_dos_dft_functional":
+    {
+        "result": {
+            "scf_energy": -229.6779298720992
         }
     }
 }

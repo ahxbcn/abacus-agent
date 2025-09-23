@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 from typing import Literal, Optional, TypedDict, Dict, Any, List, Tuple, Union
 
 from abacusagent.init_mcp import mcp
@@ -64,6 +65,16 @@ def run_abacus_calculation(
     Raises:
         FileNotFoundError: If the structure file does not exist.
     """
+    extra_input = {}
+    if dft_functional in ['PBE', 'PBEsol', 'LDA', 'SCAN']:
+        extra_input['dft_functional'] = dft_functional
+    elif dft_functional in ['R2SCAN']:
+        extra_input['dft_functional'] = 'MGGA_X_R2SCAN+MGGA_C_R2SCAN'
+    elif dft_functional in [ 'HSE', 'PBE0']:
+        extra_input['dft_functional'] = dft_functional
+        os.environ['ABACUS_COMMAND'] = "OMP_NUM_THREADS=16 abacus" # Set to use OpenMP for hybrid functionals like HSE and PBE0
+    else:
+        print("DFT functional not supported now. Use dafault PBE functional.")
     
     abacus_prepare_outputs = abacus_prepare(stru_file=stru_file,
                                             stru_type=stru_type,
@@ -73,7 +84,8 @@ def run_abacus_calculation(
                                             dftu=dftu,
                                             dftu_param=dftu_param,
                                             init_mag=init_mag,
-                                            afm=afm,)
+                                            afm=afm,
+                                            extra_input=extra_input)
     
     print(abacus_prepare_outputs)
     

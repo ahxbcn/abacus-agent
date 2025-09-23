@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Literal
 
 from abacusagent.modules.util.comm import generate_work_path, link_abacusjob, run_abacus, has_chgfile, collect_metrics
-
+from abacusagent.modules.util.chemical_elements import MAX_ANGULAR_MOMENTUM_OF_ELEMENTS
 
 
 angular_momentum_map = ['s', 'p', 'd', 'f', 'g']
@@ -357,10 +357,12 @@ def plot_pdos_species_shell(shifted_energy, orbitals, output_dir, nspin, dpi):
             species_shells[species] = {}  # Initialize species kind
         
         angular_momentum = angular_momentum_map[orbital['l']]
-        if angular_momentum not in species_shells[species].keys():
-            species_shells[species][angular_momentum] = orbital['data'] # Initialize DOS for angular momentum of a species
-        else:
-            species_shells[species][angular_momentum] += orbital['data'] # Add DOS of a angular momentum of a species
+        # The orbital with higher angular momentum than in realistic atoms will be ignored.
+        if angular_momentum_map.index(angular_momentum) <= angular_momentum_map.index(MAX_ANGULAR_MOMENTUM_OF_ELEMENTS[orbital['species']]):
+            if angular_momentum not in species_shells[species].keys():
+                species_shells[species][angular_momentum] = orbital['data'] # Initialize DOS for angular momentum of a species
+            else:
+                species_shells[species][angular_momentum] += orbital['data'] # Add DOS of a angular momentum of a species
     
     # Plot PDOS for each species and each shell
     num_species = len(species_shells)
@@ -425,14 +427,16 @@ def plot_pdos_species_orbital(shifted_energy, orbitals, output_dir, nspin, label
             species_orbitals[species] = {}
         
         angular_momentum = angular_momentum_map[orbital['l']]
-        if angular_momentum not in species_orbitals[species].keys():
-            species_orbitals[species][angular_momentum] = {}
-        
-        mag_quantum_num = orbital['m']
-        if mag_quantum_num not in species_orbitals[species][angular_momentum].keys():
-            species_orbitals[species][angular_momentum][mag_quantum_num] = orbital['data']
-        else:
-            species_orbitals[species][angular_momentum][mag_quantum_num] += orbital['data']
+        # The orbital with higher angular momentum than in realistic atoms will be ignored.
+        if angular_momentum_map.index(angular_momentum) <= angular_momentum_map.index(MAX_ANGULAR_MOMENTUM_OF_ELEMENTS[orbital['species']]):
+            if angular_momentum not in species_orbitals[species].keys():
+                species_orbitals[species][angular_momentum] = {}
+            
+            mag_quantum_num = orbital['m']
+            if mag_quantum_num not in species_orbitals[species][angular_momentum].keys():
+                species_orbitals[species][angular_momentum][mag_quantum_num] = orbital['data']
+            else:
+                species_orbitals[species][angular_momentum][mag_quantum_num] += orbital['data']
     
     total_subplots = 0
     for species, species_pdos in species_orbitals.items():
