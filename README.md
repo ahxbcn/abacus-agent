@@ -159,5 +159,4 @@ Functions of ABACUS Agent tools are in active development. Currently, the follow
 
 Besides, a wrapper function which accepts a structure file and some key parameters to do ABACUS calculation is also provided.
 
-You can use `abacusagent --screen-modules` to hide tool function in some modules. For example, if you want to hide the wrapper function to avoid confusion with the dedicated function, 
-you can use `abacusagent --screen-modules tool_wrapper` to start the server.
+You can use `abacusagent --screen-modules` to hide tool function in some modules. The `--matmaster` option will only allow the wrapper function to be loaded.
