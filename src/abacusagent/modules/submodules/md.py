@@ -8,8 +8,7 @@ from ase.io.trajectory import TrajectoryWriter
 from abacustest.lib_prepare.abacus import ReadInput, WriteInput, AbacusStru
 
 from abacusagent.init_mcp import mcp
-from abacusagent.modules.util.comm import generate_work_path, link_abacusjob, run_abacus
-from abacusagent.modules.submodules.abacus import abacus_collect_data
+from abacusagent.modules.util.comm import generate_work_path, link_abacusjob, run_abacus, collect_metrics
 
 
 def get_last_md_stru(md_stru_outputdir: Path) -> Path:
@@ -181,7 +180,7 @@ def abacus_run_md(
 
         run_abacus(work_path)
 
-        metrics = abacus_collect_data(work_path)['collected_metrics']
+        metrics = collect_metrics(work_path)
         suffix = input_params.get('suffix', 'ABACUS')
         md_traj_file, traj_frame_nums = convert_md_dump_to_ase_traj(Path(os.path.join(work_path, f'OUT.{suffix}/MD_dump')).absolute())
         return {'md_work_path': work_path,
