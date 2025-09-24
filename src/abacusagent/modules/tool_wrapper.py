@@ -167,7 +167,9 @@ def run_abacus_calculation(
         if relax_outputs['result']['normal_end'] is False:
             raise ValueError('Relaxation calculation failed')
         elif relax_outputs['result']['relax_converge'] is False:
-            raise ValueError(f'Relaxation calculation did not converge in {max_steps} steps')
+            return {"msg":f'Relaxation calculation did not converge in {max_steps} steps',
+                    "final_stru": Path(relax_outputs['results']['new_abacus_inputs_dir']) / "STRU",
+                    **relax_outputs["results"]}
         else:
             print("Relax calculation completed successfully.")
             abacus_inputs_dir = relax_outputs['new_abacus_inputs_dir']
