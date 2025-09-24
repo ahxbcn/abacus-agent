@@ -16,6 +16,8 @@ class TestToolWrapper(unittest.TestCase):
         self.test_path = Path(self.test_dir.name)
         self.abacus_inputs_dir_si_prim = Path(__file__).parent / 'abacus_inputs_dirs/Si-prim/'
         self.stru_scf = self.abacus_inputs_dir_si_prim / "STRU_scf"
+        self.abacus_inputs_dir_fe_bcc_prim = Path(__file__).parent / 'abacus_inputs_dirs/Fe-BCC-prim/'
+        self.stru_fe_bcc_prim = self.abacus_inputs_dir_fe_bcc_prim / "STRU_cell_relaxed"
 
         self.original_cwd = os.getcwd()
         os.chdir(self.test_path)
@@ -26,7 +28,7 @@ class TestToolWrapper(unittest.TestCase):
     
     def test_run_abacus_calculation_dos(self):
         """
-        Test the abacus_calculation_scf function.
+        Test the abacus_calculation_scf function to calculate DOS.
         """
         test_func_name = inspect.currentframe().f_code.co_name
         ref_results = load_test_ref_result(test_func_name)
@@ -34,7 +36,7 @@ class TestToolWrapper(unittest.TestCase):
         os.makedirs(test_work_dir, exist_ok=True)
         shutil.copy2(self.stru_scf, test_work_dir / "STRU")
         
-        outputs = run_abacus_calculation(test_work_dir / "STRU")
+        outputs = run_abacus_calculation(test_work_dir / "STRU", property='dos')
         print(outputs)
 
         dos_fig_path = outputs['dos_fig_path']
@@ -49,7 +51,7 @@ class TestToolWrapper(unittest.TestCase):
 
     def test_run_abacus_calculation_dos_relax(self):
         """
-        Test the abacus_calculation_scf function.
+        Test the abacus_calculation_scf function to calculate DOS after a cell-relax calculation.
         """
         test_func_name = inspect.currentframe().f_code.co_name
         ref_results = load_test_ref_result(test_func_name)
@@ -57,7 +59,7 @@ class TestToolWrapper(unittest.TestCase):
         os.makedirs(test_work_dir, exist_ok=True)
         shutil.copy2(self.stru_scf, test_work_dir / "STRU")
         
-        outputs = run_abacus_calculation(test_work_dir / "STRU", relax=True, relax_cell=True)
+        outputs = run_abacus_calculation(test_work_dir / "STRU", relax=True, relax_cell=True, property='dos')
         print(outputs)
 
         dos_fig_path = outputs['dos_fig_path']
@@ -70,9 +72,9 @@ class TestToolWrapper(unittest.TestCase):
         self.assertTrue(outputs['nscf_normal_end'])
         self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'])
     
-    def test_run_abacus_calculation_dos_dft_functional(self):
+    def test_run_abacus_calculation_dft_functional(self):
         """
-        Test the abacus_calculation_scf function using DFT functional.
+        Test the abacus_calculation_scf function to calculate DOS with different DFT functional.
         """
         test_func_name = inspect.currentframe().f_code.co_name
         ref_results = load_test_ref_result(test_func_name)
@@ -80,7 +82,7 @@ class TestToolWrapper(unittest.TestCase):
         os.makedirs(test_work_dir, exist_ok=True)
         shutil.copy2(self.stru_scf, test_work_dir / "STRU")
         
-        outputs = run_abacus_calculation(test_work_dir / "STRU", dft_functional="PBEsol")
+        outputs = run_abacus_calculation(test_work_dir / "STRU", dft_functional="PBEsol", property='dos')
         print(outputs)
 
         dos_fig_path = outputs['dos_fig_path']
@@ -92,3 +94,163 @@ class TestToolWrapper(unittest.TestCase):
         self.assertTrue(outputs['scf_converge'])
         self.assertTrue(outputs['nscf_normal_end'])
         self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'])
+
+    def test_run_abacus_calculation_nspin_init_mag(self):
+        """
+        Test the abacus_calculation_scf function with nspin and initial magnetic moments setted.
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+        test_work_dir = self.test_path / test_func_name
+        os.makedirs(test_work_dir, exist_ok=True)
+        shutil.copy2(self.stru_fe_bcc_prim, test_work_dir / "STRU")
+        
+        outputs = run_abacus_calculation(test_work_dir / "STRU", property='dos', nspin=2, init_mag={"Fe": 2.0})
+        print(outputs)
+
+        dos_fig_path = outputs['dos_fig_path']
+        pdos_fig_path = outputs['pdos_fig_path']
+
+        self.assertIsInstance(dos_fig_path, get_path_type())
+        self.assertIsInstance(pdos_fig_path, get_path_type())
+        self.assertTrue(outputs['scf_normal_end'])
+        self.assertTrue(outputs['scf_converge'])
+        self.assertTrue(outputs['nscf_normal_end'])
+        self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'])
+
+    def test_run_abacus_calculation_dftu(self):
+        """
+        Test the abacus_calculation_scf function with DFT+U parameters setted
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+        test_work_dir = self.test_path / test_func_name
+        os.makedirs(test_work_dir, exist_ok=True)
+        shutil.copy2(self.stru_fe_bcc_prim, test_work_dir / "STRU")
+        
+        outputs = run_abacus_calculation(test_work_dir / "STRU", property='dos', dftu=True, dftu_param={'Fe': ['d', 1.0]})
+        print(outputs)
+
+        dos_fig_path = outputs['dos_fig_path']
+        pdos_fig_path = outputs['pdos_fig_path']
+
+        self.assertIsInstance(dos_fig_path, get_path_type())
+        self.assertIsInstance(pdos_fig_path, get_path_type())
+        self.assertTrue(outputs['scf_normal_end'])
+        self.assertTrue(outputs['scf_converge'])
+        self.assertTrue(outputs['nscf_normal_end'])
+        self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'])
+    
+    def test_run_abacus_calculation_bader_charge(self):
+        """
+        Test the abacus_calculation_scf function to calculate Bader charge
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+        test_work_dir = self.test_path / test_func_name
+        os.makedirs(test_work_dir, exist_ok=True)
+        shutil.copy2(self.stru_scf, test_work_dir / "STRU")
+        
+        outputs = run_abacus_calculation(test_work_dir / "STRU", property='bader_charge')
+        print(outputs)
+
+        abacus_workpath = outputs['abacus_workpath']
+        badercharge_run_workpath = outputs['badercharge_run_workpath']
+        self.assertIsInstance(abacus_workpath, get_path_type())
+        self.assertIsInstance(badercharge_run_workpath, get_path_type())
+        for act, ref in zip(outputs['bader_charges'], ref_results['bader_charges']):
+            self.assertAlmostEqual(act, ref, places=3)
+        for act, ref in zip(outputs['atom_labels'], ref_results['atom_labels']):
+            self.assertEqual(act, ref)
+    
+    def test_run_abacus_calculation_band(self):
+        """
+        Test the abacus_calculation_scf function to calculate band
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+        test_work_dir = self.test_path / test_func_name
+        os.makedirs(test_work_dir, exist_ok=True)
+        shutil.copy2(self.stru_scf, test_work_dir / "STRU")
+        
+        outputs = run_abacus_calculation(test_work_dir / "STRU", property='band')
+        print(outputs)
+
+        band_calc_dir = outputs['band_calc_dir']
+        band_picture = outputs['band_picture']
+        self.assertIsInstance(band_calc_dir, get_path_type())
+        self.assertIsInstance(band_picture, get_path_type())
+        self.assertAlmostEqual(outputs['band_gap'], ref_results['band_gap'], places=4)
+    
+    def test_run_abacus_calculation_elastic_properties(self):
+        """
+        Test the abacus_calculation_scf function to calculate elastic properties
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+        test_work_dir = self.test_path / test_func_name
+        os.makedirs(test_work_dir, exist_ok=True)
+        shutil.copy2(self.stru_scf, test_work_dir / "STRU")
+        
+        outputs = run_abacus_calculation(test_work_dir / "STRU", property='elastic_properties')
+        print(outputs)
+        self.assertIsInstance(outputs['elastic_cal_dir'], get_path_type())
+
+        # Compare calculated and reference elastic tensor
+        self.assertEqual(len(outputs['elastic_tensor']), len(ref_results['elastic_tensor']))
+        for elastic_tensor_output_row, elastic_tensor_ref_row in zip(outputs['elastic_tensor'], ref_results['elastic_tensor']):
+            self.assertEqual(len(elastic_tensor_output_row), len(elastic_tensor_ref_row))
+            for element_output, element_ref in zip(elastic_tensor_output_row, elastic_tensor_ref_row):
+                self.assertAlmostEqual(element_output, element_ref, places=3)
+
+        self.assertAlmostEqual(outputs['bulk_modulus'], ref_results['bulk_modulus'], places=2)
+        self.assertAlmostEqual(outputs['shear_modulus'], ref_results['shear_modulus'], places=2)
+        self.assertAlmostEqual(outputs['young_modulus'], ref_results['young_modulus'], places=2)
+        self.assertAlmostEqual(outputs['poisson_ratio'], ref_results['poisson_ratio'], places=2)
+    
+    def test_run_abacus_calculation_phonon_dispersion(self):
+        """
+        Test the abacus_calculation_scf function to calculate phonon dispersion
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+        test_work_dir = self.test_path / test_func_name
+        os.makedirs(test_work_dir, exist_ok=True)
+        shutil.copy2(self.stru_scf, test_work_dir / "STRU")
+        
+        outputs = run_abacus_calculation(test_work_dir / "STRU", property='phonon_dispersion', relax=True)
+        print(outputs)
+        
+        self.assertIsInstance(outputs['phonon_work_path'], get_path_type())
+        self.assertIsInstance(outputs['band_plot'], get_path_type())
+        self.assertIsInstance(outputs['dos_plot'], get_path_type())
+
+        self.assertAlmostEqual(outputs['entropy'], ref_results['entropy'], places=3)
+        self.assertAlmostEqual(outputs['free_energy'], ref_results['free_energy'], places=3)
+        self.assertAlmostEqual(outputs['max_frequency_THz'], ref_results['max_frequency_THz'], places=3)
+        self.assertAlmostEqual(outputs['max_frequency_K'], ref_results['max_frequency_K'], places=3)
+    
+    def test_run_abacus_calculation_md(self):
+        """
+        Test the abacus_calculation_scf function to do AIMD calculation
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+        test_work_dir = self.test_path / test_func_name
+        os.makedirs(test_work_dir, exist_ok=True)
+        shutil.copy2(self.stru_scf, test_work_dir / "STRU")
+        
+        md_nstep = 5
+        outputs = run_abacus_calculation(test_work_dir / "STRU", property='md',
+                                         md_type = 'nve',
+                                         md_nstep = md_nstep,
+                                         md_dt = 1.0,
+                                         md_tfirst = 300)
+        
+        print(outputs)
+        
+        self.assertTrue(outputs['normal_end'])
+        self.assertEqual(outputs['traj_frame_nums'], md_nstep+1)
+        self.assertIsInstance(outputs['md_work_path'], get_path_type())
+        self.assertIsInstance(outputs['md_traj_file'], get_path_type())
+
