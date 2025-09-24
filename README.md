@@ -20,7 +20,7 @@ conda activate abacus-agent
 ```
 2. Install necessary dependencies:
 ```bash
-pip install mcp google-adk litellm bohr-agent-sdk pymatgen abacustest==0.4.24
+pip install mcp google-adk litellm bohr-agent-sdk pymatgen abacustest
 ```
 3. Install ABACUS-agent-tools:
 ```bash
@@ -60,9 +60,13 @@ Note: When running `abacusagent`, it will automatically check if the file exists
     "_comments": {
         "ABACUS_WORK_PATH": "The working directory for AbacusAgent, where all temporary files will be stored.",
         "ABACUS_SUBMIT_TYPE": "The type of submission for ABACUS, can be local or bohrium.",
+        "ABACUSAGENT_TRANSPORT": "The transport protocol for AbacusAgent, can be 'sse' or 'streamable-http'.",
         "ABACUSAGENT_HOST": "The host address for the AbacusAgent server.",
         "ABACUSAGENT_PORT": "The port number for the AbacusAgent server.",
         "ABACUSAGENT_MODEL": "The model to use for AbacusAgent, can be 'fastmcp', 'test', or 'dp'.",
+        "LLM_MODEL": "The model name for the LLM to use. Like: openai/qwen-turbo, deepseek/deepseek-chat",
+        "LLM_API_KEY": "The API key for the LLM service.",
+        "LLM_BASE_URL": "The base URL for the LLM service, if applicable.",
         "BOHRIUM_USERNAME": "The username for Bohrium.",
         "BOHRIUM_PASSWORD": "The password for Bohrium.",
         "BOHRIUM_PROJECT_ID": "The project ID for Bohrium.",
@@ -71,7 +75,10 @@ Note: When running `abacusagent`, it will automatically check if the file exists
         "BOHRIUM_ABACUS_COMMAND": "The command to run Abacus on Bohrium",
         "ABACUS_COMMAND": "The command to execute Abacus on local machine.",
         "ABACUS_PP_PATH": "The path to the pseudopotential library for Abacus.",
-        "ABACUS_ORB_PATH": "The path to the orbital library for Abacus.",
+        "ABACUS_ORB_PATH": "The path to the orbital library for ABACUS_PP_PATH",
+        "ABACUS_SOC_PP_PATH": "The path to the SOC pseudopotential library for Abacus.",
+        "ABACUS_SOC_ORB_PATH": "The path to the orbital library for ABACUS_SOC_PP_PATH.",
+        "PYATB_COMMAND": "The command to execute PYATB on local machine.",
         "_comments": "This dictionary contains the default environment variables for AbacusAgent."
     }
 }
@@ -86,13 +93,17 @@ INFO:     Application startup complete.
 INFO:     Uvicorn running on http://localhost:50001 (Press CTRL+C to quit)
 ```
 #### Preparing Google ADK Agent
-Organize your agent files in the following structure:
+You can use the following command to create files needed by a new agent:
 ```
-name_of_your_agent/
+abacusagent --create
+```
+Then a directory containing all necessary files will be generated:
+```
+abacus-agent/
 ├── __init__.py
 └── agent.py
 ```
-See example files in `examples\my_agent` to prepare `__init__.py` and `agent.py`.
+Then you can edit the `agent.py` file to customize the agent.
 #### Starting Google ADK
 ```bash
 >>> adk web
@@ -146,3 +157,7 @@ Functions of ABACUS Agent tools are in active development. Currently, the follow
 - Charge density difference
 - Using Birch-Murganhan equation to fit equation of state for cubic crystals
 
+Besides, a wrapper function which accepts a structure file and some key parameters to do ABACUS calculation is also provided.
+
+You can use `abacusagent --screen-modules` to hide tool function in some modules. For example, if you want to hide the wrapper function to avoid confusion with the dedicated function, 
+you can use `abacusagent --screen-modules tool_wrapper` to start the server.

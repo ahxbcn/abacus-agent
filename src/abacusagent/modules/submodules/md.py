@@ -9,7 +9,7 @@ from abacustest.lib_prepare.abacus import ReadInput, WriteInput, AbacusStru
 
 from abacusagent.init_mcp import mcp
 from abacusagent.modules.util.comm import generate_work_path, link_abacusjob, run_abacus
-from abacusagent.modules.abacus import abacus_collect_data
+from abacusagent.modules.submodules.abacus import abacus_collect_data
 
 
 def get_last_md_stru(md_stru_outputdir: Path) -> Path:
