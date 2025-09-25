@@ -76,7 +76,7 @@ def abacus_phonon_dispersion(
 
         # Determine supercell if not provided
         if supercell is None:
-            min_supercell_length = 6.0 # In Angstrom. A temporary value, should be verified in detail
+            min_supercell_length = 10.0 # In Angstrom. A temporary value, should be verified in detail
             a, b, c = stru.get_cell().lengths()
             supercell = [int(np.ceil(min_supercell_length / a)),
                          int(np.ceil(min_supercell_length / b)),

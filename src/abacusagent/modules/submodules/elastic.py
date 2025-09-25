@@ -136,6 +136,7 @@ def abacus_cal_elastic(
                        copy_files=["INPUT", "STRU", "KPT"])
 
         input_params = ReadInput(os.path.join(input_stru_dir, "INPUT"))
+        input_params['kspacing'] = 0.08
         stru = AbacusStru.ReadStru(os.path.join(input_stru_dir, input_params.get("stru_file", "STRU")))
 
         if 'kspacing' in input_params.keys():
