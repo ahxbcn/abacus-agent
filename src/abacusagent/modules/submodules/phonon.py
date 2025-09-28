@@ -14,7 +14,6 @@ from abacustest.lib_model.comm import check_abacus_inputs
 
 from abacusagent.init_mcp import mcp
 from abacusagent.modules.util.comm import run_abacus, generate_work_path, link_abacusjob, collect_metrics
-from abacusagent.modules.abacus import abacus_collect_data
 
 THz_TO_K = 47.9924
 
@@ -80,7 +79,6 @@ def abacus_phonon_dispersion(
 
         # Determine supercell if not provided
         if supercell is None:
-            min_supercell_length = 10.0 # In Angstrom. A temporary value, should be verified in detail
             a, b, c = stru.to_ase().get_cell().lengths()
             supercell = [int(np.ceil(min_supercell_length / a)),
                          int(np.ceil(min_supercell_length / b)),
