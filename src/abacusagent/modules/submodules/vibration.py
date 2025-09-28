@@ -12,15 +12,10 @@ from ase.vibrations import Vibrations
 from ase.calculators.abacus import Abacus, AbacusProfile
 from ase.thermochemistry import HarmonicThermo
 from ase.io.abacus import read_kpt
-from ase.data import chemical_symbols
 from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteInput
 from abacustest.lib_model.comm import check_abacus_inputs
 
-from abacusagent.init_mcp import mcp
 from abacusagent.modules.util.comm import get_physical_cores, generate_work_path, link_abacusjob, run_abacus, collect_metrics
-
-SQRT_OMEGA2_TO_HZ = 98226947433914.52 # Convert $\sqrt{eV/(angstrom^2 \cdot amu)}$ to Hz
-HZ_TO_CM_1 = 3.3356409519815204e-11 # Convert frequency in Hz to cm^-1. Equals 1/c.
 
 def set_ase_abacus_calculator(abacus_inputs_dir: Path,
                               work_path: Path,

@@ -13,7 +13,7 @@ from abacustest.lib_prepare.abacus import ReadInput, WriteInput, AbacusStru
 from abacustest.lib_model.comm import check_abacus_inputs
 
 from abacusagent.init_mcp import mcp
-from abacusagent.modules.util.comm import run_abacus, generate_work_path, link_abacusjob
+from abacusagent.modules.util.comm import run_abacus, generate_work_path, link_abacusjob, collect_metrics
 from abacusagent.modules.abacus import abacus_collect_data
 
 THz_TO_K = 47.9924
@@ -25,6 +25,8 @@ def abacus_phonon_dispersion(
     supercell: Optional[List[int]] = None,
     displacement_stepsize: float = 0.01,
     temperature: Optional[float] = 298.15,
+    scf_thr: float = 1e-7,
+    min_supercell_length: float = 10.0,
 ):
     """
     Calculate phonon dispersion with finite-difference method using Phonopy with ABACUS as the calculator. 
@@ -36,6 +38,9 @@ def abacus_phonon_dispersion(
             along all 3 directions larger than 10.0 Angstrom.
         displacement_stepsize (float, optional): Displacement step size for finite difference. Defaults to 0.01 Angstrom.
         temperature (float, optional): Temperature in Kelvin for thermal properties. Defaults to 298.15. Units in Kelvin.
+        scf_thr (float): SCF convergence threshold. Defaults to 1e-7. If the basis set is PW, we recommend to set a tighter value.
+        min_supercell_length (float): If supercell is not provided, the generated supercell will have a length of lattice vector
+            along all 3 directions larger than min_supercell_length. Defaults to 10.0 Angstrom. Units in Angstrom.
     Returns:
         A dictionary containing:
             - phonon_work_path: Path to the directory containing phonon calculation results.
@@ -104,8 +109,8 @@ def abacus_phonon_dispersion(
 
         force_sets = []
         for job_dir in displaced_job_dirs:
-            metrics = abacus_collect_data(abacus_outputs_dir = job_dir,
-                                          metrics=['force', 'normal_end', 'converge'])['collected_metrics']
+            metrics = collect_metrics(abacusjob = job_dir,
+                                      metrics_names=['force', 'normal_end', 'converge'])['collected_metrics']
             if metrics['normal_end'] is not True:
                 print(f"ABACUS calculation in {job_dir} didn't end normally")
             elif metrics['converge'] is not True:
