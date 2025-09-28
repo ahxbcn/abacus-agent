@@ -1,6 +1,7 @@
 import os
 from typing import Dict, List, Optional, Any, Literal
 from pathlib import Path
+import copy
 
 import numpy as np
 from ase import Atoms
@@ -8,12 +9,11 @@ from ase.io import read
 from phonopy import Phonopy
 from phonopy.harmonic.dynmat_to_fc import get_commensurate_points
 from phonopy.structure.atoms import PhonopyAtoms
-from abacustest.lib_prepare.abacus import ReadInput
+from abacustest.lib_prepare.abacus import ReadInput, WriteInput, AbacusStru
 from abacustest.lib_model.comm import check_abacus_inputs
 
 from abacusagent.init_mcp import mcp
-from abacusagent.modules.util.comm import generate_work_path
-from abacusagent.modules.submodules.vibration import set_ase_abacus_calculator
+from abacusagent.modules.util.comm import run_abacus, generate_work_path, link_abacusjob, collect_metrics
 
 THz_TO_K = 47.9924
 
@@ -24,6 +24,8 @@ def abacus_phonon_dispersion(
     supercell: Optional[List[int]] = None,
     displacement_stepsize: float = 0.01,
     temperature: Optional[float] = 298.15,
+    scf_thr: float = 1e-7,
+    min_supercell_length: float = 10.0,
 ):
     """
     Calculate phonon dispersion with finite-difference method using Phonopy with ABACUS as the calculator. 
@@ -35,6 +37,9 @@ def abacus_phonon_dispersion(
             along all 3 directions larger than 10.0 Angstrom.
         displacement_stepsize (float, optional): Displacement step size for finite difference. Defaults to 0.01 Angstrom.
         temperature (float, optional): Temperature in Kelvin for thermal properties. Defaults to 298.15. Units in Kelvin.
+        scf_thr (float): SCF convergence threshold. Defaults to 1e-7. If the basis set is PW, we recommend to set a tighter value.
+        min_supercell_length (float): If supercell is not provided, the generated supercell will have a length of lattice vector
+            along all 3 directions larger than min_supercell_length. Defaults to 10.0 Angstrom. Units in Angstrom.
     Returns:
         A dictionary containing:
             - phonon_work_path: Path to the directory containing phonon calculation results.
@@ -55,29 +60,26 @@ def abacus_phonon_dispersion(
 
         input_params = ReadInput(os.path.join(abacus_inputs_dir, "INPUT"))
         stru_file = input_params.get('stru_file', "STRU")
-        stru = read(os.path.join(abacus_inputs_dir, stru_file))
+        #stru = read(os.path.join(abacus_inputs_dir, stru_file))
+        stru = AbacusStru.ReadStru(os.path.join(abacus_inputs_dir, stru_file))
         # Provide extra INPUT parameters necessary for calculating phonon dispersion
         extra_input_params = {'calculation': 'scf',
-                              'cal_force': 1,
-                              'out_chg': 1,
-                              'init_chg': 'auto'}
+                              'cal_force': 1}
         if input_params.get('scf_thr', 1e-7) > 1e-7:
             extra_input_params['scf_thr'] = 1e-7
-        calc = set_ase_abacus_calculator(abacus_inputs_dir,
-                                         work_path,
-                                         extra_input_params)
+        for param_name, param_value in extra_input_params.items():
+            input_params[param_name] = param_value
 
         ph_atoms = PhonopyAtoms(
-            symbols=stru.get_chemical_symbols(),
+            symbols=stru.get_element(number=False),
             cell=stru.get_cell(),
-            scaled_positions=stru.get_scaled_positions(),
-            magnetic_moments=stru.get_initial_magnetic_moments()
+            scaled_positions=stru.get_coord(direct=True),
+            magnetic_moments=stru.get_atommag()
         )
 
         # Determine supercell if not provided
         if supercell is None:
-            min_supercell_length = 6.0 # In Angstrom. A temporary value, should be verified in detail
-            a, b, c = stru.get_cell().lengths()
+            a, b, c = stru.to_ase().get_cell().lengths()
             supercell = [int(np.ceil(min_supercell_length / a)),
                          int(np.ceil(min_supercell_length / b)),
                          int(np.ceil(min_supercell_length / c))]
@@ -86,22 +88,35 @@ def abacus_phonon_dispersion(
         phonon.generate_displacements(distance=displacement_stepsize)
         print("Generated {} supercell structures with displacements.".format(len(phonon.supercells_with_displacements)) +
               "Doing SCF calculations for each supercell structure...")
+        
+        stru_supercell = stru.supercell(supercell)
+        structure_index = 1
+        displaced_job_dirs = []
+        for sc in phonon.supercells_with_displacements:
+            stru_supercell.set_cell(sc.cell, bohr=False)
+            stru_supercell.set_coord(sc.positions, bohr=False)
+            dir_name = os.path.join(work_path, f"disp-{structure_index}")
+            os.makedirs(dir_name)
+            link_abacusjob(abacus_inputs_dir, dir_name)
+            stru_supercell.write(os.path.join(dir_name, stru_file))
+            WriteInput(input_params, os.path.join(dir_name, "INPUT"))
+            displaced_job_dirs.append(dir_name)
+            structure_index += 1
+        
+        run_abacus(displaced_job_dirs)
 
         force_sets = []
-        structure_index = 1
-        for sc in phonon.supercells_with_displacements:
-            sc_atoms = Atoms(
-                cell=sc.cell,
-                symbols=sc.symbols,
-                scaled_positions=sc.scaled_positions,
-                magmoms=sc.magnetic_moments,
-                pbc=True,
-            )
-            sc_atoms.calc = calc
-            print(f"Doing SCF calculation for supercell structure {structure_index}...")
-            force = sc_atoms.get_forces()
-            force_sets.append(force - np.mean(force, axis=0))
-            structure_index += 1
+        for job_dir in displaced_job_dirs:
+            metrics = collect_metrics(abacusjob = job_dir,
+                                      metrics_names=['force', 'normal_end', 'converge'])['collected_metrics']
+            if metrics['normal_end'] is not True:
+                print(f"ABACUS calculation in {job_dir} didn't end normally")
+            elif metrics['converge'] is not True:
+                print(f"ABACUS calculation in {job_dir} didn't reached SCF convergence")
+            else:
+                pass
+
+            force_sets.append(np.array(metrics['force']).reshape(-1, 3))
 
         phonon.forces = force_sets
         phonon.produce_force_constants()
