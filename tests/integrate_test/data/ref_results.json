@@ -218,10 +218,64 @@
             "scf_energy": -230.1492835634546
         }
     },
-    "test_run_abacus_calculation_dos_dft_functional":
+    "test_run_abacus_calculation_dft_functional":
     {
         "result": {
             "scf_energy": -229.6779298720992
         }
+    },
+    "test_run_abacus_calculation_nspin_init_mag":
+    {
+        "result": {
+            "scf_energy": -3220.427378240614
+        }
+    },
+    "test_run_abacus_calculation_dftu":
+    {
+        "result": {
+            "scf_energy": -3218.975525525896
+        }
+    },
+    "test_run_abacus_calculation_bader_charge": 
+    {
+        "result": {
+            "bader_charges": [0.042, -0.042],
+            "atom_labels": ["Si", "Si"]
+        }
+    },
+    "test_run_abacus_calculation_band":
+    {
+        "result": {
+            "band_gap": 0.6063
+        }
+    },
+    "test_run_abacus_calculation_elastic_properties":
+    {
+        "result": {
+            "elastic_tensor": [[72.94374269880102, 138.0565070552012, 105.5018483800011, 46.04093898820017, 0.0, 0.0], 
+                               [121.77926875280127, 89.22098088080104, 105.50184831860112, -23.020529476400085, 39.87239985140014, -28.193571419200104], 
+                               [121.77926874400121, 89.22098089020113, 105.50184831940109, -23.020529463600077, -39.87239982920014, 28.193571403200107], 
+                               [113.54466132069999, -37.8367804689, -75.69930212769998, 53.521760329299994, 0.0, 0.0], 
+                               [0.0034711007000251463, 75.70441232010002, -75.6993046768, -26.761075965600003, 46.350214400500015, 65.5421882798], 
+                               [0.003470167799993673, -75.69991824160002, 75.70502684200004, 26.759338535300007, 46.347200869400005, 65.54431910830002]],
+            "bulk_modulus": 105.50069933775669,
+            "shear_modulus": 27.657016643966653,
+            "young_modulus": 76.30340229101337,
+            "poisson_ratio": 0.37945829937624276
+        }
+    },
+    "test_run_abacus_calculation_phonon_dispersion": 
+    {
+        "result": {
+            "entropy": 39.855272587031884,
+            "free_energy": 6.544580089490639,
+            "heat_capacity": 39.526878497832975,
+            "max_frequency_THz": 15.274069131694052, 
+            "max_frequency_K": 733.0392353959137
+        }
+    },
+    "test_run_abacus_calculation_md":
+    {
+        "result": {}
     }
 }

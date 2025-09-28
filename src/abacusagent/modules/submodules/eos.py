@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from typing import Literal, Optional, TypedDict, Dict, Any, List
+import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteInput
@@ -8,8 +9,7 @@ from abacustest.lib_model.comm_eos import eos_fit
 from abacustest.lib_model.comm import check_abacus_inputs
 
 from abacusagent.init_mcp import mcp
-from abacusagent.modules.abacus import abacus_modify_input, abacus_modify_stru, abacus_collect_data
-from abacusagent.modules.util.comm import run_abacus, link_abacusjob, generate_work_path
+from abacusagent.modules.util.comm import run_abacus, link_abacusjob, generate_work_path, collect_metrics
 
 def is_cubic(cell: List[List[float]]) -> bool:
     """
@@ -76,7 +76,8 @@ def abacus_eos(
             raise ValueError("The structure is not cubic. Implemented EOS calculation requires a cubic structure.")
 
         # Generated lattice parameters for EOS calculation
-        original_cell_param = input_stru.get_cell()[0][0]  # Assuming cubic structure, take one cell parameter
+        original_cell = input_stru.get_cell()
+        original_cell_param = np.linalg.norm(original_cell[0])
         if stru_scale_type == 'percentage':
             scales = [1 + i * scale_stepsize for i in range(-stru_scale_number, stru_scale_number + 1)]
         elif stru_scale_type == 'angstrom':
@@ -86,9 +87,11 @@ def abacus_eos(
 
         scaled_lat_params = [original_cell_param * scale for scale in scales]
 
-        output = abacus_modify_input(abacus_inputs_dir, extra_input={'calculation': 'scf'})
+        input_params['calculation'] = 'scf'
+        WriteInput(input_params, os.path.join(abacus_inputs_dir, "INPUT"))
 
         scale_cell_job_dirs = []
+        stru = copy.deepcopy(input_stru)
         for i in range(len(scales)):
             dir_name = Path(os.path.join(work_path, f"scale_cell_{i}")).absolute()
             os.makedirs(dir_name, exist_ok=True)
@@ -103,13 +106,14 @@ def abacus_eos(
             )
 
             new_cell = (np.array(input_stru.get_cell()) * scales[i]).tolist()
-            output = abacus_modify_stru(dir_name, cell=new_cell, coord_change_type='scale')
+            stru.set_cell(new_cell, bohr=False, change_coord=True)
+            stru.write(os.path.join(dir_name, input_stru_file))
 
         run_abacus(scale_cell_job_dirs)
 
         energies = []
         for i, job_dir in enumerate(scale_cell_job_dirs):
-            metrics = abacus_collect_data(job_dir)['collected_metrics']
+            metrics = collect_metrics(job_dir)
             if metrics['normal_end'] is not True or metrics['converge'] is not True:
                 raise RuntimeError(f"Job {i} did not end normally or did not converge. Please check the job directory: {job_dir}")
             energies.append(metrics['energy'])
@@ -139,9 +143,8 @@ def abacus_eos(
             )
         optimal_lat_param = V0 ** (1.0 / 3)
         optimal_cell = (np.array(input_stru.get_cell()) * optimal_lat_param / original_cell_param).tolist()
-        output = abacus_modify_stru(new_abacus_inputs_dir,
-                                    cell = optimal_cell,
-                                    coord_change_type = 'scale')
+        stru.set_cell(optimal_cell, bohr=False, change_coord=True)
+        stru.write(os.path.join(new_abacus_inputs_dir, input_stru_file))
 
         return {
             "eos_work_path": work_path.absolute(),
