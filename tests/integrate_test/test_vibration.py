@@ -39,6 +39,7 @@ class TestAbacusVibrationAnalysis(unittest.TestCase):
                                             stepsize = 0.01,
                                             nfree = 2,
                                             temperature=400)
+        print(outputs)
         
         self.assertIsInstance(outputs['vib_analysis_work_dir'], get_path_type())
 
