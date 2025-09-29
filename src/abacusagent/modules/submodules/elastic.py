@@ -2,23 +2,18 @@
 Calculating elastic constants using ABACUS.
 """
 import os
-import shutil
-import time
 from typing import Dict, List
 from pathlib import Path
 
 import numpy as np
-import dpdata
-from pymatgen.core.structure import Structure
 from pymatgen.analysis.elasticity.elastic import Strain
 from pymatgen.analysis.elasticity.elastic import ElasticTensor
 from pymatgen.analysis.elasticity.strain import DeformedStructureSet
 from pymatgen.analysis.elasticity.stress import Stress
 
 from abacustest.lib_prepare.comm import kspacing2kpt
-from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteKpt, WriteInput
+from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteKpt, WriteInput, AbacusStru
 from abacustest.lib_model.comm import check_abacus_inputs
-from abacusagent.init_mcp import mcp
 from abacusagent.modules.util.comm import run_abacus, link_abacusjob, generate_work_path, collect_metrics
 
 def prepare_deformed_stru(
@@ -29,15 +24,14 @@ def prepare_deformed_stru(
     """
     Generate deformed structures
     """
-    temp = dpdata.System(os.path.join(input_stru_dir, "STRU"), fmt="abacus/stru")
-    dump_poscar_name = Path('STRU-to-POSCAR-' + time.strftime("%Y%m%d%H%M%S"))
-    temp.to('vasp/poscar', dump_poscar_name)
-    original_stru = Structure.from_file(dump_poscar_name)
-    os.remove(dump_poscar_name)
+    input_params = ReadInput(os.path.join(input_stru_dir, "INPUT"))
+    stru_file = input_params.get("stru_file", "STRU")
+    print(stru_file)
+    original_stru = AbacusStru.ReadStru(os.path.join(input_stru_dir, stru_file))
 
     norm_strains = [-norm_strain, -0.5*norm_strain, +0.5*norm_strain, +norm_strain]
     shear_strains = [-shear_strain, -0.5*shear_strain, +0.5*shear_strain, +shear_strain]
-    deformed_strus = DeformedStructureSet(original_stru,
+    deformed_strus = DeformedStructureSet(original_stru.to_pymatgen(),
                                          symmetry=False,
                                          norm_strains=norm_strains,
                                          shear_strains=shear_strains)
@@ -53,37 +47,24 @@ def prepare_deformed_stru_inputs(
     Prepare ABACUS inputs directories from deformed structures and prepared inputs templates
     """
     abacus_inputs_dirs = []
-    copy_files = []
-    for item in os.listdir(input_stru_dir):
-        if os.path.isfile(os.path.join(input_stru_dir, item)):
-            if item.endswith("INPUT") or item.endswith("KPT") or item.endswith(".orb")\
-                    or item.endswith(".upf") or item.endswith(".UPF"):
-                copy_files.append(item)
-    
-    original_stru = AbacusStru.ReadStru(os.path.join(input_stru_dir, "STRU"))
+    input_params = ReadInput(os.path.join(input_stru_dir, "INPUT"))
+    stru_file = input_params.get("stru_file", "STRU")
+    original_stru = AbacusStru.ReadStru(os.path.join(input_stru_dir, stru_file))
 
     stru_counts = 1
     for deformed_stru in deformed_strus:
         abacus_inputs_dir = os.path.join(work_path, f'deformed-stru-{stru_counts:0>3d}')
         os.mkdir(abacus_inputs_dir)
-        for item in copy_files:
-            shutil.copy(os.path.join(input_stru_dir, item), abacus_inputs_dir)
+        link_abacusjob(src=input_stru_dir,
+                       dst=abacus_inputs_dir,
+                       exclude=["STRU"],
+                       exclude_directories=True,
+                       copy_files=["INPUT", "KPT", "*log", "*json"])
         
         # Write deformed structure to ABACUS STRU format
-        dump_poscar_name = os.path.join(abacus_inputs_dir, 'deformed-STRU-POSCAR-' + time.strftime("%Y%m%d%H%M%S"))
-        deformed_stru.to(dump_poscar_name, fmt='vasp/poscar')
-
-        deformed_stru_poscar = dpdata.System(dump_poscar_name, fmt='vasp/poscar')
-        os.remove(dump_poscar_name)
-        first_dump_stru_name = os.path.join(abacus_inputs_dir, 'deformed-STRU-unmodified')
-        deformed_stru_poscar.to('abacus/stru', first_dump_stru_name)
-
-        deformed_stru_abacus = AbacusStru.ReadStru(first_dump_stru_name)
-        os.remove(first_dump_stru_name)
-        deformed_stru_abacus.set_pp(original_stru.get_pp())
-        deformed_stru_abacus.set_orb(original_stru.get_orb())
-        deformed_stru_abacus.set_atommag(original_stru.get_atommag())
-        deformed_stru_abacus.write(os.path.join(abacus_inputs_dir, "STRU"))
+        original_stru.set_cell(deformed_stru.lattice.matrix.tolist(), bohr=False)
+        original_stru.set_coord(deformed_stru.cart_coords.tolist(), bohr=False, direct=False)
+        original_stru.write(os.path.join(abacus_inputs_dir, stru_file))
 
         abacus_inputs_dirs.append(Path(abacus_inputs_dir).absolute())
         stru_counts += 1

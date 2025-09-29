@@ -34,7 +34,8 @@ class TestAbacusCalElastic(unittest.TestCase):
         shutil.copytree(self.abacus_inputs_dir_si_prim, test_work_dir)
         shutil.copy2(self.stru_cell_relaxed, test_work_dir / "STRU")
 
-        outputs = abacus_cal_elastic(test_work_dir)
+        outputs = abacus_cal_elastic(test_work_dir, kspacing=0.14)
+        print(outputs)
         
         self.assertIsInstance(outputs['elastic_cal_dir'], get_path_type())
 
