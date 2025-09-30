@@ -10,6 +10,7 @@ from typing import List, Dict, Optional, Any
 from pathlib import Path
 
 import numpy as np
+import unittest
 
 from abacustest.lib_prepare.abacus import ReadInput, WriteInput, AbacusStru
 from abacustest.lib_model.comm import check_abacus_inputs
