@@ -33,11 +33,11 @@ def run_command(
         for fd in readable:
             if fd == process.stdout:
                 line = process.stdout.readline()
-                print(line.decode()[:-1])
+                #struprint(line.decode()[:-1])
                 out += line.decode()
             elif fd == process.stderr:
                 line = process.stderr.readline()
-                print("STDERR:", line.decode()[:-1])
+                #print("STDERR:", line.decode()[:-1])
                 err += line.decode()
 
         return_code = process.poll()

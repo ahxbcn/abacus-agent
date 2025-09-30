@@ -35,4 +35,4 @@ def abacus_cal_elastic(
     Raises:
         RuntimeError: If ABACUS calculation when calculating stress for input structure or deformed structures fails.
     """
-    return _abacus_cal_elastic(abacus_inputs_dir, norm_strain, shear_strain)
+    return _abacus_cal_elastic(abacus_inputs_dir, norm_strain, shear_strain, kspacing)

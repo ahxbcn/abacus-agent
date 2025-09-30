@@ -6,13 +6,14 @@ from typing import Dict, List
 from pathlib import Path
 
 import numpy as np
+import copy
 from pymatgen.analysis.elasticity.elastic import Strain
 from pymatgen.analysis.elasticity.elastic import ElasticTensor
 from pymatgen.analysis.elasticity.strain import DeformedStructureSet
 from pymatgen.analysis.elasticity.stress import Stress
 
 from abacustest.lib_prepare.comm import kspacing2kpt
-from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteKpt, WriteInput, AbacusStru
+from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteKpt, WriteInput
 from abacustest.lib_model.comm import check_abacus_inputs
 from abacusagent.modules.util.comm import run_abacus, link_abacusjob, generate_work_path, collect_metrics
 
@@ -26,7 +27,6 @@ def prepare_deformed_stru(
     """
     input_params = ReadInput(os.path.join(input_stru_dir, "INPUT"))
     stru_file = input_params.get("stru_file", "STRU")
-    print(stru_file)
     original_stru = AbacusStru.ReadStru(os.path.join(input_stru_dir, stru_file))
 
     norm_strains = [-norm_strain, -0.5*norm_strain, +0.5*norm_strain, +norm_strain]
@@ -62,9 +62,10 @@ def prepare_deformed_stru_inputs(
                        copy_files=["INPUT", "KPT", "*log", "*json"])
         
         # Write deformed structure to ABACUS STRU format
-        original_stru.set_cell(deformed_stru.lattice.matrix.tolist(), bohr=False)
-        original_stru.set_coord(deformed_stru.cart_coords.tolist(), bohr=False, direct=False)
-        original_stru.write(os.path.join(abacus_inputs_dir, stru_file))
+        deformed_stru_abacus = copy.deepcopy(original_stru)
+        deformed_stru_abacus.set_cell(deformed_stru.lattice.matrix.tolist(), bohr=False)
+        deformed_stru_abacus.set_coord(deformed_stru.cart_coords.tolist(), bohr=False, direct=False)
+        deformed_stru_abacus.write(os.path.join(abacus_inputs_dir, stru_file))
 
         abacus_inputs_dirs.append(Path(abacus_inputs_dir).absolute())
         stru_counts += 1
