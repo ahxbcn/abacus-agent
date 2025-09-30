@@ -397,6 +397,6 @@ def abacus_cal_band(abacus_inputs_dir: Path,
                     "message": "The band structure is computed via a non-self-consistent field (NSCF) calculation using ABACUS, \
                                 following a converged self-consistent field (SCF) calculation."}
         else:
-            raise ValueError(f"Calculation mode {mode} not in ('pyatb', 'nscf')")
+            raise ValueError(f"Calculation mode {mode} not in ('pyatb', 'nscf', 'auto')")
     except Exception as e:
         return {'message': f"Calculating band failed: {e}"}
