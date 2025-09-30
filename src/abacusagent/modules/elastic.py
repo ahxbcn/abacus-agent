@@ -15,6 +15,7 @@ def abacus_cal_elastic(
     abacus_inputs_dir: Path,
     norm_strain: float = 0.01,
     shear_strain: float = 0.01,
+    kspacing: float = 0.08,
 ) -> Dict[str, float]:
     """
     Calculate various elastic constants for a given structure using ABACUS. 
@@ -22,6 +23,7 @@ def abacus_cal_elastic(
         abacus_inputs_dir (str): Path to the ABACUS input files, which contains the INPUT, STRU, KPT, and pseudopotential or orbital files.
         norm_strain (float): Normal strain to calculate elastic constants, default is 0.01.
         shear_strain (float): Shear strain to calculate elastic constants, default is 0.01.
+        kspacing (float): K-point spacing for ABACUS calculation, default is 0.08. Units in Bohr^{-1}.
     Returns:
         A dictionary containing the following keys:
         - elastic_cal_dir (Path): Work path of running abacus_cal_elastic. 
