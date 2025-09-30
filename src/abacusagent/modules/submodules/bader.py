@@ -5,20 +5,15 @@ import os
 import re
 import glob
 import shutil
-import unittest
 from typing import List, Dict, Optional, Any
 
 from pathlib import Path
 
 import numpy as np
-import baderkit
-
 
 from abacustest.lib_prepare.abacus import ReadInput, WriteInput, AbacusStru
-from abacustest.lib_collectdata.collectdata import RESULT
 from abacustest.lib_model.comm import check_abacus_inputs
 
-from abacusagent.init_mcp import mcp
 from abacusagent.modules.util.comm import run_abacus, link_abacusjob, generate_work_path, run_command, has_chgfile,collect_metrics
 
 BADER_EXE = os.environ.get("BADER_EXE", "bader") # use environment variable to specify the bader executable path
@@ -241,7 +236,6 @@ def postprocess_charge_densities(
     }
 
 
-#@mcp.tool() # make it visible to the MCP server
 def abacus_badercharge_run(
     abacus_inputs_dir: Path
 ) -> List[float]:

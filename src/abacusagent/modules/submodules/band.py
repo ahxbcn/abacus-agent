@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Literal, Optional, TypedDict, Dict, Any, List, Tuple
 from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteInput, WriteKpt
 
-from abacusagent.init_mcp import mcp
 from abacusagent.modules.util.comm import run_abacus, run_pyatb, collect_metrics
 from abacusagent.modules.util.pyatb import property_calculation_scf
 
@@ -142,7 +141,6 @@ def process_band_data(abacusjob_dir: Path,
     else:
         return high_symm_labels, high_symm_poses, kline_splited, bands_splited, bands_dw_splited
 
-#@mcp.tool()
 def abacus_plot_band_nscf(abacusjob_dir: Path,
                           energy_min: float = -10,
                           energy_max: float = 10
@@ -271,7 +269,6 @@ def write_pyatb_input(band_calc_path: Path):
 
     return True
 
-#@mcp.tool()
 def abacus_plot_band_pyatb(band_calc_path: Path,
                            energy_min: float = -10,
                            energy_max: float = 10,
@@ -331,7 +328,6 @@ def abacus_plot_band_pyatb(band_calc_path: Path,
     return {'band_gap': band_gap,
             'band_picture': Path(band_picture).absolute()}    
 
-#@mcp.tool()
 def abacus_cal_band(abacus_inputs_dir: Path,
                     mode: Literal["nscf", "pyatb", "auto"] = "auto",
                     energy_min: float = -10,

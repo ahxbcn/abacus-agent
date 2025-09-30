@@ -1,11 +1,8 @@
 import os
 from typing import Dict, List, Optional, Any, Literal
 from pathlib import Path
-import copy
 
 import numpy as np
-from ase import Atoms
-from ase.io import read
 from phonopy import Phonopy
 from phonopy.harmonic.dynmat_to_fc import get_commensurate_points
 from phonopy.structure.atoms import PhonopyAtoms
@@ -17,8 +14,7 @@ from abacusagent.modules.util.comm import run_abacus, generate_work_path, link_a
 
 THz_TO_K = 47.9924
 
-# Modified from calculate_phonon in https://github.com/deepmodeling/AI4S-agent-tools/blob/main/servers/DPACalculator/server.py
-#@mcp.tool()
+
 def abacus_phonon_dispersion(
     abacus_inputs_dir: Path,
     supercell: Optional[List[int]] = None,
