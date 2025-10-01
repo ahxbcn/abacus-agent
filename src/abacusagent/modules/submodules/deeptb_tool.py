@@ -2,12 +2,10 @@ import os
 import json
 from typing import Optional, Literal, Dict, Any, TypedDict
 from pathlib import Path
-from abacusagent.init_mcp import mcp
 
 class ConfigResult(TypedDict):
     config_path: str
 
-#@mcp.tool()
 def generate_deeptb_config(
     material: Literal["Si"] = "Si",
 ) -> ConfigResult:

@@ -105,7 +105,7 @@ def filter_force(forces, selected_atoms, original_stru):
 
     return filtered_force
 
-#@mcp.tool()
+
 def abacus_vibration_analysis(abacus_inputs_dir: Path,
                               selected_atoms: Optional[List[int]] = None,
                               stepsize: float = 0.01,

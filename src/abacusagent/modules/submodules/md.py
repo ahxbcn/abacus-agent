@@ -7,7 +7,6 @@ from ase import Atoms
 from ase.io.trajectory import TrajectoryWriter
 from abacustest.lib_prepare.abacus import ReadInput, WriteInput, AbacusStru
 
-from abacusagent.init_mcp import mcp
 from abacusagent.modules.util.comm import generate_work_path, link_abacusjob, run_abacus, collect_metrics
 
 
@@ -85,7 +84,6 @@ def convert_md_dump_to_ase_traj(md_dump_path: Path, traj_filename: str="md_traj.
     
     return Path(traj_filename).absolute(), len(md_steps)
 
-#@mcp.tool()
 def abacus_run_md(
     abacus_inputs_dir: Path,
     md_type: Literal['nve', 'nvt', 'npt', 'langevin'] = 'nve',
