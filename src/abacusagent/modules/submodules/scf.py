@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
-from typing import Literal, Optional, TypedDict, Dict, Any, List, Tuple, Union
+from typing import Dict, Any
 
-from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteInput
+from abacustest.lib_prepare.abacus import ReadInput, WriteInput
 from abacustest.lib_model.comm import check_abacus_inputs
 
 from abacusagent.modules.util.comm import generate_work_path, link_abacusjob, run_abacus, collect_metrics

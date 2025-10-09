@@ -59,7 +59,7 @@ def split_array(array: List[Any], splits: List[int]):
 
 def read_high_symmetry_labels(abacusjob_dir: Path):
     """
-    Read high symmetry labels from INPUT file
+    Read high symmetry labels from KPT file
     """
     high_symm_labels = []
     band_point_nums = []

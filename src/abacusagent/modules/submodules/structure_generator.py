@@ -119,6 +119,8 @@ def generate_bulk_structure_from_wyckoff_position(
         spacegroup (str | int): International space group names or index of space group in standard crystal tables. 
         wyckoff_positions (List[Tuple[str, List[int], str]]): List of Wyckoff positions in the crystal. For each wyckoff position, 
             the first is the symbol of the element, the second is the fractional coordinate, and the third is symbol of the wyckoff position.
+        crystal_name (str, optional): Filename of the generated structure file without extension. Defaults to 'crystal'.
+        format (str, optional): Format of the generated structure file. Defaults to 'cif'.
     
     Returns:
         Path to the generated crystal structure file.
@@ -185,7 +187,7 @@ def generate_molecule_structure(
         molecule_name: The name of the molecule or atom to generate. It can be a chemical symbol (e.g., 'H', 'O', 'C') or
                        a molecule name in g2 collection contained in ASE's collections.
         cell: The cell parameters for the generated structure. Default is a 10x10x10 Angstrom cell. Units in angstrom.
-        vcuum: The vacuum space to add around the molecule. Default is 7.0 Angstrom.
+        vacuum: The vacuum space to add around the molecule. Default is 5.0 Angstrom.
         output_file_format: The format of the output file. Default is 'abacus'. 'poscar' represents POSCAR format used by VASP.
     Returns:
         A dictionary containing:

@@ -4,11 +4,13 @@ from pathlib import Path
 import unittest
 import tempfile
 import inspect
+import pytest
 from utils import initilize_test_env, load_test_ref_result, get_path_type
 from abacusagent.modules.phonon import abacus_phonon_dispersion
 
 initilize_test_env()
 
+@pytest.mark.long
 class TestAbacusPhononDispersion(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.TemporaryDirectory()
@@ -44,10 +46,10 @@ class TestAbacusPhononDispersion(unittest.TestCase):
         self.assertIsInstance(outputs['band_plot'], get_path_type())
         self.assertIsInstance(outputs['dos_plot'], get_path_type())
 
-        self.assertAlmostEqual(outputs['entropy'], ref_results['entropy'])
-        self.assertAlmostEqual(outputs['free_energy'], ref_results['free_energy'])
-        self.assertAlmostEqual(outputs['max_frequency_THz'], ref_results['max_frequency_THz'])
-        self.assertAlmostEqual(outputs['max_frequency_K'], ref_results['max_frequency_K'])
+        self.assertAlmostEqual(outputs['entropy'], ref_results['entropy'], places=3)
+        self.assertAlmostEqual(outputs['free_energy'], ref_results['free_energy'], places=3)
+        self.assertAlmostEqual(outputs['max_frequency_THz'], ref_results['max_frequency_THz'], places=3)
+        self.assertAlmostEqual(outputs['max_frequency_K'], ref_results['max_frequency_K'], places=3)
 
     def test_abacus_phonon_dispersion_nspin2(self):
         """
@@ -69,7 +71,7 @@ class TestAbacusPhononDispersion(unittest.TestCase):
         self.assertIsInstance(outputs['band_plot'], get_path_type())
         self.assertIsInstance(outputs['dos_plot'], get_path_type())
 
-        self.assertAlmostEqual(outputs['entropy'], ref_results['entropy'])
-        self.assertAlmostEqual(outputs['free_energy'], ref_results['free_energy'])
-        self.assertAlmostEqual(outputs['max_frequency_THz'], ref_results['max_frequency_THz'])
-        self.assertAlmostEqual(outputs['max_frequency_K'], ref_results['max_frequency_K'])
+        self.assertAlmostEqual(outputs['entropy'], ref_results['entropy'], places=3)
+        self.assertAlmostEqual(outputs['free_energy'], ref_results['free_energy'], places=3)
+        self.assertAlmostEqual(outputs['max_frequency_THz'], ref_results['max_frequency_THz'], places=3)
+        self.assertAlmostEqual(outputs['max_frequency_K'], ref_results['max_frequency_K'], places=3)

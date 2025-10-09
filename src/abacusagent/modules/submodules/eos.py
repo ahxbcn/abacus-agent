@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Literal, Optional, TypedDict, Dict, Any, List
+from typing import Literal, List
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
@@ -33,7 +33,6 @@ def is_cubic(cell: List[List[float]]) -> bool:
     else:
         return False
 
-#@mcp.tool()
 def abacus_eos(
     abacus_inputs_dir: Path,
     stru_scale_number: int = 3,

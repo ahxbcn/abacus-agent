@@ -1,10 +1,7 @@
 """
 Calculating elastic constants using ABACUS.
 """
-import os
-import shutil
-import time
-from typing import Dict, List
+from typing import Dict
 from pathlib import Path
 
 from abacusagent.init_mcp import mcp
