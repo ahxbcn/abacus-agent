@@ -2,16 +2,12 @@ import os
 from pathlib import Path
 from typing import Literal, Optional, TypedDict, Dict, Any, List, Tuple, Union
 
-from abacustest.lib_model.model_013_inputs import PrepInput
 from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteInput
-from abacustest.lib_collectdata.collectdata import RESULT
 from abacustest.lib_model.comm import check_abacus_inputs
 
-from abacusagent.init_mcp import mcp
 from abacusagent.modules.util.comm import generate_work_path, link_abacusjob, run_abacus, collect_metrics
 
 
-#@mcp.tool()
 def abacus_calculation_scf(
     abacus_inputs_dir: Path,
 ) -> Dict[str, Any]:
@@ -19,7 +15,7 @@ def abacus_calculation_scf(
     Run ABACUS SCF calculation.
 
     Args:
-        abacusjob (str): Path to the directory containing the ABACUS input files.
+        abacus_inputs_dir (Path): Path to the directory containing the ABACUS input files.
     Returns:
         A dictionary containing the path to output file of ABACUS calculation, and a dictionary containing whether the SCF calculation
         finished normally, the SCF is converged or not, the converged SCF energy and total time used.

@@ -1,11 +1,8 @@
 import os
 from typing import Dict, List, Optional, Any, Literal
 from pathlib import Path
-import copy
 
 import numpy as np
-from ase import Atoms
-from ase.io import read
 from phonopy import Phonopy
 from phonopy.harmonic.dynmat_to_fc import get_commensurate_points
 from phonopy.structure.atoms import PhonopyAtoms
@@ -17,14 +14,12 @@ from abacusagent.modules.util.comm import run_abacus, generate_work_path, link_a
 
 THz_TO_K = 47.9924
 
-# Modified from calculate_phonon in https://github.com/deepmodeling/AI4S-agent-tools/blob/main/servers/DPACalculator/server.py
-#@mcp.tool()
+
 def abacus_phonon_dispersion(
     abacus_inputs_dir: Path,
     supercell: Optional[List[int]] = None,
     displacement_stepsize: float = 0.01,
     temperature: Optional[float] = 298.15,
-    scf_thr: float = 1e-7,
     min_supercell_length: float = 10.0,
 ):
     """
@@ -37,7 +32,6 @@ def abacus_phonon_dispersion(
             along all 3 directions larger than 10.0 Angstrom.
         displacement_stepsize (float, optional): Displacement step size for finite difference. Defaults to 0.01 Angstrom.
         temperature (float, optional): Temperature in Kelvin for thermal properties. Defaults to 298.15. Units in Kelvin.
-        scf_thr (float): SCF convergence threshold. Defaults to 1e-7. If the basis set is PW, we recommend to set a tighter value.
         min_supercell_length (float): If supercell is not provided, the generated supercell will have a length of lattice vector
             along all 3 directions larger than min_supercell_length. Defaults to 10.0 Angstrom. Units in Angstrom.
     Returns:
@@ -108,7 +102,7 @@ def abacus_phonon_dispersion(
         force_sets = []
         for job_dir in displaced_job_dirs:
             metrics = collect_metrics(abacusjob = job_dir,
-                                      metrics_names=['force', 'normal_end', 'converge'])['collected_metrics']
+                                      metrics_names=['force', 'normal_end', 'converge'])
             if metrics['normal_end'] is not True:
                 print(f"ABACUS calculation in {job_dir} didn't end normally")
             elif metrics['converge'] is not True:

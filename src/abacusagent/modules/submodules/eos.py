@@ -8,7 +8,6 @@ from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteInput
 from abacustest.lib_model.comm_eos import eos_fit
 from abacustest.lib_model.comm import check_abacus_inputs
 
-from abacusagent.init_mcp import mcp
 from abacusagent.modules.util.comm import run_abacus, link_abacusjob, generate_work_path, collect_metrics
 
 def is_cubic(cell: List[List[float]]) -> bool:

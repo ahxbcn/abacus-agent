@@ -12,11 +12,9 @@ from ase.data import chemical_symbols
 from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteInput
 from abacustest.lib_model.comm import check_abacus_inputs
 
-from abacusagent.init_mcp import mcp
 from abacusagent.modules.util.comm import run_abacus, generate_work_path, link_abacusjob
 from abacusagent.modules.util.cube_manipulator import read_gaussian_cube, axpy, write_gaussian_cube
 
-#@mcp.tool()
 def abacus_cal_elf(abacus_inputs_dir: Path):
     """
     Calculate electron localization function (ELF) using ABACUS.
@@ -114,7 +112,6 @@ def get_total_charge_density(abacus_inputs_dir: Path):
     
     return chg
 
-#@mcp.tool()
 def abacus_cal_charge_density_difference(
     abacus_inputs_dir: Path,
     subsys1_atom_index: Optional[List[int]] = [0],
@@ -223,7 +220,6 @@ def abacus_cal_charge_density_difference(
     except Exception as e:
         return {'message': f'Calculaing charge density difference failed: {e}'}
 
-#@mcp.tool()
 def abacus_cal_spin_density(
     abacus_inputs_dir: Path
 ) -> Dict[str, Any]:

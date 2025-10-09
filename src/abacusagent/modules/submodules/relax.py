@@ -6,11 +6,9 @@ from abacustest.lib_prepare.abacus import ReadInput, WriteInput
 from abacustest.lib_collectdata.collectdata import RESULT
 from abacustest.lib_model.comm import check_abacus_inputs
 
-from abacusagent.init_mcp import mcp
 from abacusagent.modules.util.comm import run_abacus, link_abacusjob, generate_work_path, collect_metrics
 
 
-#@mcp.tool()
 def abacus_do_relax(
     abacus_inputs_dir: Path,
     force_thr_ev: Optional[float] = None,
@@ -117,7 +115,7 @@ def abacus_do_relax(
     except Exception as e:
         return {"message": f"Relaxation calculation failed: {e}"}
 
-#@mcp.tool()
+
 def abacus_prepare_inputs_from_relax_results(
     relax_jobpath: Path
 )-> Dict[str, Any]:

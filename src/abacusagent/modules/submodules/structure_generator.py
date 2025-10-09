@@ -8,7 +8,6 @@ from pymatgen.core import Structure, Lattice
 from pathlib import Path
 from typing import Literal, Optional, Dict, Any, List, Tuple, Union
 
-from abacusagent.init_mcp import mcp
 from abacusagent.modules.util.comm import generate_work_path 
 
 
