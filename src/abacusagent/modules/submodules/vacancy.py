@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Literal
 from itertools import groupby
 
 from ase.build import bulk
@@ -55,6 +55,7 @@ def abacus_cal_vacancy_formation_energy(
     supercell: List[int] = [1, 1, 1],
     vacancy_element: str = None,
     vacancy_element_index: int = 1,
+    relax_precision: Literal['low', 'medium', 'high'] = 'low',
 ) -> Dict[str, Any]:
     """
     Calculate vacancy formation energy. Currenly only non-charged vacancy of limited elements are suppoted. 
@@ -68,6 +69,10 @@ def abacus_cal_vacancy_formation_energy(
         supercell_matrix (List[int]): Supercell matrix. Defaults to [1, 1, 1], which means no supercell.
         vacancy_element (str): Element to be removed. Default is None, which means the first type of element in the structure.
         vacancy_element_index (int): Index of the vacancy element. The index starts from 1 and is in the original structure. Defaults to 1.
+        relax_precision (Literal['low', 'medium', 'high']): The precision of the relax calculation, can be 'low', 'medium', or 'high'. Default is 'medium'.
+            'Low' means the relax calculation will be done with force_thr_ev=0.05 and stress_thr_kbar=5.
+            'Medium' means the relax calculation will be done with force_thr_ev=0.01 and stress_thr_kbar=1.0.
+            'High' means the relax calculation will be done with force_thr_ev=0.005 and stress_thr_kbar=0.5.
     Returns:
         A dictionary containing:
         - "vacancy_formation_energy": Calculated vacancy formation energy.
@@ -92,8 +97,15 @@ def abacus_cal_vacancy_formation_energy(
 
         input_params['calculation'] = 'cell-relax'
         input_params['relax_method'] = 'cg'
-        input_params['force_thr_ev'] = 0.02
-        input_params['stress_thr'] = 0.5
+        if relax_precision == 'high':
+            input_params['force_thr_ev'] = 0.005
+            input_params['stress_thr'] = 0.5
+        elif relax_precision == 'medium':
+            input_params['force_thr_ev'] = 0.01
+            input_params['stress_thr'] = 1.0
+        else:
+            input_params['force_thr_ev'] = 0.05
+            input_params['stress_thr'] = 5.0
 
         if vacancy_element is None:
             vacancy_element = original_stru.get_label()[0]
