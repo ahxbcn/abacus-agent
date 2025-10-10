@@ -125,15 +125,24 @@ def abacus_cal_vacancy_formation_energy(
                     vacancy_element_crys_jobpath])
 
         # Calculate the vacancy formation energy
-        supercell_energy = collect_metrics(supercell_jobpath, metrics_names=['energy'])['energy']
-        defect_supercell_energy = collect_metrics(defect_supercell_jobpath, metrics_names=['energy'])['energy']
-        vacancy_element_crys_energy = collect_metrics(vacancy_element_crys_jobpath, metrics_names=['energy'])['energy']
+        supercell_job_metrics = relax_postprocess(supercell_jobpath)
+        defect_supercell_job_metrics = relax_postprocess(defect_supercell_jobpath)
+        vacancy_element_crys_job_metrics = relax_postprocess(vacancy_element_crys_jobpath)
 
+        supercell_energy = supercell_job_metrics['energies'][-1]
+        defect_supercell_energy = defect_supercell_job_metrics['energies'][-1]
+        vacancy_element_crys_energy = vacancy_element_crys_job_metrics['energies'][-1]
         vac_formation_energy = (defect_supercell_energy + vacancy_element_crys_energy / vacancy_element_crys_stru.get_natoms()) - supercell_energy
 
         return {'vac_formation_energy': vac_formation_energy,
                 'supercell_jobpath': Path(supercell_jobpath).absolute(),
+                'supercell_job_relax_converge': supercell_job_metrics['relax_converge'],
+                'supercell_job_normal_end': supercell_job_metrics['normal_end'],
                 'defect_supercell_jobpath': Path(defect_supercell_jobpath).absolute(),
-                'vacancy_element_crys_jobpath': Path(vacancy_element_crys_jobpath).absolute()}
+                'defect_supercell_job_relax_converge': defect_supercell_job_metrics['relax_converge'],
+                'defect_supercell_job_normal_end': defect_supercell_job_metrics['normal_end'],
+                'vacancy_element_crys_jobpath': Path(vacancy_element_crys_jobpath).absolute(),
+                'vacancy_element_crys_job_relax_converge': vacancy_element_crys_job_metrics['relax_converge'],
+                'vacancy_element_crys_job_normal_end': vacancy_element_crys_job_metrics['normal_end']}
     except Exception as e:
         raise RuntimeError(f"Error in abacus_cal_vacancy_formation_energy: {e}")
