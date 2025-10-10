@@ -127,8 +127,6 @@ def abacus_cal_vacancy_formation_energy(
         vacancy_element_crys_stru = build_most_stable_elementary_crys_stru(vacancy_element, vacancy_element_pp, vacancy_element_orb)
         vacancy_element_crys_jobpath = os.path.join(work_path, f"{vacancy_element}_crys_cell_relax")
         link_abacusjob(src=original_inputs_dir, dst=vacancy_element_crys_jobpath, copy_files=['INPUT', 'STRU', "abacus.log"])
-        if vacancy_element in MAGNETIC_CRYSTALS:
-            input_params['nspin'] = 2
         WriteInput(input_params, os.path.join(vacancy_element_crys_jobpath, "INPUT"))
         vacancy_element_crys_stru.write(os.path.join(vacancy_element_crys_jobpath, input_params.get("stru_file", "STRU")))
 
