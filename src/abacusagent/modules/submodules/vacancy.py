@@ -66,7 +66,7 @@ def abacus_cal_vacancy_formation_energy(
     Args:
         abacus_inputs_dir (Path): Path to the directory containing the ABACUS inputs.
         supercell_matrix (List[int]): Supercell matrix. Defaults to [1, 1, 1], which means no supercell.
-        vacancy_element (str): Element to be removed. Defaults to "Fe".
+        vacancy_element (str): Element to be removed. Default is None, which means the first type of element in the structure.
         vacancy_element_index (int): Index of the vacancy element. The index starts from 1 and is in the original structure. Defaults to 1.
     Returns:
         A dictionary containing:
@@ -94,6 +94,9 @@ def abacus_cal_vacancy_formation_energy(
         input_params['relax_method'] = 'cg'
         input_params['force_thr_ev'] = 0.02
         input_params['stress_thr'] = 0.5
+
+        if vacancy_element is None:
+            vacancy_element = original_stru.get_label()[0]
 
         # Prepare ABACUS input files for supercell structure, defect supercell structure, and most stable crystal structure of the vacancy element
         supercell_jobpath = os.path.join(work_path, "supercell_cell_relax")

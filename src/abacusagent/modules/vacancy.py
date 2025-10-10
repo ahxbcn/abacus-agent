@@ -21,7 +21,7 @@ def abacus_cal_vacancy_formation_energy(
     Args:
         abacus_inputs_dir (Path): Path to the directory containing the ABACUS inputs.
         supercell_matrix (List[int]): Supercell matrix. Defaults to [1, 1, 1], which means no supercell.
-        vacancy_element (str): Element to be removed. Defaults to "Fe".
+        vacancy_element (str): Element to be removed. Default is None, which means the first type of element in the structure.
         vacancy_element_index (int): Index of the vacancy element. Defaults to 1. The index is in the original structure.
     Returns:
         A dictionary containing:
