@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from typing import List, Dict, Any, Literal
+import copy
 from itertools import groupby
 
 from ase.build import bulk
@@ -11,8 +12,6 @@ from abacustest.lib_model.comm import check_abacus_inputs
 from abacusagent.modules.util.comm import generate_work_path, link_abacusjob, run_abacus
 from abacusagent.modules.submodules.structure_generator import ELEMENT_CRYSTAL_STRUCTURES
 from abacusagent.modules.submodules.relax import relax_postprocess
-
-MAGNETIC_CRYSTALS = {"Fe", "Ni", "Co", "Cr", "Mn"}
 
 def build_most_stable_elementary_crys_stru(element: str, pp: str, orb: str) -> AbacusStru:
     """
@@ -69,7 +68,7 @@ def abacus_cal_vacancy_formation_energy(
         supercell_matrix (List[int]): Supercell matrix. Defaults to [1, 1, 1], which means no supercell.
         vacancy_element (str): Element to be removed. Default is None, which means the first type of element in the structure.
         vacancy_element_index (int): Index of the vacancy element. The index starts from 1 and is in the original structure. Defaults to 1.
-        relax_precision (Literal['low', 'medium', 'high']): The precision of the relax calculation, can be 'low', 'medium', or 'high'. Default is 'medium'.
+        relax_precision (Literal['low', 'medium', 'high']): The precision of the relax calculation, can be 'low', 'medium', or 'high'. Default is 'low'.
             'Low' means the relax calculation will be done with force_thr_ev=0.05 and stress_thr_kbar=5.
             'Medium' means the relax calculation will be done with force_thr_ev=0.01 and stress_thr_kbar=1.0.
             'High' means the relax calculation will be done with force_thr_ev=0.005 and stress_thr_kbar=0.5.
@@ -93,7 +92,8 @@ def abacus_cal_vacancy_formation_energy(
 
         supercell_stru = original_stru.supercell(supercell)
         vacancy_element_index -= 1
-        defect_supercell_stru = supercell_stru.delete_atom(vacancy_element, vacancy_element_index)
+        defect_supercell_stru = copy.deepcopy(supercell_stru)
+        defect_supercell_stru.set_empty_atom(vacancy_element, vacancy_element_index)
 
         input_params['calculation'] = 'cell-relax'
         input_params['relax_method'] = 'cg'
