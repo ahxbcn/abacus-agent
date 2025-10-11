@@ -93,7 +93,7 @@ def collect_force(abacusjob_dir):
 
     return metrics['force']
 
-def filter_force(forces, selected_atoms, original_stru):
+def filter_force(forces, selected_atoms):
     """
     Select forces belong to selected atoms
     """
@@ -104,7 +104,6 @@ def filter_force(forces, selected_atoms, original_stru):
     filtered_force = np.array(forces)[selected_atoms_force_idx]
 
     return filtered_force
-
 
 def abacus_vibration_analysis(abacus_inputs_dir: Path,
                               selected_atoms: Optional[List[int]] = None,
@@ -217,7 +216,7 @@ def abacus_vibration_analysis(abacus_inputs_dir: Path,
         }}
         for disped_stru_job_path, disped_stru_cache_label in list(zip(disped_stru_job_paths, disped_stru_cache_labels)):
             force = collect_force(disped_stru_job_path)
-            cache_forces_json["forces"]["__ndarray__"][2] = list(filter_force(force, selected_atoms, stru))
+            cache_forces_json["forces"]["__ndarray__"][2] = list(filter_force(force, selected_atoms))
             with open(os.path.join(vib_cache_dir, disped_stru_cache_label), "w") as fin:
                 json.dump(cache_forces_json, fin)
         

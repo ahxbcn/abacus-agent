@@ -10,6 +10,7 @@ def abacus_phonon_dispersion(
     supercell: Optional[List[int]] = None,
     displacement_stepsize: float = 0.01,
     temperature: Optional[float] = 298.15,
+    min_supercell_length: float = 10.0,
 ):
     """
     Calculate phonon dispersion with finite-difference method using Phonopy with ABACUS as the calculator. 
@@ -21,6 +22,8 @@ def abacus_phonon_dispersion(
             along all 3 directions larger than 10.0 Angstrom.
         displacement_stepsize (float, optional): Displacement step size for finite difference. Defaults to 0.01 Angstrom.
         temperature (float, optional): Temperature in Kelvin for thermal properties. Defaults to 298.15. Units in Kelvin.
+        min_supercell_length (float): If supercell is not provided, the generated supercell will have a length of lattice vector
+            along all 3 directions larger than min_supercell_length. Defaults to 10.0 Angstrom. Units in Angstrom.
     Returns:
         A dictionary containing:
             - phonon_work_path: Path to the directory containing phonon calculation results.
@@ -37,4 +40,5 @@ def abacus_phonon_dispersion(
         supercell,
         displacement_stepsize,
         temperature,
+        min_supercell_length
     )

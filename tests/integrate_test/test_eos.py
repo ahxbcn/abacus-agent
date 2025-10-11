@@ -4,11 +4,13 @@ from pathlib import Path
 import unittest
 import tempfile
 import inspect
+import pytest
 from utils import initilize_test_env, load_test_ref_result, get_path_type
 from abacusagent.modules.eos import abacus_eos
 
 initilize_test_env()
 
+@pytest.mark.long
 class TestAbacusEos(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.TemporaryDirectory()

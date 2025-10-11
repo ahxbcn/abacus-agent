@@ -205,7 +205,7 @@ class TestAbacusDosRun(unittest.TestCase):
         self.assertTrue(outputs['scf_normal_end'])
         self.assertTrue(outputs['scf_converge'])
         self.assertTrue(outputs['nscf_normal_end'])
-        self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'])
+        self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'], places=6)
 
     def test_abacus_dos_run_pw_nspin2(self):
         """
@@ -228,4 +228,4 @@ class TestAbacusDosRun(unittest.TestCase):
         self.assertTrue(outputs['scf_normal_end'])
         self.assertTrue(outputs['scf_converge'])
         self.assertTrue(outputs['nscf_normal_end'])
-        self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'])
+        self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'], places=6)

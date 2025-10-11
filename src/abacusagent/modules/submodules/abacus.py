@@ -136,33 +136,6 @@ def abacus_prepare(
     except Exception as e:
         return {"message": f"Prepare ABACUS input files from given structure failed: {e}"}
 
-#@mcp.tool()
-def get_file_content(
-    filepath: Path
-) -> Dict[str, str]:
-    """
-    Get content of a file.
-    Args:
-        filepath: Path to a file
-    Returns:
-        A string containing file content
-    Raises:
-        IOError: if read content of `filepath` failed
-    """
-    filepath = Path(filepath)
-    file_content = ''
-    try:
-        with open(filepath) as fin:
-            for lines in fin:
-                file_content += lines
-    except:
-        raise IOError(f"Read content of {filepath} failed")
-    
-    max_length = 2000
-    if len(file_content) > max_length:
-        file_content = file_content[:max_length]
-    return {'file_content': file_content}
-
 def abacus_modify_input(
     abacus_inputs_dir: Path,
     dft_plus_u_settings: Optional[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]]] = None,

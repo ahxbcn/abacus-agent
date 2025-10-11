@@ -8,7 +8,7 @@ from abacusagent.modules.submodules.vibration import abacus_vibration_analysis a
 def abacus_vibration_analysis(abacus_inputs_dir: Path,
                               selected_atoms: Optional[List[int]] = None,
                               stepsize: float = 0.01,
-                              nfree: Literal[2, 4] = 2,
+                              nfree: Literal[2] = 2,
                               temperature: Optional[float] = 298.15):
     """
     Performing vibrational analysis using finite displacement method.

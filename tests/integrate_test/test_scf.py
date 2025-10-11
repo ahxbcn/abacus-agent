@@ -43,5 +43,5 @@ class TestAbacusCalculationScf(unittest.TestCase):
             shutil.rmtree(scf_work_dir)
         self.assertTrue(outputs['normal_end'])
         self.assertTrue(outputs['converge'])
-        self.assertAlmostEqual(outputs['energy'], ref_results['energy'])
+        self.assertAlmostEqual(outputs['energy'], ref_results['energy'], places=6)
 

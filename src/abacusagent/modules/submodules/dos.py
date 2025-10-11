@@ -1,8 +1,6 @@
 import os
 import re
-import sys
 import numpy as np
-import shutil
 import matplotlib.pyplot as plt
 from abacustest.lib_prepare.abacus import ReadInput, WriteInput
 from abacustest.lib_collectdata.collectdata import RESULT
