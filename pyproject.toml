@@ -8,6 +8,17 @@ dynamic = ["version"]
 description = "Abacus agent"
 requires-python = ">=3.11"
 
+dependencies = [
+       "abacustest>=0.4.38",
+       "numpy<2.0",
+       "pymatgen>=2025.5.28",
+       "bohr-agent-sdk==0.1.100",
+       "bohrium-sdk==0.13.0",
+       "dpdata>=0.2.24",
+       "regex==2024.11.6",
+       "pyatb==1.1.1"
+]
+
 [project.scripts]
 abacusagent = "abacusagent.main:main"
 

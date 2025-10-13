@@ -4,6 +4,7 @@ from pathlib import Path
 import unittest
 import tempfile
 import inspect
+import pytest
 from abacusagent.modules.tool_wrapper import run_abacus_calculation
 from utils import initilize_test_env, load_test_ref_result, get_path_type
 
@@ -182,6 +183,7 @@ class TestToolWrapper(unittest.TestCase):
         self.assertIsInstance(band_picture, get_path_type())
         self.assertAlmostEqual(outputs['band_gap'], ref_results['band_gap'], places=4)
     
+    @pytest.mark.long
     def test_run_abacus_calculation_elastic_properties(self):
         """
         Test the abacus_calculation_scf function to calculate elastic properties
@@ -208,6 +210,7 @@ class TestToolWrapper(unittest.TestCase):
         self.assertAlmostEqual(outputs['young_modulus'], ref_results['young_modulus'], places=2)
         self.assertAlmostEqual(outputs['poisson_ratio'], ref_results['poisson_ratio'], places=2)
     
+    @pytest.mark.long
     def test_run_abacus_calculation_phonon_dispersion(self):
         """
         Test the abacus_calculation_scf function to calculate phonon dispersion
