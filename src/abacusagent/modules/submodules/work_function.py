@@ -5,10 +5,9 @@ from typing import Literal, Optional, Dict, Any
 from abacustest.lib_prepare.abacus import ReadInput, WriteInput
 from abacustest.lib_model.comm import check_abacus_inputs
 
+from abacusagent.constant import RY_TO_EV
 from abacusagent.modules.util.comm import run_abacus, generate_work_path, link_abacusjob, collect_metrics
 from abacusagent.modules.util.cube_manipulator import read_gaussian_cube, profile1d
-
-RY_TO_EV = 13.60569253
 
 def plot_averaged_elecstat_pot(
     averaged_elecstat_data,
