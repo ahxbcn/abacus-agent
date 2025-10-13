@@ -19,9 +19,15 @@ conda activate $CONDA_ENV_NAME
 # 安装ABACUS-agent-tools
 cd ../
 pip install . # 依赖安装还需要补充检查
+git clone https://gitlab.com/1041176461/ase-abacus.git #ase-abacus
+cd ase-abacus
+pip install . 
+cd ..
+
 pip install google-adk
 pip install bohr-agent-sdk
 pip install litellm
+
 cd quick_start
 
 # 下载APNS-PP-ORB-v1赝势和轨道
