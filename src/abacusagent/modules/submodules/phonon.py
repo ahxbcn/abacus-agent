@@ -10,9 +10,8 @@ from abacustest.lib_prepare.abacus import ReadInput, WriteInput, AbacusStru
 from abacustest.lib_model.comm import check_abacus_inputs
 
 from abacusagent.init_mcp import mcp
+from abacusagent.constant import THZ_TO_K
 from abacusagent.modules.util.comm import run_abacus, generate_work_path, link_abacusjob, collect_metrics
-
-THz_TO_K = 47.9924
 
 
 def abacus_phonon_dispersion(
@@ -147,7 +146,7 @@ def abacus_phonon_dispersion(
             "free_energy": float(thermal['free_energy'][0]),
             "heat_capacity": float(thermal['heat_capacity'][0]),
             "max_frequency_THz": float(np.max(freqs)),
-            "max_frequency_K": float(np.max(freqs) * THz_TO_K),
+            "max_frequency_K": float(np.max(freqs) * THZ_TO_K),
         }
     except Exception as e:
         return {"message": f"Calculating phonon spectrum failed: {e}"}

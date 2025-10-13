@@ -12,8 +12,8 @@ from ase.data import chemical_symbols
 from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteInput
 from abacustest.lib_model.comm import check_abacus_inputs
 
-from abacusagent.modules.util.comm import run_abacus, generate_work_path, link_abacusjob
-from abacusagent.modules.util.cube_manipulator import read_gaussian_cube, axpy, write_gaussian_cube
+from abacusagent.modules.util.comm import run_abacus, generate_work_path, link_abacusjob, collect_metrics
+from abacusagent.modules.util.cube_manipulator import read_gaussian_cube, axpy, write_gaussian_cube, profile1d
 
 def abacus_cal_elf(abacus_inputs_dir: Path):
     """
