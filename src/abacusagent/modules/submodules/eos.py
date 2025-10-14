@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Literal, List
 import copy
 import numpy as np
-import matplotlib.pyplot as plt
 from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteInput
 from abacustest.lib_model.comm_eos import eos_fit
 from abacustest.lib_model.comm import check_abacus_inputs
@@ -13,7 +12,7 @@ from abacusagent.modules.util.comm import run_abacus, link_abacusjob, generate_w
 def is_cubic(cell: List[List[float]]) -> bool:
     """
     Check if the cell is cubic.
-    
+
     Args:
         cell (List[List[float]]): The cell vectors.
 
@@ -33,10 +32,24 @@ def is_cubic(cell: List[List[float]]) -> bool:
     else:
         return False
 
+def plot_eos(lat_params, fit_energy, scaled_lat_params, energies):
+    import matplotlib.pyplot as plt
+    plt.figure(figsize=(8, 6))
+    plt.plot(lat_params, fit_energy, label='Fitted Birch-Murnaghan EOS', color='red')
+    plt.scatter(scaled_lat_params, energies, label='Calculated Energies', color='blue')
+    plt.xlabel('Lattice Parameter (Angstrom)')
+    plt.ylabel('Energy (eV)')
+    plt.title('Birch-Murnaghan EOS Fit')
+    plt.legend()
+    plt.grid()
+    plt.savefig('birch_murnaghan_eos_fit.png', dpi=300)
+    fig_path = Path('birch_murnaghan_eos_fit.png').absolute()
+
+    return fig_path
+
 def abacus_eos(
     abacus_inputs_dir: Path,
     stru_scale_number: int = 3,
-    stru_scale_type: Literal['percentage', 'angstrom'] = 'percentage',
     scale_stepsize: float = 0.02
 ):
     """
@@ -45,15 +58,11 @@ def abacus_eos(
     Args:
         abacus_inputs_dir (Path): Path to the ABACUS input files, which contains the INPUT, STRU, KPT, and pseudopotential or orbital files.
         stru_scale_number (int): Number of structures to generate for EOS calculation.
-        stru_scale_type (Literal['percentage', 'angstrom']): Type of scaling for structures.
-        scale_stepsize (float): Step size for scaling.
-            - 'percentage' means percentage of the original cell size. Default is 0.02, which means 2% of the original cell size.
-            - 'angstrom' means absolute angstrom value. The typical stepsize 0.1 angstrom is recommended for most system.
+        scale_stepsize (float): Step size for scaling. Default is 0.02, which means 2% of the original cell size.
 
     Returns:
         Dict[str, Any]: A dictionary containing EOS calculation results:
             - "eos_work_path" (Path): Working directory for the EOS calculation.
-            - "new_abacus_inputs_dir" (Path): ABACUS input files directory containing the lowest energy structure using the fitted EOS.
             - "eos_fig_path" (Path): Path to the EOS fitting plot (energy vs. volume).
             - "E0" (float): Minimum energy (in eV) from the EOS fit.
             - "V0" (float): Equilibrium volume (in Å³) corresponding to E0.
@@ -64,28 +73,23 @@ def abacus_eos(
         is_valid, msg = check_abacus_inputs(abacus_inputs_dir)
         if not is_valid:
             raise RuntimeError(f"Invalid ABACUS input files: {msg}")
-        
+
         work_path = Path(generate_work_path()).absolute()
 
         input_params = ReadInput(os.path.join(abacus_inputs_dir, "INPUT"))
         input_stru_file = input_params.get('stru_file', 'STRU')
         input_stru = AbacusStru.ReadStru(os.path.join(abacus_inputs_dir, input_stru_file))
-        if is_cubic(input_stru.get_cell()) is False:
-            raise ValueError("The structure is not cubic. Implemented EOS calculation requires a cubic structure.")
 
         # Generated lattice parameters for EOS calculation
         original_cell = input_stru.get_cell()
         original_cell_param = np.linalg.norm(original_cell[0])
-        if stru_scale_type == 'percentage':
-            scales = [1 + i * scale_stepsize for i in range(-stru_scale_number, stru_scale_number + 1)]
-        elif stru_scale_type == 'angstrom':
-            scales = [1 + i * scale_stepsize / original_cell_param for i in range(-stru_scale_number, stru_scale_number + 1)]
-        else:
-            raise ValueError("Invalid stru_scale_type. Use 'percentage' or 'angstrom'.")
-
+        scales = [1 + i * scale_stepsize for i in range(-stru_scale_number, stru_scale_number + 1)]
         scaled_lat_params = [original_cell_param * scale for scale in scales]
 
-        input_params['calculation'] = 'scf'
+        input_params["calculation"] = 'cell-relax'
+        input_params['fixed_axes'] = 'volume'
+        input_params['force_thr_ev'] = 0.01
+        input_params['stress_thr'] = 1.0
         WriteInput(input_params, os.path.join(abacus_inputs_dir, "INPUT"))
 
         scale_cell_job_dirs = []
@@ -120,38 +124,14 @@ def abacus_eos(
         V0, E0, fit_volume, fit_energy, B0, B0_deriv, residual0 = eos_fit(volumes, energies)
         lat_params = np.cbrt(np.array(fit_volume))
 
-        plt.figure(figsize=(8, 6))
-        plt.plot(lat_params, fit_energy, label='Fitted Birch-Murnaghan EOS', color='red')
-        plt.scatter(scaled_lat_params, energies, label='Calculated Energies', color='blue')
-        plt.xlabel('Lattice Parameter (Angstrom)')
-        plt.ylabel('Energy (eV)')
-        plt.title('Birch-Murnaghan EOS Fit')
-        plt.legend()
-        plt.grid()
-        plt.savefig('birch_murnaghan_eos_fit.png', dpi=300)
-        fig_path = Path('birch_murnaghan_eos_fit.png').absolute()
-
-        new_abacus_inputs_dir = Path(os.path.join(work_path, "new_abacus_inputs_dir")).absolute()
-        link_abacusjob(
-                src=abacus_inputs_dir,
-                dst=new_abacus_inputs_dir,
-                copy_files=["INPUT", input_stru_file],
-                exclude=["OUT.*", "*.log", "*.out", "*.json", "log"],
-                exclude_directories=True
-            )
-        optimal_lat_param = V0 ** (1.0 / 3)
-        optimal_cell = (np.array(input_stru.get_cell()) * optimal_lat_param / original_cell_param).tolist()
-        stru.set_cell(optimal_cell, bohr=False, change_coord=True)
-        stru.write(os.path.join(new_abacus_inputs_dir, input_stru_file))
+        fig_path = plot_eos(lat_params, fit_energy, scaled_lat_params, energies)
 
         return {
             "eos_work_path": work_path.absolute(),
-            "new_abacus_inputs_dir": Path(new_abacus_inputs_dir).absolute(),
-            "eos_fig_path": fig_path,
+            "eos_fig_path": fig_path.absolute(),
             "E0": E0,
             "V0": V0,
             "B0": B0,
             "B0_deriv": B0_deriv, }
     except Exception as e:
         return {"message": f"Fitting EOS failed: {e}"}
-
