@@ -283,5 +283,11 @@
         "result": {
             "work_function": 4.329085761761545
         }
+    },
+    "test_abacus_cal_vacancy_formation_energy_gamma_tial":
+    {
+        "result": {
+            "vac_formation_energy": 1.166700944879949
+        }
     }
 }
