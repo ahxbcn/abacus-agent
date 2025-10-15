@@ -9,7 +9,7 @@ from ase.build import bulk
 from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteInput
 from abacustest.lib_model.comm import check_abacus_inputs
 
-from abacusagent.modules.util.comm import generate_work_path, link_abacusjob, run_abacus
+from abacusagent.modules.util.comm import generate_work_path, link_abacusjob, run_abacus, get_relax_precision
 from abacusagent.modules.submodules.structure_generator import ELEMENT_CRYSTAL_STRUCTURES
 from abacusagent.modules.submodules.relax import relax_postprocess
 
@@ -68,10 +68,10 @@ def abacus_cal_vacancy_formation_energy(
         supercell_matrix (List[int]): Supercell matrix. Defaults to [1, 1, 1], which means no supercell.
         vacancy_element (str): Element to be removed. Default is None, which means the first type of element in the structure.
         vacancy_element_index (int): Index of the vacancy element. The index starts from 1 and is in the original structure. Defaults to 1.
-        relax_precision (Literal['low', 'medium', 'high']): The precision of the relax calculation, can be 'low', 'medium', or 'high'. Default is 'low'.
-            'Low' means the relax calculation will be done with force_thr_ev=0.05 and stress_thr_kbar=5.
-            'Medium' means the relax calculation will be done with force_thr_ev=0.01 and stress_thr_kbar=1.0.
-            'High' means the relax calculation will be done with force_thr_ev=0.005 and stress_thr_kbar=0.5.
+        relax_precision (Literal['low', 'medium', 'high']): Precision of the relax calculation. The unit of `force_thr_ev` is eV/Angstrom, and the unit of `stress_thr` is kbar.
+        - 'low' means the relax calculation will be done with force_thr_ev=0.05 and stress_thr=5.0.
+        - 'medium' means the relax calculation will be done with force_thr_ev=0.01 and stress_thr=1.0.
+        - 'high' means the relax calculation will be done with force_thr_ev=0.005 and stress_thr=0.5.
     Returns:
         A dictionary containing:
         - "vacancy_formation_energy": Calculated vacancy formation energy.
@@ -97,15 +97,7 @@ def abacus_cal_vacancy_formation_energy(
 
         input_params['calculation'] = 'cell-relax'
         input_params['relax_method'] = 'cg'
-        if relax_precision == 'high':
-            input_params['force_thr_ev'] = 0.005
-            input_params['stress_thr'] = 0.5
-        elif relax_precision == 'medium':
-            input_params['force_thr_ev'] = 0.01
-            input_params['stress_thr'] = 1.0
-        else:
-            input_params['force_thr_ev'] = 0.05
-            input_params['stress_thr'] = 5.0
+        input_params.update(get_relax_precision(relax_precision))
 
         if vacancy_element is None:
             vacancy_element = original_stru.get_label()[0]

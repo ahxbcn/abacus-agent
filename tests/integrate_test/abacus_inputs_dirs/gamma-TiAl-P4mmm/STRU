@@ -1,0 +1,28 @@
+ATOMIC_SPECIES
+Ti  47.8670 Ti_ONCV_PBE-1.2.upf upf201
+Al  26.9815 Al.upf upf201
+
+NUMERICAL_ORBITAL
+Ti_gga_7au_100Ry_4s2p2d1f.orb
+Al_gga_8au_100Ry_2s2p1d.orb
+
+LATTICE_CONSTANT
+1.8897260000
+
+LATTICE_VECTORS
+        2.8207855730        0.0000000000        0.0000000000
+        0.0000000000        2.8207855730        0.0000000000
+       -0.0000000000       -0.0000000000        4.0988600822
+
+ATOMIC_POSITIONS
+Direct
+
+Ti #label
+0.0000   #magnetism
+1 #number of atoms
+        0.5000000000        0.5000000000        0.5000000000 m 1 1 1
+
+Al #label
+0.0000   #magnetism
+1 #number of atoms
+        0.0000000000        0.0000000000        0.0000000000 m 1 1 1

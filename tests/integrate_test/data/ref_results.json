@@ -167,11 +167,11 @@
     "test_abacus_phonon_dispersion_nspin1": 
     {
         "result": {
-            "entropy": 34.27791643853491,
-            "free_energy": 9.719805286625483,
-            "heat_capacity": 36.163381863807714,
-            "max_frequency_THz": 18.36540344775355, 
-            "max_frequency_K": 881.3997884259676
+            "entropy": 34.2782712749132,
+            "free_energy": 9.71960956083306,
+            "heat_capacity": 36.163577121277775,
+            "max_frequency_THz": 18.365224492366256, 
+            "max_frequency_K": 881.3911999274384
         }
     },
     "test_abacus_phonon_dispersion_nspin2": 
@@ -267,15 +267,27 @@
     "test_run_abacus_calculation_phonon_dispersion": 
     {
         "result": {
-            "entropy": 39.855272587031884,
-            "free_energy": 6.544580089490639,
-            "heat_capacity": 39.526878497832975,
-            "max_frequency_THz": 15.274069131694052, 
-            "max_frequency_K": 733.0392353959137
+            "entropy": 38.65484930147255,
+            "free_energy": 6.827416636728532,
+            "heat_capacity": 39.69874114943025,
+            "max_frequency_THz": 15.270295385823896, 
+            "max_frequency_K": 732.8581242746149
         }
     },
     "test_run_abacus_calculation_md":
     {
         "result": {}
+    },
+    "test_abacus_cal_work_function_al110":
+    {
+        "result": {
+            "work_function": 4.329085761761545
+        }
+    },
+    "test_abacus_cal_vacancy_formation_energy_gamma_tial":
+    {
+        "result": {
+            "vac_formation_energy": 1.166700944879949
+        }
     }
 }

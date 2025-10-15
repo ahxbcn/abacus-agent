@@ -24,9 +24,7 @@ cd ase-abacus
 pip install . 
 cd ..
 
-pip install google-adk
-pip install bohr-agent-sdk
-pip install litellm
+pip install google-adk bohr-agent-sdk litellm
 
 cd quick_start
 
