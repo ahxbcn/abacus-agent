@@ -22,7 +22,7 @@ def run_abacus_calculation(
     relax: bool = False,
     relax_cell: bool = True,
     relax_precision: Literal['low', 'medium', 'high'] = 'medium',
-    property: Literal['relaxed_structure', 'bader_charge', 'elf', 'band', 'dos', 'elastic_properties', 'eos', 'phonon_dispersion', 'md'] = 'bader_charge',
+    property: Literal['bader_charge', 'elf', 'band', 'dos', 'elastic_properties', 'eos', 'phonon_dispersion', 'md'] = 'bader_charge',
     lcao: bool = True,
     nspin: Literal[1, 2, 4] = 1,
     dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
