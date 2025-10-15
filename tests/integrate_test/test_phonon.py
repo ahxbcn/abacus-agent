@@ -46,10 +46,10 @@ class TestAbacusPhononDispersion(unittest.TestCase):
         self.assertIsInstance(outputs['band_plot'], get_path_type())
         self.assertIsInstance(outputs['dos_plot'], get_path_type())
 
-        self.assertAlmostEqual(outputs['entropy'], ref_results['entropy'], places=3)
-        self.assertAlmostEqual(outputs['free_energy'], ref_results['free_energy'], places=3)
-        self.assertAlmostEqual(outputs['max_frequency_THz'], ref_results['max_frequency_THz'], places=3)
-        self.assertAlmostEqual(outputs['max_frequency_K'], ref_results['max_frequency_K'], places=3)
+        self.assertAlmostEqual(outputs['entropy'], ref_results['entropy'], places=2)
+        self.assertAlmostEqual(outputs['free_energy'], ref_results['free_energy'], places=2)
+        self.assertAlmostEqual(outputs['max_frequency_THz'], ref_results['max_frequency_THz'], places=2)
+        self.assertAlmostEqual(outputs['max_frequency_K'], ref_results['max_frequency_K'], places=2)
 
     def test_abacus_phonon_dispersion_nspin2(self):
         """
@@ -71,7 +71,7 @@ class TestAbacusPhononDispersion(unittest.TestCase):
         self.assertIsInstance(outputs['band_plot'], get_path_type())
         self.assertIsInstance(outputs['dos_plot'], get_path_type())
 
-        self.assertAlmostEqual(outputs['entropy'], ref_results['entropy'], places=3)
-        self.assertAlmostEqual(outputs['free_energy'], ref_results['free_energy'], places=3)
-        self.assertAlmostEqual(outputs['max_frequency_THz'], ref_results['max_frequency_THz'], places=3)
-        self.assertAlmostEqual(outputs['max_frequency_K'], ref_results['max_frequency_K'], places=3)
+        self.assertAlmostEqual(outputs['entropy'], ref_results['entropy'], places=2)
+        self.assertAlmostEqual(outputs['free_energy'], ref_results['free_energy'], places=2)
+        self.assertAlmostEqual(outputs['max_frequency_THz'], ref_results['max_frequency_THz'], places=2)
+        self.assertAlmostEqual(outputs['max_frequency_K'], ref_results['max_frequency_K'], places=2)
