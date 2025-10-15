@@ -3,7 +3,7 @@ import os
 from typing import Literal, Optional, TypedDict, Dict, Any, List, Tuple, Union
 
 from abacusagent.init_mcp import mcp
-from abacusagent.modules.util import get_relax_precision
+from abacusagent.modules.util.comm import get_relax_precision
 from abacusagent.modules.submodules.abacus import abacus_prepare
 from abacusagent.modules.submodules.cube import abacus_cal_elf
 from abacusagent.modules.submodules.band import abacus_cal_band
