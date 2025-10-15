@@ -346,6 +346,25 @@ def has_pyatb_matrix_files(work_path: Path) -> bool:
             os.path.isfile(os.path.join(work_path, "OUT." + suffix, "data-SR-sparse_SPIN0.csr")) and 
             os.path.isfile(os.path.join(work_path, "OUT." + suffix, "data-rR-sparse.csr")))
     
+def get_relax_precision(relax_precision: str = "medium"):
+    """
+    Return precision of the relax calculation, can be 'low', 'medium', or 'high'. Default is 'medium'.
+    The unit of `force_thr_ev` is eV/Angstrom, and the unit of `stress_thr` is kbar.
+        - 'low' means the relax calculation will be done with force_thr_ev=0.05 and stress_thr=5.0.
+        - 'medium' means the relax calculation will be done with force_thr_ev=0.01 and stress_thr=1.0.
+        - 'high' means the relax calculation will be done with force_thr_ev=0.005 and stress_thr=0.5.
+    """
+    if relax_precision == "low":
+        relax_params = {"force_thr_ev": 0.05, "stress_thr": 5, "force_thr": None} # force_thr is superior to force_thr_ev if both are specified, so we set force_thr=None
+    elif relax_precision == "medium":
+        relax_params = {"force_thr_ev": 0.01, "stress_thr": 1, "force_thr": None}
+    elif relax_precision == "high":
+        relax_params =  {"force_thr_ev": 0.005, "stress_thr": 0.1, "force_thr": None}
+    else:
+        raise ValueError(f"Invalid relax_precision: {relax_precision}")
+    
+    return relax_params
+
 def collect_metrics(abacusjob: Union[str, Path], 
                     metrics_names: List[str] = ["normal_end", "converge", "energy", "total_time"], 
                     ) -> Dict[str, Any]:

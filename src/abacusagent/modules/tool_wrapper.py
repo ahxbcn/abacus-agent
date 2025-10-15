@@ -3,6 +3,7 @@ import os
 from typing import Literal, Optional, TypedDict, Dict, Any, List, Tuple, Union
 
 from abacusagent.init_mcp import mcp
+from abacusagent.modules.util import get_relax_precision
 from abacusagent.modules.submodules.abacus import abacus_prepare
 from abacusagent.modules.submodules.cube import abacus_cal_elf
 from abacusagent.modules.submodules.band import abacus_cal_band
@@ -21,7 +22,7 @@ def run_abacus_calculation(
     relax: bool = False,
     relax_cell: bool = True,
     relax_precision: Literal['low', 'medium', 'high'] = 'medium',
-    property: Literal['bader_charge', 'elf', 'band', 'dos', 'elastic_properties', 'eos', 'phonon_dispersion', 'md'] = 'bader_charge',
+    property: Literal['relaxed_structure', 'bader_charge', 'elf', 'band', 'dos', 'elastic_properties', 'eos', 'phonon_dispersion', 'md'] = 'bader_charge',
     lcao: bool = True,
     nspin: Literal[1, 2, 4] = 1,
     dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
@@ -52,9 +53,9 @@ def run_abacus_calculation(
             If the calculated property is phonon dispersion or elastic properties, the crystal should be relaxed first with relax_cell set to True and `relax_precision` is strongly recommended be set to `high`.
         relax_cell (bool): Whether to relax the cell size during the relax calculation. Default is True.
         relax_precision (Literal['low', 'medium', 'high']): The precision of the relax calculation, can be 'low', 'medium', or 'high'. Default is 'medium'.
-            'Low' means the relax calculation will be done with force_thr_ev=0.05 and stress_thr_kbar=5.
-            'Medium' means the relax calculation will be done with force_thr_ev=0.01 and stress_thr_kbar=1.0.
-            'High' means the relax calculation will be done with force_thr_ev=0.005 and stress_thr_kbar=0.5.
+            'low' means the relax calculation will be done with force_thr_ev=0.05 and stress_thr_kbar=5.
+            'medium' means the relax calculation will be done with force_thr_ev=0.01 and stress_thr_kbar=1.0.
+            'high' means the relax calculation will be done with force_thr_ev=0.005 and stress_thr_kbar=0.5.
         property: String indicating the property to calculate, can be 'bader_charge', 'elf', 'band', 'dos', 'elastic_properties', 'eos', 'phonon_dispersion', or 'md'. Default is 'bader_charge'.
             For band and dos calculations, only nspin=1 or 2 is supported.
             For equation of state fitting, only cubic cell is supported.
@@ -142,14 +143,7 @@ def run_abacus_calculation(
     abacus_inputs_dir = abacus_prepare_outputs['abacus_inputs_dir']
 
     if relax:
-        if relax_precision == 'low':
-            force_thr_ev, stress_thr_kbar = 0.05, 5
-        elif relax_precision == 'medium':
-            force_thr_ev, stress_thr_kbar = 0.01, 1.0
-        elif relax_precision == 'high':
-            force_thr_ev, stress_thr_kbar = 0.005, 0.5
-        else:
-            raise ValueError(f'Invalid relax_precision: {relax_precision}')
+        relax_thresholds = get_relax_precision(relax_precision)
         
         if relax_cell is False: # For ABACUS LTSv3.10.0
             relax_method = 'bfgs_trad'
@@ -158,8 +152,8 @@ def run_abacus_calculation(
         
         max_steps = 100
         relax_outputs = abacus_do_relax(abacus_inputs_dir,
-                                        force_thr_ev=force_thr_ev,
-                                        stress_thr_kbar=stress_thr_kbar,
+                                        force_thr_ev=relax_thresholds['force_thr_ev'],
+                                        stress_thr_kbar=relax_thresholds['stress_thr'],
                                         max_steps=max_steps,
                                         relax_cell=relax_cell,
                                         relax_method=relax_method)
