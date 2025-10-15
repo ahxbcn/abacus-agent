@@ -42,6 +42,8 @@ class TestAbacusPhononDispersion(unittest.TestCase):
                                            supercell = [2, 2, 2],
                                            temperature = 300,)
         
+        print(outputs)
+        
         self.assertIsInstance(outputs['phonon_work_path'], get_path_type())
         self.assertIsInstance(outputs['band_plot'], get_path_type())
         self.assertIsInstance(outputs['dos_plot'], get_path_type())

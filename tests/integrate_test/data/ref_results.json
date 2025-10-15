@@ -167,11 +167,11 @@
     "test_abacus_phonon_dispersion_nspin1": 
     {
         "result": {
-            "entropy": 34.27791643853491,
-            "free_energy": 9.719805286625483,
-            "heat_capacity": 36.163381863807714,
-            "max_frequency_THz": 18.36540344775355, 
-            "max_frequency_K": 881.3997884259676
+            "entropy": 34.2782712749132,
+            "free_energy": 9.71960956083306,
+            "heat_capacity": 36.163577121277775,
+            "max_frequency_THz": 18.365224492366256, 
+            "max_frequency_K": 881.3911999274384
         }
     },
     "test_abacus_phonon_dispersion_nspin2": 
