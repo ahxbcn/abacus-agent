@@ -277,5 +277,11 @@
     "test_run_abacus_calculation_md":
     {
         "result": {}
+    },
+    "test_abacus_cal_work_function_al110":
+    {
+        "result": {
+            "work_function": 4.329085761761545
+        }
     }
 }
