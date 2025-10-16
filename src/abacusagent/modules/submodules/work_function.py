@@ -89,6 +89,9 @@ def plot_averaged_elecstat_pot(
 def abacus_cal_work_function(
     abacus_inputs_dir: Path,
     vacuum_direction: Literal['x', 'y', 'z'] = 'z',
+    dipole_correction: bool = False,
+    efield_pos_max: float = 0.5,
+    efield_pos_dec: float = 0.1,
 ) -> Dict[str, Any]:
     """
     Calculate the electrostatic potential and work function using ABACUS.
@@ -96,6 +99,9 @@ def abacus_cal_work_function(
     Args:
         abacus_inputs_dir (Path): Path to the ABACUS input files, which contains the INPUT, STRU, KPT, and pseudopotential or orbital files.
         vacuum_direction (Literal['x', 'y', 'z']): The direction of the vacuum.
+        dipole_correction (bool): Whether to apply dipole correction along the vacuum direction.
+        efield_pos_max (float): The maximum position of the applied saw-shape electric field in dipole correction. In fractional units.
+        efield_pos_dec (float): The deceleration of the applied saw-shape electric field in dipole correction. In fractional units.
 
     Returns:
         A dictionary containing:
@@ -117,6 +123,14 @@ def abacus_cal_work_function(
 
         input_params['calculation'] = 'scf'
         input_params['out_pot'] = 2
+
+        if dipole_correction:
+            input_params['efield_flag'] = 1
+            input_params['dip_cor_flag'] = 1
+            input_params['efield_pos_max'] = efield_pos_max
+            input_params['efield_pos_dec'] = 0.1
+            input_params['efield_amp'] = 0.00
+    
         WriteInput(input_params, os.path.join(work_path, 'INPUT'))
 
         run_abacus(work_path)
