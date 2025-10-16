@@ -131,7 +131,7 @@ def abacus_cal_work_function(
             input_params['efield_flag'] = 1
             input_params['dip_cor_flag'] = 1
             input_params['efield_pos_max'] = efield_pos_max
-            input_params['efield_pos_dec'] = 0.1
+            input_params['efield_pos_dec'] = efield_pos_dec
             input_params['efield_amp'] = 0.00
     
         WriteInput(input_params, os.path.join(work_path, 'INPUT'))
