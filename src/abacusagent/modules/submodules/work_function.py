@@ -1,13 +1,74 @@
 import os
 from pathlib import Path
-from typing import Literal, Optional, Dict, Any
+from typing import Literal, Optional, Dict, Any, List
 
-from abacustest.lib_prepare.abacus import ReadInput, WriteInput
+import numpy as np
+from abacustest.lib_prepare.abacus import ReadInput, WriteInput, AbacusStru
 from abacustest.lib_model.comm import check_abacus_inputs
 
 from abacusagent.constant import RY_TO_EV
 from abacusagent.modules.util.comm import run_abacus, generate_work_path, link_abacusjob, collect_metrics
 from abacusagent.modules.util.cube_manipulator import read_gaussian_cube, profile1d
+
+def identify_potential_plateaus(
+    averaged_potential: List,
+    length: float = 10.0,
+    threshold: float = 0.01
+):
+    """
+    Identify plateaus in the electrostatic potential using directive of the electrostatic potential.
+    """
+    pot_directives = []
+    n_points = len(averaged_potential)
+    stepsize = length / (n_points - 1)
+    for i in range(n_points):
+        backward_idx = i - 1
+        forward_idx = 0 if i == n_points - 1 else i + 1
+        pot_directive = (averaged_potential[forward_idx] - averaged_potential[backward_idx]) / (stepsize * 2.0)
+        pot_directives.append(pot_directive)
+    
+    is_plateau = [abs(deriv) < threshold for deriv in pot_directives]
+
+    plateau_ranges = []
+    in_plateau, start_idx = False, None
+    for i in range(n_points):
+        if is_plateau[i] and not in_plateau:
+            in_plateau = True
+            start_idx = i
+        elif not is_plateau[i] and in_plateau:
+            in_plateau = False
+            if not start_idx == i - 1:
+                plateau_ranges.append((start_idx, i-1))
+                start_idx = None
+        elif is_plateau[i] and i == n_points - 1:
+            if not start_idx == i - 1:
+                plateau_ranges.append((start_idx, i))
+                in_plateau, start_idx = False, None
+    
+    if len(plateau_ranges) > 0:
+        if plateau_ranges[-1][1] == n_points - 1:
+            if len(plateau_ranges) > 1:
+                combined_plateau = (plateau_ranges[-1][0] - n_points, plateau_ranges[0][1])
+                plateau_ranges[0] = combined_plateau
+                plateau_ranges.pop()
+    
+    return plateau_ranges
+
+def calculate_work_functions(averaged_potential: List, fermi_energy, length: float = 10.0):
+    """
+    Calculate the work function from the averaged electrostatic potential.
+    Dipole correction is suppoted and multiple plateau of electrostatic potential can be identified.
+    """
+    work_function_results = []
+    plateau_ranges = identify_potential_plateaus(averaged_potential, length=length, threshold=0.01)
+    for plateau_range in plateau_ranges:
+        plateau_start, plateau_end = plateau_range
+        plateau_averaged_potential = np.average(averaged_potential[plateau_start:plateau_end])
+        work_function_results.append({'work_function': plateau_averaged_potential - fermi_energy,
+                                      'plateau_start_fractional': plateau_start / len(averaged_potential),
+                                      'plateau_end_fractional': plateau_end / len(averaged_potential)})
+    
+    return work_function_results
 
 def plot_averaged_elecstat_pot(
     averaged_elecstat_data,
@@ -69,8 +130,13 @@ def abacus_cal_work_function(
 
         profile_result = profile1d(pot, axis=vacuum_direction, average=True)
         profile_result['data'][:, 1] *= RY_TO_EV  # Convert from Rydberg to eV
-        v_vacuum = max(profile_result['data'][:, 1])
-        work_function = v_vacuum - metrics['efermi']
+
+        stru = AbacusStru.ReadStru(os.path.join(work_path, input_params.get('stru_file', 'STRU')))
+        direction_map = {'x': 0, 'y': 1, 'z': 2}
+        length = np.linalg.norm(stru.get_cell()[direction_map[vacuum_direction]])
+        work_function_results = calculate_work_functions(profile_result['data'][:, 1],
+                                                         fermi_energy=metrics['efermi'],
+                                                         length=length)
 
         # Plot the averaged electrostatic potential
         plot_path = plot_averaged_elecstat_pot(profile_result, work_path, axis=vacuum_direction)
@@ -78,6 +144,6 @@ def abacus_cal_work_function(
         return {'elecstat_pot_work_function_work_path': Path(work_path).absolute(),
                 'elecstat_pot_file': Path(pot_file).absolute(),
                 'averaged_elecstat_pot_plot': Path(plot_path).absolute(),
-                'work_function': work_function}
+                'work_function_results': work_function_results}
     except Exception as e:
         return {'message': f"Calculating electrostatic potential and work function failed: {e}"}
