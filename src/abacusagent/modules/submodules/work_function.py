@@ -108,7 +108,10 @@ def abacus_cal_work_function(
         - elecstat_pot_work_function_work_path (Path): Path to the ABACUS job directory calculating electrostatic potential and work function.
         - elecstat_pot_file (Path): Path to the cube file containing the electrostatic potential.
         - averaged_elecstat_pot_plot (Path): Path to the plot of the averaged electrostatic potential.
-        - work_function (float): The calculated work function in eV.
+        - work_function_results (list): A list of dictionary, where each dictionary contains 3 keys:
+            - 'work_function': calculated work function
+            - 'plateau_start_fractional': Fractional coordinate of start of the identified plateau in the given vacuum direction
+            - 'plateau_end_fractional': Fractional coordinate of end of the identified plateau in the given vacuum direction
     """
     try:
         is_valid, msg = check_abacus_inputs(abacus_inputs_dir)
