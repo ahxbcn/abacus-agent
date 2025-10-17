@@ -16,18 +16,18 @@ def identify_potential_plateaus(
     threshold: float = 0.01
 ):
     """
-    Identify plateaus in the electrostatic potential using directive of the electrostatic potential.
+    Identify plateaus in the electrostatic potential using derivative of the electrostatic potential.
     """
-    pot_directives = []
+    pot_derivatives = []
     n_points = len(averaged_potential)
     stepsize = length / (n_points - 1)
     for i in range(n_points):
         backward_idx = i - 1
         forward_idx = 0 if i == n_points - 1 else i + 1
-        pot_directive = (averaged_potential[forward_idx] - averaged_potential[backward_idx]) / (stepsize * 2.0)
-        pot_directives.append(pot_directive)
+        pot_derivative = (averaged_potential[forward_idx] - averaged_potential[backward_idx]) / (stepsize * 2.0)
+        pot_derivatives.append(pot_derivative)
     
-    is_plateau = [abs(deriv) < threshold for deriv in pot_directives]
+    is_plateau = [abs(deriv) < threshold for deriv in pot_derivatives]
 
     plateau_ranges = []
     in_plateau, start_idx = False, None
@@ -70,12 +70,134 @@ def calculate_work_functions(averaged_potential: List, fermi_energy, length: flo
     
     return work_function_results
 
+def round_coord_pbc1d(a, length):
+    a /= length
+    return (a - np.floor(a)) * length
+
+def dist_pbc1d(a, b, length):
+    a, b = round_coord_pbc1d(a, length), round_coord_pbc1d(b, length)
+    if a > b:
+        a, b = b, a
+    return min(b - a, a + length - b)
+
+def determine_efield_pos_max(stru: AbacusStru, vacuum_direction: Literal['x', 'y', 'z'] = 'z', threshold: float=3.0) -> float:
+    """
+    Automatically determine the maximum position of the applied saw-shape electric field in dipole correction.
+    """
+    def calculate_dist(ref_pos, atom_poses, mode=Literal['lower', 'higher']):
+        min_dist = None
+        if mode == 'lower':
+            for atom_pos in atom_poses:
+                if atom_pos < ref_pos:
+                    dist = dist_pbc1d(ref_pos, atom_pos, length=cell_length)
+                    if min_dist is None:
+                        min_dist = dist
+                    elif dist < min_dist:
+                        min_dist = dist
+        elif mode == 'higher':
+                if atom_pos > ref_pos:
+                    dist = dist_pbc1d(ref_pos, atom_pos, length=cell_length)
+                    if min_dist is None:
+                        min_dist = dist
+                    elif dist < min_dist:
+                        min_dist = dist
+        else:
+            raise ValueError("Invalid mode")
+        
+        return min_dist
+
+    direction_map = {'x': 0, 'y': 1, 'z': 2}
+    direction = direction_map[vacuum_direction]
+    atom_positions_vac_dir = []
+    for atom_idx in range(stru.get_natoms()):
+        atom_positions_vac_dir.append(stru.get_coord()[atom_idx][direction])
+    
+    cell_length = np.linalg.norm(stru.get_cell()[direction]) # Lattice parameter along the given vacuum direction
+
+    if cell_length - max(atom_positions_vac_dir) + min(atom_positions_vac_dir) < threshold:
+        # The slab crosses the boundary, and the vacuum lies with in the cell
+        stepsize = 1.0 # Angstrom
+        # Find lower boundary of the vacuum region
+        trial_pos = 1.0 # Angstrom
+        lower_boundary = None
+        while lower_boundary is None:
+            min_dist = calculate_dist(trial_pos, atom_positions_vac_dir, mode='lower')
+            if min_dist > threshold:
+                lower_boundary = trial_pos
+            elif trial_pos + stepsize < cell_length:
+                trial_pos += stepsize
+            else:
+                raise RuntimeError("Unable to find the lower boundary of the vacuum region")
+        
+        trial_pos = cell_length - 1.0
+        upper_boundary = None
+        while upper_boundary is None:
+            min_dist = calculate_dist(trial_pos, atom_positions_vac_dir, mode='higher')
+            if min_dist > threshold:
+                upper_boundary = trial_pos
+            elif trial_pos - stepsize > 0:
+                trial_pos -= stepsize
+            else:
+                raise RuntimeError("Unable to find the upper boundary of the vacuum region")
+
+        if upper_boundary < lower_boundary - threshold:
+            print("There seems have no vacuum region. Check your structure and input arguments")
+        elif upper_boundary < lower_boundary:
+            print("Warning: The slab is too thick. The vacuum region should be enlarged")
+        pos = (upper_boundary + lower_boundary) / 2
+    else:
+        # The slab does not cross the boundary
+        if min(atom_positions_vac_dir) + cell_length - min(atom_positions_vac_dir) < threshold * 2:
+            print("Warning: The slab is too close to the boundary. The vacuum region should be enlarged")
+        pos = (min(atom_positions_vac_dir) + max(atom_positions_vac_dir) + cell_length) / 2 # Midpoint of leftmost atom (PBC image in the right cell) and rightmost atom
+        min_dist = pos - max(atom_positions_vac_dir)
+        if pos > cell_length:
+            pos -= cell_length
+    
+    return pos / cell_length, min_dist
+
+def determine_efield_pos_max_scan(stru: AbacusStru, vacuum_direction: Literal['x', 'y', 'z'] = 'z', threshold: float=3.0):
+    """
+    Using simple scan to automatically determine the maximum position of the applied saw-shape electric field in dipole correction.
+    """
+    direction_map = {'x': 0, 'y': 1, 'z': 2}
+    direction = direction_map[vacuum_direction]
+    atom_positions_vac_dir = []
+    for atom_idx in range(stru.get_natoms()):
+        atom_positions_vac_dir.append(stru.get_coord()[atom_idx][direction])
+    
+    cell_length = np.linalg.norm(stru.get_cell()[direction]) # Lattice parameter along the given vacuum direction
+
+    scan_pos, scan_stepsize, scan_min_dist_max = 0.0, 0.05, None
+    while scan_pos < 1.0:
+        min_dist = None
+        for atom_idx in range(stru.get_natoms()):
+            dist = dist_pbc1d(atom_positions_vac_dir[atom_idx], scan_pos * cell_length, cell_length)
+            if min_dist is None:
+                min_dist = dist
+            elif dist < min_dist:
+                min_dist = dist
+        
+        if scan_min_dist_max is None:
+            scan_min_dist_max = min_dist
+            scan_min = scan_pos
+        elif scan_min_dist_max < min_dist:
+            scan_min_dist_max = min_dist
+            scan_min = scan_pos
+        
+        scan_pos += scan_stepsize
+    
+    if scan_min_dist_max > threshold:
+        return scan_min, scan_min_dist_max
+    else:
+        raise RuntimeError("No suitable position for maximum position of the applied saw-shape electric field found")
+
 def plot_averaged_elecstat_pot(
     averaged_elecstat_data,
     work_path: Path,
     axis: Literal['x', 'y', 'z'] = 'z',
     plot_filename: Optional[str] = "elecstat_pot_profile.png"
-) -> Dict[str, Any]:
+) -> Path:
     import matplotlib.pyplot as plt
     plt.plot(averaged_elecstat_data['data'][:, 0], averaged_elecstat_data['data'][:, 1], label='Electrostatic Potential')
     plt.xlim(0, 1)
@@ -83,6 +205,7 @@ def plot_averaged_elecstat_pot(
     plt.ylabel("Electrostatic Potential (eV)")
     plot_path = os.path.join(work_path, plot_filename)
     plt.savefig(plot_path, dpi=300)
+    plt.close()
 
     return plot_path
 
@@ -90,8 +213,6 @@ def abacus_cal_work_function(
     abacus_inputs_dir: Path,
     vacuum_direction: Literal['x', 'y', 'z'] = 'z',
     dipole_correction: bool = False,
-    efield_pos_max: float = 0.5,
-    efield_pos_dec: float = 0.1,
 ) -> Dict[str, Any]:
     """
     Calculate the electrostatic potential and work function using ABACUS.
@@ -100,8 +221,6 @@ def abacus_cal_work_function(
         abacus_inputs_dir (Path): Path to the ABACUS input files, which contains the INPUT, STRU, KPT, and pseudopotential or orbital files.
         vacuum_direction (Literal['x', 'y', 'z']): The direction of the vacuum.
         dipole_correction (bool): Whether to apply dipole correction along the vacuum direction.
-        efield_pos_max (float): The maximum position of the applied saw-shape electric field in dipole correction. In fractional units.
-        efield_pos_dec (float): The deceleration of the applied saw-shape electric field in dipole correction. In fractional units.
 
     Returns:
         A dictionary containing:
@@ -121,6 +240,7 @@ def abacus_cal_work_function(
         work_path = Path(generate_work_path()).absolute()
         link_abacusjob(src=abacus_inputs_dir,dst=work_path,copy_files=["INPUT", "STRU"], exclude_directories=True)
         input_params = ReadInput(os.path.join(work_path, 'INPUT'))
+        stru = AbacusStru.ReadStru(os.path.join(work_path, input_params.get('stru_file', 'STRU')))
         if input_params.get('nspin', 1) not in [1, 2]:
             raise ValueError('Only non spin-polarized and collinear spin-polarized calculation are supported for calculating electrostatic potential and work function')
 
@@ -130,8 +250,10 @@ def abacus_cal_work_function(
         if dipole_correction:
             input_params['efield_flag'] = 1
             input_params['dip_cor_flag'] = 1
+
+            efield_pos_max, min_dist = determine_efield_pos_max(stru, vacuum_direction)
             input_params['efield_pos_max'] = efield_pos_max
-            input_params['efield_pos_dec'] = efield_pos_dec
+            input_params['efield_pos_dec'] = 0.1
             input_params['efield_amp'] = 0.00
     
         WriteInput(input_params, os.path.join(work_path, 'INPUT'))
@@ -148,7 +270,6 @@ def abacus_cal_work_function(
         profile_result = profile1d(pot, axis=vacuum_direction, average=True)
         profile_result['data'][:, 1] *= RY_TO_EV  # Convert from Rydberg to eV
 
-        stru = AbacusStru.ReadStru(os.path.join(work_path, input_params.get('stru_file', 'STRU')))
         direction_map = {'x': 0, 'y': 1, 'z': 2}
         length = np.linalg.norm(stru.get_cell()[direction_map[vacuum_direction]])
         work_function_results = calculate_work_functions(profile_result['data'][:, 1],
