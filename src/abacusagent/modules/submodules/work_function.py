@@ -125,13 +125,15 @@ def abacus_cal_work_function(
         direction_map = {'x': 0, 'y': 1, 'z': 2}
         input_params['calculation'] = 'scf'
         input_params['out_pot'] = 2
-        input_params['efield_dir'] = direction_map[vacuum_direction]
 
         if dipole_correction:
             input_params['efield_flag'] = 1
             input_params['dip_cor_flag'] = 1
+            input_params['efield_dir'] = direction_map[vacuum_direction]
             input_params['efield_amp'] = 0.00
-    
+            input_params['efield_pos_max'] = None
+            input_params['efield_pos_dec'] = None
+
         WriteInput(input_params, os.path.join(work_path, 'INPUT'))
 
         run_abacus(work_path)
