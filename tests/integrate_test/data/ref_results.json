@@ -281,7 +281,20 @@
     "test_abacus_cal_work_function_al110":
     {
         "result": {
-            "work_function": 4.329085761761545
+            "work_function_results": [{"work_function": 4.328994681259157, 
+                                       "plateau_start_fractional": 0.5637860082304527, 
+                                       "plateau_end_fractional": 0.8353909465020576}]
+        }
+    },
+    "test_abacus_cal_work_function_zno0001_dipole_corr":
+    {
+        "result": {
+            "work_function_results": [{"work_function": 2.6146683619622704, 
+                                       "plateau_start_fractional": 0.37109375, 
+                                       "plateau_end_fractional": 0.62109375}, 
+                                      {"work_function": 7.8168926011874955, 
+                                       "plateau_start_fractional": 0.73046875, 
+                                       "plateau_end_fractional": 0.92578125}]
         }
     },
     "test_abacus_cal_vacancy_formation_energy_gamma_tial":
