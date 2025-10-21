@@ -3,7 +3,7 @@ Use Pyatb to do property calculation.
 """
 import os
 from pathlib import Path
-from typing import Dict, Any, Literal
+from typing import List, Dict, Any, Literal
 from abacusagent.modules.util.comm import (
     generate_work_path, 
     link_abacusjob, 
@@ -105,4 +105,19 @@ def property_calculation_scf(
         "mode": mode
     }
         
-    
+def prepare_pyatb_inputs(pyatb_input_args: List[str]) -> None:
+    """
+    Prepare the pyatb input files.
+    Args:
+        pyatb_input_args (List[str]): A dictionary containing the arguments for pyatb input preparation.
+        For example, if you want to plot the joint density of states using pyatb after ABACUS SCF calculation, the dictionary can be: ['--jdos']
+    """
+    from pyatb.easy_use.input_generator import main
+    import argparse
+
+    print(os.getcwd())
+
+    original_sys_args = argparse._sys.argv
+    argparse._sys.argv = ['_'] + pyatb_input_args
+    main()
+    argparse._sys.argv = original_sys_args
