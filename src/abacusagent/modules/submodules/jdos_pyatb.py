@@ -2,8 +2,8 @@ import os
 from pathlib import Path
 from typing import Dict, Any
 
-from abacusagent.modules.util.comm import run_pyatb
-from abacusagent.modules.util.pyatb import prepare_pyatb_inputs, property_calculation_scf
+from abacusagent.modules.util.comm import run_pyatb, run_command
+from abacusagent.modules.util.pyatb import property_calculation_scf, PyatbInputGenerator
 
 def plot_jdos_pyatb(
     jdos_dat_file: Path,
@@ -46,13 +46,13 @@ def pyatb_calculate_jdos(
     """
     scf_results = property_calculation_scf(abacus_inputs_path, mode='pyatb')
 
-    if scf_results["normal_end"] is False:
+    if not scf_results["normal_end"]:
         raise RuntimeError("SCF calculation did not finish successfully.")
-    elif scf_results["converge"] is False:
+    elif not scf_results["converge"]:
         raise RuntimeError("SCF calculation did not converge.")
     else:
         os.chdir(scf_results["work_path"])
-        prepare_pyatb_inputs(["--jdos"])
+        PyatbInputGenerator(jdos=True).run()
 
     run_pyatb(Path(os.path.join(scf_results["work_path"], "./pyatb")).absolute())
 
