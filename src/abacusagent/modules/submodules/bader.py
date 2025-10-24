@@ -5,6 +5,7 @@ import os
 import re
 import glob
 import shutil
+import json
 from typing import List, Dict, Optional, Any
 
 from pathlib import Path
@@ -231,12 +232,21 @@ def calculate_bader_charge_from_cube(
     cube_data = read_gaussian_cube(merged_cube_file)
     net_bader_charges = (np.array(cube_data["chg"]) - np.array(bader_charges)).tolist()
 
+    bader_charge_json = Path("./bader_charge_results.json").absolute()
+    with open(bader_charge_json, "w") as fout:
+        json.dump({
+            "bader_charges": bader_charges,
+            "atom_core_charge": cube_data["chg"],
+            "net_bader_charges": net_bader_charges
+        }, fout)
+
     return {
         "bader_charges": bader_charges,
         "atom_core_charge": cube_data["chg"],
         "net_bader_charges": net_bader_charges,
         "work_path": Path(work_path).absolute(),
-        "cube_file": Path(merged_cube_file).absolute()
+        "cube_file": Path(merged_cube_file).absolute(),
+        "bader_charge_json": bader_charge_json.absolute(),
     }
 
 
