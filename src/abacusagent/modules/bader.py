@@ -3,7 +3,7 @@ from typing import List, Dict, Optional, Any
 
 from abacusagent.init_mcp import mcp
 from abacusagent.modules.submodules.bader import abacus_badercharge_run as _abacus_badercharge_run
-from abacusagent.modules.submodules.bader import postprocess_charge_densities as _postprocess_charge_densities
+from abacusagent.modules.submodules.bader import calculate_bader_charge_from_cube as _calculate_bader_charge_from_cube
 
 @mcp.tool() # make it visible to the MCP server
 def abacus_badercharge_run(
@@ -27,7 +27,7 @@ def abacus_badercharge_run(
     return _abacus_badercharge_run(abacus_inputs_dir)
 
 @mcp.tool()
-def postprocess_charge_densities(
+def calculate_bader_charge_from_cube(
     fcube: List[Path]|Path
 ) -> Dict[str, Any]:
     """
@@ -42,4 +42,4 @@ def postprocess_charge_densities(
         - bader_charges: List of Bader charge for each atom. The value represents the number of valence electrons for each atom, and core charge is not included.
         - atom_core_charges: List of core charge for each atom.
     """
-    return _postprocess_charge_densities(fcube)
+    return _calculate_bader_charge_from_cube(fcube)

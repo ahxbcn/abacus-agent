@@ -196,7 +196,7 @@ def calculate_bader_charges(
     
     return files
 
-def postprocess_charge_densities(
+def calculate_bader_charge_from_cube(
     fcube: List[Path]|Path
 ) -> Dict[str, Any]:
     """
@@ -280,7 +280,7 @@ def abacus_badercharge_run(
             atom_labels = None
 
         # Postprocess the charge density to obtain Bader charges
-        bader_results = postprocess_charge_densities(fcube)
+        bader_results = calculate_bader_charge_from_cube(fcube)
 
         return {
             "net_bader_charges": bader_results["net_bader_charges"],
