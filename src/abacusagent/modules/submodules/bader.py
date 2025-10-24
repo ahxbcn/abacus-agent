@@ -131,7 +131,6 @@ def merge_charge_densities_of_different_spin(
     Returns:
     str: Output cube file path.
     """
-    assert 0 < len(fcube) <= 2, "fcube should contain 1 or 2 cube files."
     if len(fcube) == 1:
         return fcube[0]
     
