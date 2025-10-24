@@ -208,6 +208,8 @@ def postprocess_charge_densities(
     Returns:
     list: A list of Bader charges.
     """
+    if not isinstance(fcube, (list, tuple)):
+        fcube = [fcube]
     
     merged_cube_file = merge_charge_densities_of_different_spin(fcube)
     merged_cube_file = Path(merged_cube_file).absolute()
