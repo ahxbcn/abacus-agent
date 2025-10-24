@@ -31,10 +31,12 @@ def calculate_bader_charge_from_cube(
     fcube: List[Path]|Path
 ) -> Dict[str, Any]:
     """
-    Postprocess charge densities from ABACUS calculation.
+    Postprocess the charge density to obtain Bader charges.
     
     Parameters:
     fcube (str or list of str): Path to the cube file(s) containing the charge density.
+        - For spin-nonpolarized calculations, provide a single cube file path.
+        - For spin-polarized calculations, provide a list of two cube file paths containing the spin-up and spin-down charge density respectively.
     
     Returns:
     dict: A dictionary containing:
