@@ -38,8 +38,11 @@ def calculate_bader_charge_from_cube(
     
     Returns:
     dict: A dictionary containing:
-        - net_bader_charges: List of net Bader charge for each atom. Core charge is included.
-        - bader_charges: List of Bader charge for each atom. The value represents the number of valence electrons for each atom, and core charge is not included.
-        - atom_core_charges: List of core charge for each atom.
+        - net_charges: List of net charge for each atom. Core charge is included.
+        - number_of_electrons: List of number of electrons around each atom. Core charge is not included.
+        - core_charges: List of core charge for each atom.
+        - work_path: Absolute path to the work directory.
+        - cube_file: Absolute path to the cube file used in this tool.
+        - charge_results_json: Absolute path to the JSON file containing detailed Bader charge results
     """
     return _calculate_bader_charge_from_cube(fcube)

@@ -235,18 +235,18 @@ def calculate_bader_charge_from_cube(
     bader_charge_json = Path("./bader_charge_results.json").absolute()
     with open(bader_charge_json, "w") as fout:
         json.dump({
-            "bader_charges": bader_charges,
-            "atom_core_charge": cube_data["chg"],
-            "net_bader_charges": net_bader_charges
+            "number_of_electrons": bader_charges,
+            "core_charge": cube_data["chg"],
+            "net_charges": net_bader_charges
         }, fout)
 
     return {
-        "bader_charges": bader_charges,
-        "atom_core_charge": cube_data["chg"],
-        "net_bader_charges": net_bader_charges,
+        "number_of_electrons": bader_charges,
+        "core_charge": cube_data["chg"],
+        "net_charges": net_bader_charges,
         "work_path": Path(work_path).absolute(),
         "cube_file": Path(merged_cube_file).absolute(),
-        "bader_charge_json": bader_charge_json.absolute(),
+        "charge_results_json": bader_charge_json.absolute(),
     }
 
 
