@@ -408,6 +408,7 @@ def abacus_collect_data(
                           kpt: list, the K POINTS setting in KPT file
                      fft_grid: fft grid for charge/potential
                         nbase: number of basis in LCAO
+                   noccu_band: number of occupied bands
                        nbands: number of bands
                        nkstot: total K point number
                          ibzk: irreducible K point number
