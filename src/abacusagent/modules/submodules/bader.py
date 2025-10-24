@@ -290,9 +290,9 @@ def abacus_badercharge_run(
         bader_results = calculate_bader_charge_from_cube(fcube)
 
         return {
-            "net_bader_charges": bader_results["net_bader_charges"],
-            "bader_charges": bader_results["bader_charges"],
-            "atom_core_charges": bader_results["atom_core_charge"],
+            "net_charges": bader_results["net_charges"],
+            "number_of_electrons": bader_results["number_of_electrons"],
+            "core_charges": bader_results["core_charge"],
             "atom_labels": atom_labels,
             "abacus_workpath": Path(abacus_jobpath).absolute(),
             "badercharge_run_workpath": Path(bader_results["work_path"]).absolute(),

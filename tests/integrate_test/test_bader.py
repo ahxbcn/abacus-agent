@@ -43,7 +43,7 @@ class TestAbacusBaderchargeRun(unittest.TestCase):
         badercharge_run_workpath = outputs['badercharge_run_workpath']
         self.assertIsInstance(abacus_workpath, get_path_type())
         self.assertIsInstance(badercharge_run_workpath, get_path_type())
-        for act, ref in zip(outputs['net_bader_charges'], ref_results['net_bader_charges']):
+        for act, ref in zip(outputs['net_charges'], ref_results['net_charges']):
             self.assertAlmostEqual(act, ref, places=3)
         for act, ref in zip(outputs['atom_labels'], ref_results['atom_labels']):
             self.assertEqual(act, ref)
@@ -68,7 +68,7 @@ class TestAbacusBaderchargeRun(unittest.TestCase):
         badercharge_run_workpath = outputs['badercharge_run_workpath']
         self.assertIsInstance(abacus_workpath, get_path_type())
         self.assertIsInstance(badercharge_run_workpath, get_path_type())
-        for act, ref in zip(outputs['net_bader_charges'], ref_results['net_bader_charges']):
+        for act, ref in zip(outputs['net_charges'], ref_results['net_charges']):
             self.assertAlmostEqual(act, ref, places=3)
         for act, ref in zip(outputs['atom_labels'], ref_results['atom_labels']):
             self.assertEqual(act, ref)
