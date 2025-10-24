@@ -3,6 +3,7 @@ from typing import List, Dict, Optional, Any
 
 from abacusagent.init_mcp import mcp
 from abacusagent.modules.submodules.bader import abacus_badercharge_run as _abacus_badercharge_run
+from abacusagent.modules.submodules.bader import postprocess_charge_densities as _postprocess_charge_densities
 
 @mcp.tool() # make it visible to the MCP server
 def abacus_badercharge_run(
@@ -24,3 +25,21 @@ def abacus_badercharge_run(
         - badercharge_run_workpath: Absolute path to the Bader analysis work directory.
     """
     return _abacus_badercharge_run(abacus_inputs_dir)
+
+@mcp.tool()
+def postprocess_charge_densities(
+    fcube: List[Path]|Path
+) -> Dict[str, Any]:
+    """
+    Postprocess charge densities from ABACUS calculation.
+    
+    Parameters:
+    fcube (str or list of str): Path to the cube file(s) containing the charge density.
+    
+    Returns:
+    dict: A dictionary containing:
+        - net_bader_charges: List of net Bader charge for each atom. Core charge is included.
+        - bader_charges: List of Bader charge for each atom. The value represents the number of valence electrons for each atom, and core charge is not included.
+        - atom_core_charges: List of core charge for each atom.
+    """
+    return _postprocess_charge_densities(fcube)

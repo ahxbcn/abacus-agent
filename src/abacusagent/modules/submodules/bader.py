@@ -16,6 +16,7 @@ from abacustest.lib_prepare.abacus import ReadInput, WriteInput, AbacusStru
 from abacustest.lib_model.comm import check_abacus_inputs
 
 from abacusagent.modules.util.comm import run_abacus, link_abacusjob, generate_work_path, run_command, has_chgfile,collect_metrics
+from abacusagent.modules.util.cube_manipulator import read_gaussian_cube
 
 BADER_EXE = os.environ.get("BADER_EXE", "bader") # use environment variable to specify the bader executable path
 
@@ -193,7 +194,6 @@ def calculate_bader_charges(
         raise FileNotFoundError("Incomplete Bader analysis output files.")
     files = [Path(f).absolute() for f in files]
     
-    
     return files
 
 def postprocess_charge_densities(
@@ -229,9 +229,13 @@ def postprocess_charge_densities(
     os.chdir(cwd)
     
     bader_charges = read_bader_acf(Path(work_path) / 'ACF.dat')
+    cube_data = read_gaussian_cube(merged_cube_file)
+    net_bader_charges = (np.array(cube_data["chg"]) - np.array(bader_charges)).tolist()
 
     return {
         "bader_charges": bader_charges,
+        "atom_core_charge": cube_data["chg"],
+        "net_bader_charges": net_bader_charges,
         "work_path": Path(work_path).absolute(),
         "cube_file": Path(merged_cube_file).absolute()
     }
@@ -250,7 +254,9 @@ def abacus_badercharge_run(
     
     Returns:
     dict: A dictionary containing: 
-        - bader_charges: List of Bader charge for each atom.
+        - net_bader_charges: List of net Bader charge for each atom. Core charge is included.
+        - bader_charges: List of Bader charge for each atom. The value represents the number of valence electrons for each atom, and core charge is not included.
+        - atom_core_charges: List of core charge for each atom.
         - atom_labels: Labels of atoms in the structure.
         - abacus_workpath: Absolute path to the ABACUS work directory.
         - badercharge_run_workpath: Absolute path to the Bader analysis work directory.
@@ -273,14 +279,11 @@ def abacus_badercharge_run(
 
         # Postprocess the charge density to obtain Bader charges
         bader_results = postprocess_charge_densities(fcube)
-        original_atom_electrons = collect_metrics(Path(abacus_jobpath),
-                                                ['nelec_dict'])['nelec_dict']
-
-        for i in range(len(bader_results['bader_charges'])):
-            bader_results["bader_charges"][i] = original_atom_electrons.get(atom_labels[i], 0) - bader_results["bader_charges"][i]
 
         return {
+            "net_bader_charges": bader_results["net_bader_charges"],
             "bader_charges": bader_results["bader_charges"],
+            "atom_core_charges": bader_results["atom_core_charge"],
             "atom_labels": atom_labels,
             "abacus_workpath": Path(abacus_jobpath).absolute(),
             "badercharge_run_workpath": Path(bader_results["work_path"]).absolute(),
