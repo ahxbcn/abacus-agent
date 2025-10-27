@@ -93,17 +93,65 @@ def collect_force(abacusjob_dir):
 
     return metrics['force']
 
-def filter_force(forces, selected_atoms):
+def prepare_abacus_vibration_analysis(input_params: Dict[str, Any],
+                                      stru: AbacusStru,
+                                      work_path: Path,
+                                      abacus_inputs_dir: Path,
+                                      selected_atoms: Optional[List[int]] = None,
+                                      stepsize: float = 0.01,
+                                      vib_cache_dir: str = "vib"):
     """
-    Select forces belong to selected atoms
+    Prepare ABACUS input files for vibrational analysis.
     """
-    selected_atoms_force_idx = []
-    for selected_atom in selected_atoms:
-        selected_atoms_force_idx += [selected_atom*3, selected_atom*3+1, selected_atom*3+2]
-    
-    filtered_force = np.array(forces)[selected_atoms_force_idx]
+    stru_file = input_params.get('stru_file', "STRU")
+    displaced_stru = copy.deepcopy(stru)
+    original_stru_coord = np.array(stru.get_coord(bohr=False, direct=False))
 
-    return filtered_force
+    if selected_atoms is None:
+        selected_atoms = [i for i in range(stru.get_natoms())]
+
+    selected_atoms.sort()
+    
+    DIRECTION_MAP = ['x', 'y', 'z']
+    STEP_MAP = {'+': 1, '-': -1}
+    disped_stru_job_paths = []
+    disped_stru_cache_labels = []
+
+    # Prepare ABACUS input files for the given structure
+    abacus_scf_work_path = os.path.join(work_path, "SCF")
+    original_stru_job_path = os.path.join(abacus_scf_work_path, "eq")
+    os.makedirs(original_stru_job_path)
+
+    link_abacusjob(src=abacus_inputs_dir,
+                   dst=original_stru_job_path,  
+                   copy_files=['INPUT', 'STRU', 'KPT', 'abacus.log'],
+                   exclude_directories=True)
+    WriteInput(input_params, os.path.join(original_stru_job_path, "INPUT"))
+    disped_stru_job_paths.append(original_stru_job_path)
+    disped_stru_cache_labels.append(os.path.join(vib_cache_dir, 'cache.eq.json'))
+
+    # Prepare ABACUS input files for each displaced structure. nfree is assumed to be 2.
+    for selected_atom in selected_atoms:
+        for direction in range(3): # x, y and z directions
+            displaced_stru_coord = copy.deepcopy(original_stru_coord)
+            for step in STEP_MAP.keys(): # Two steps along one direction
+                disped_stru_job_path = os.path.join(abacus_scf_work_path, f"disp-{selected_atom}-{DIRECTION_MAP[direction]}{step}")
+                os.makedirs(disped_stru_job_path)
+
+                link_abacusjob(src=abacus_inputs_dir,
+                               dst=disped_stru_job_path, 
+                               copy_files=['INPUT', 'STRU', 'KPT', 'abacus.log'],
+                               exclude_directories=True)
+                
+                displaced_stru_coord[selected_atom][direction] = original_stru_coord[selected_atom][direction] + stepsize * STEP_MAP[step]
+                displaced_stru.set_coord(displaced_stru_coord, bohr=False, direct=False)
+                WriteInput(input_params, os.path.join(disped_stru_job_path, "INPUT"))
+                displaced_stru.write(os.path.join(disped_stru_job_path, stru_file))
+
+                disped_stru_job_paths.append(disped_stru_job_path)
+                disped_stru_cache_labels.append(os.path.join(vib_cache_dir, f"cache.{selected_atom}{DIRECTION_MAP[direction]}{step}.json"))
+        
+    return disped_stru_job_paths, disped_stru_cache_labels
 
 def abacus_vibration_analysis(abacus_inputs_dir: Path,
                               selected_atoms: Optional[List[int]] = None,
@@ -142,7 +190,7 @@ def abacus_vibration_analysis(abacus_inputs_dir: Path,
             raise ValueError("stepsize should be positive.")
         
         work_path = Path(generate_work_path()).absolute()
-
+        
         input_params = ReadInput(os.path.join(abacus_inputs_dir, "INPUT"))
         stru_file = input_params.get('stru_file', "STRU")
         stru = AbacusStru.ReadStru(os.path.join(abacus_inputs_dir, stru_file))
@@ -157,66 +205,26 @@ def abacus_vibration_analysis(abacus_inputs_dir: Path,
                          indices=selected_atoms,
                          delta=stepsize,
                          nfree=nfree)
-        
-        displaced_stru = copy.deepcopy(stru)
-        original_stru_coord = np.array(stru.get_coord(bohr=False, direct=False))
 
-        if selected_atoms is None:
-            selected_atoms = [i for i in range(stru.get_natoms())]
-
-        selected_atoms.sort()
-        
-        DIRECTION_MAP = ['x', 'y', 'z']
-        STEP_MAP = {'+': 1, '-': -1}
-        disped_stru_job_paths = []
-        disped_stru_cache_labels = []
-
-        # Prepare ABACUS input files for the given structure
-        abacus_scf_work_path = os.path.join(work_path, "SCF")
-        original_stru_job_path = os.path.join(abacus_scf_work_path, "eq")
-        os.makedirs(original_stru_job_path)
-
-        link_abacusjob(src=abacus_inputs_dir,
-                       dst=original_stru_job_path,  
-                       copy_files=['INPUT', 'STRU', 'KPT', 'abacus.log'],
-                       exclude_directories=True)
-        WriteInput(input_params, os.path.join(original_stru_job_path, "INPUT"))
-        disped_stru_job_paths.append(original_stru_job_path)
-        disped_stru_cache_labels.append(os.path.join(vib_cache_dir, 'cache.eq.json'))
-
-        # Prepare ABACUS input files for each displaced structure. nfree is assumed to be 2.
-        for selected_atom in selected_atoms:
-            for direction in range(3): # x, y and z directions
-                displaced_stru_coord = copy.deepcopy(original_stru_coord)
-                for step in STEP_MAP.keys(): # Two steps along one direction
-                    disped_stru_job_path = os.path.join(abacus_scf_work_path, f"disp-{selected_atom}-{DIRECTION_MAP[direction]}{step}")
-                    os.makedirs(disped_stru_job_path)
-
-                    link_abacusjob(src=abacus_inputs_dir,
-                                   dst=disped_stru_job_path, 
-                                   copy_files=['INPUT', 'STRU', 'KPT', 'abacus.log'],
-                                   exclude_directories=True)
-                    
-                    displaced_stru_coord[selected_atom][direction] = original_stru_coord[selected_atom][direction] + stepsize * STEP_MAP[step]
-                    displaced_stru.set_coord(displaced_stru_coord, bohr=False, direct=False)
-                    WriteInput(input_params, os.path.join(disped_stru_job_path, "INPUT"))
-                    displaced_stru.write(os.path.join(disped_stru_job_path, stru_file))
-
-                    disped_stru_job_paths.append(disped_stru_job_path)
-                    disped_stru_cache_labels.append(os.path.join(vib_cache_dir, f"cache.{selected_atom}{DIRECTION_MAP[direction]}{step}.json"))
+        disped_stru_job_paths, disped_stru_cache_labels = prepare_abacus_vibration_analysis(input_params,
+                                                                                            stru, 
+                                                                                            work_path=work_path,
+                                                                                            abacus_inputs_dir=abacus_inputs_dir,
+                                                                                            selected_atoms=selected_atoms,
+                                                                                            stepsize=stepsize,
+                                                                                            vib_cache_dir=vib_cache_dir)
         
         # Run ABACUS calculation for all prepared jobs
         run_abacus(disped_stru_job_paths)
         
         # Collect needed forces for each ABACUS calculation and dump to cache directory used by ase.vibrations
         cache_forces_json = {"forces": {
-            "__ndarray__": [[len(selected_atoms), 3],
+            "__ndarray__": [[stru.get_natoms(), 3],
                             "float64",
                             []]
         }}
         for disped_stru_job_path, disped_stru_cache_label in list(zip(disped_stru_job_paths, disped_stru_cache_labels)):
-            force = collect_force(disped_stru_job_path)
-            cache_forces_json["forces"]["__ndarray__"][2] = list(filter_force(force, selected_atoms))
+            cache_forces_json["forces"]["__ndarray__"][2] = collect_force(disped_stru_job_path)
             with open(os.path.join(vib_cache_dir, disped_stru_cache_label), "w") as fin:
                 json.dump(cache_forces_json, fin)
         
@@ -253,6 +261,5 @@ def abacus_vibration_analysis(abacus_inputs_dir: Path,
                 'vib_free_energy': float(free_energy),
                 'vib_analysis_work_dir': Path(work_path).absolute()}
     except Exception as e:
-        print(e)
         return {'message': f"Doing vibration analysis failed: {e}"}
 
