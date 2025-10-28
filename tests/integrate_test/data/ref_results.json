@@ -287,6 +287,20 @@
     {
         "result": {}
     },
+    "test_run_abacus_calculation_work_function":
+    {
+        "result": {
+            "work_function_results": [{"work_function": 4.328994681259157, 
+                                       "plateau_start_fractional": 0.5637860082304527, 
+                                       "plateau_end_fractional": 0.8353909465020576}]
+        }
+    },
+    "test_run_abacus_calculation_vacancy_formation_energy":
+    {
+        "result": {
+            "vac_formation_energy": 1.166700944879949
+        }
+    },
     "test_abacus_cal_work_function_al110":
     {
         "result": {

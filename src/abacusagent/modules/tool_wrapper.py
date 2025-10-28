@@ -14,6 +14,8 @@ from abacusagent.modules.submodules.elastic import abacus_cal_elastic
 from abacusagent.modules.submodules.eos import abacus_eos
 from abacusagent.modules.submodules.relax import abacus_do_relax
 from abacusagent.modules.submodules.md import abacus_run_md
+from abacusagent.modules.submodules.work_function import abacus_cal_work_function
+from abacusagent.modules.submodules.vacancy import abacus_cal_vacancy_formation_energy
 
 @mcp.tool()
 def run_abacus_calculation(
@@ -22,7 +24,8 @@ def run_abacus_calculation(
     relax: bool = False,
     relax_cell: bool = True,
     relax_precision: Literal['low', 'medium', 'high'] = 'medium',
-    property: Literal['bader_charge', 'elf', 'band', 'dos', 'elastic_properties', 'eos', 'phonon_dispersion', 'md'] = 'bader_charge',
+    property: Literal['bader_charge', 'elf', 'band', 'dos', 'elastic_properties', 'eos', 'phonon_dispersion', 'md',
+                      'work_function', 'vacancy_formation_energy'] = 'bader_charge',
     lcao: bool = True,
     nspin: Literal[1, 2, 4] = 1,
     dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
@@ -32,6 +35,12 @@ def run_abacus_calculation(
                          Literal['auto']]] = None,
     init_mag: Optional[Dict[str, float]] = None,
     #afm: bool = False,
+    vacuum_direction: Optional[Literal['x', 'y', 'z']] = 'z',
+    dipole_correction: bool = False,
+    vacancy_supercell: List[int] = [1, 1, 1],
+    vacancy_element: str = None,
+    vacancy_element_index: int = 1,
+    vacancy_relax_precision: Literal['low', 'medium', 'high'] = 'medium',
     md_type: Literal['nve', 'nvt', 'npt', 'langevin'] = 'nve',
     md_nstep: int = 10,
     md_dt: float = 1.0,
@@ -47,6 +56,7 @@ def run_abacus_calculation(
     Calculate properties using ABACUS.
 
     Args:
+        The following parameters are commom for all properties:
         stru_file (Path): Structure file in cif, poscar, or abacus/stru format.
         stru_type (Literal["cif", "poscar", "abacus/stru"] = "cif"): Type of structure file, can be 'cif', 'poscar', or 'abacus/stru'. 'cif' is the default. 'poscar' is the VASP POSCAR format. 'abacus/stru' is the ABACUS structure format.
         relax: Whether to do a relax calculation before doing the property calculation. Default is False.
@@ -74,6 +84,17 @@ def run_abacus_calculation(
                 For example, {"Fe": ["d", 4], "O": ["p", 1]} means applying DFT+U to Fe 3d orbital with U=4 eV and O 2p orbital with U=1 eV.
         init_mag ( dict or None): The initial magnetic moment for magnetic elements, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the initial magnetic moment.
 
+        The following parameters are only used when `property` is `work_function`:
+        vacuum_direction (Literal['x', 'y', 'z'] or None): The direction of the vacuum layer. Can be 'x', 'y', or 'z'. Default is 'z'.
+        dipole_correction (bool): Whether to apply dipole correction during the calculation of work function. Default is False.
+        
+        The following parameters are only used when `property` is `vacancy_formation_energy`:
+        vacancy_supercell (List[int]): Supercell matrix. Defaults to [1, 1, 1], which means no supercell in the calculation of vacancy formation energy.
+        vacancy_element (str): Element to be removed. Default is None, which means the first type of element in the structure file.
+        vacancy_element_index (int): Index of the vacancy element. Defaults to 1. The index is in the original structure. and should be counted for the given element.
+        vacancy_relax_precision (Literal['low', 'medium', 'high']): The precision of the relax calculation for the calculation of vacancy formation energy, can be 'low', 'medium', or 'high'. Default is 'medium'.
+            The definition of the relax precision is the same as the relax_precision parameter in the keyword `relax_precision` in the `abacus_cal_band` function.
+        
         The following parameters are only used when `property` is `md`:
         md_type (Literal['nve', 'nvt', 'npt', 'langevin']): The algorithm to integrate the equation of motion for molecular dynamics (MD).
             - nve: NVE ensemble with velocity Verlet algorithm.
@@ -194,6 +215,16 @@ def run_abacus_calculation(
                                 md_pcouple,
                                 md_dumpfreq,
                                 md_seed)
+    elif property == 'work_function':
+        outputs = abacus_cal_work_function(abacus_inputs_dir,
+                                           vacuum_direction,
+                                           dipole_correction)
+    elif property == 'vacancy_formation_energy':
+        outputs = abacus_cal_vacancy_formation_energy(abacus_inputs_dir,
+                                                      vacancy_supercell,
+                                                      vacancy_element,
+                                                      vacancy_element_index,
+                                                      relax_precision)
     else:
         raise ValueError(f'Invalid property: {property}')
     
