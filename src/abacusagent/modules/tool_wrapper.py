@@ -224,7 +224,7 @@ def run_abacus_calculation(
                                                       vacancy_supercell,
                                                       vacancy_element,
                                                       vacancy_element_index,
-                                                      relax_precision)
+                                                      vacancy_relax_precision)
     else:
         raise ValueError(f'Invalid property: {property}')
     
