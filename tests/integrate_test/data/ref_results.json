@@ -68,6 +68,18 @@
             "band_gap": 0.6702
         }
     },
+    "test_abacus_cal_band_nscf_kpath":
+    {
+        "result": {
+            "band_gap": 0.5804
+        }
+    },
+    "test_abacus_cal_band_pyatb_kpath":
+    {
+        "result": {
+            "band_gap": 0.6702
+        }
+    },
     "test_abacus_cal_band_pyatb_pw": 
     {
         "result": {
