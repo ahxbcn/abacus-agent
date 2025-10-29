@@ -1,11 +1,13 @@
 import os
-from typing import Dict, List, Optional, Any, Literal
+from typing import Dict, List, Optional, Any, Literal, Union
 from pathlib import Path
 
 import numpy as np
+import phonopy
 from phonopy import Phonopy
 from phonopy.harmonic.dynmat_to_fc import get_commensurate_points
 from phonopy.structure.atoms import PhonopyAtoms
+from phonopy.phonon.band_structure import get_band_qpoints_by_seekpath, get_band_qpoints_and_path_connections
 from abacustest.lib_prepare.abacus import ReadInput, WriteInput, AbacusStru
 from abacustest.lib_model.comm import check_abacus_inputs
 
@@ -20,6 +22,8 @@ def abacus_phonon_dispersion(
     displacement_stepsize: float = 0.01,
     temperature: Optional[float] = 298.15,
     min_supercell_length: float = 10.0,
+    qpath: Optional[Union[List[str], List[List[str]]]] = None,
+    high_symm_points: Optional[Dict[str, List[float]]] = None
 ):
     """
     Calculate phonon dispersion with finite-difference method using Phonopy with ABACUS as the calculator. 
@@ -33,11 +37,18 @@ def abacus_phonon_dispersion(
         temperature (float, optional): Temperature in Kelvin for thermal properties. Defaults to 298.15. Units in Kelvin.
         min_supercell_length (float): If supercell is not provided, the generated supercell will have a length of lattice vector
             along all 3 directions larger than min_supercell_length. Defaults to 10.0 Angstrom. Units in Angstrom.
+        qpath (Tuple[List[str], List[List[str]]]): 
+            A list of name of high symmetry points in the phonon dispersion path. Non-continuous line of high symmetry points are stored as seperate lists.
+            For example, ['G', 'M', 'K', 'G'] and [['G', 'X', 'P', 'N', 'M', 'S'], ['S_0', 'G', R']] are both acceptable inputs.
+            Default is None. If None, will use automatically generated q-point path.
+            `kpath` must be used with `high_symm_points` to take effect.
+        high_symm_points: A dictionary containing high symmetry points and their coordinates in the band path. All points in `qpath` should be included.
+            For example, {'G': [0, 0, 0], 'M': [0.5, 0.0, 0.0], 'K': [0.33333333, 0.33333333, 0.0], 'G': [0, 0, 0]}.
+            Default is None. If None, will use automatically generated high symmetry points.
     Returns:
         A dictionary containing:
             - phonon_work_path: Path to the directory containing phonon calculation results.
-            - band_plot: Path to the phonon dispersion plot.
-            - dos_plot: Path to the phonon density of states plot.
+            - band_dos_plot: Path to the phonon dispersion plot.
             - entropy: Entropy at the specified temperature.
             - free_energy: Free energy at the specified temperature.
             - heat_capacity: Heat capacity at the specified temperature.
@@ -80,7 +91,7 @@ def abacus_phonon_dispersion(
         phonon = Phonopy(ph_atoms, supercell_matrix=supercell)
         phonon.generate_displacements(distance=displacement_stepsize)
         print("Generated {} supercell structures with displacements.".format(len(phonon.supercells_with_displacements)) +
-              "Doing SCF calculations for each supercell structure...")
+              " Doing SCF calculations for each supercell structure...")
         
         stru_supercell = stru.supercell(supercell)
         structure_index = 1
@@ -120,28 +131,55 @@ def abacus_phonon_dispersion(
 
         comm_q = get_commensurate_points(phonon.supercell_matrix)
         freqs = np.array([phonon.get_frequencies(q) for q in comm_q])
+        
+        # Calculate phonon DOS
+        phonon.run_total_dos()
 
-        band_plot_path = os.path.join(work_path, "phonon_dispersion.png")
-        yaml_path = os.path.join(work_path, "phonon_dispersion.yaml")
-        phonon.auto_band_structure(
-            npoints=101,
-            write_yaml=True,
-            filename=str(yaml_path)
-        )
+        # Calculate phonon dispersion
+        if qpath is not None and high_symm_points is not None: # Use provided qpath
+            # Convert provided qpath to phonopy format used by get_band_qpoints_and_path_connections
+            # Labels of Gamma point are processed during this process
+            qpath_phonopy = []
+            labels = []
+            if all(isinstance(item, str) for item in qpath): # A whole continous qpath:
+                path = []
+                for point in qpath:
+                    path.append(high_symm_points[point])
+                    if point == 'G' or point.lower() == 'gamma':
+                        labels.append(r"$\Gamma$")
+                    else:
+                        labels.append(point)
+                qpath_phonopy.append(path)
+            elif all(isinstance(item, list) for item in qpath): # Q-points line with uncontinous points
+                for sub_path in qpath:
+                    path = []
+                    for point in sub_path:
+                        path.append(high_symm_points[point])
+                        if point == 'G' or point.lower() == 'gamma':
+                            labels.append(r"$\Gamma$")
+                        else:
+                            labels.append(point)
+                    qpath_phonopy.append(path)
 
-        band_plot = phonon.plot_band_structure()
-        band_plot.savefig(band_plot_path, dpi=300)
+            qpoints, connections = get_band_qpoints_and_path_connections(qpath_phonopy, npoints=101)
+            phonon.run_band_structure(qpoints, path_connections=connections, labels=labels)
+        else:
+            # Use automatically generated qpath
+            bands, labels, path_connections = get_band_qpoints_by_seekpath(ph_atoms, npoints=101, is_const_interval=True)
+            phonon.run_band_structure(bands, path_connections=path_connections, labels=labels)
+        
+        # Plot phonon dispersion and DOS
+        import matplotlib.pyplot as plt
 
-        dos_dat_path = (Path(work_path) / "phonon_dos.dat").absolute()
-        phonon.auto_total_dos(write_dat = True, filename=dos_dat_path)
-        dos_plot_path = os.path.join(work_path, "phonon_dos.png")
-        dos_plot = phonon.plot_total_dos(xlabel='Frequency (THz)')
-        dos_plot.savefig(dos_plot_path, dpi=300)
+        band_dos_plot_path = os.path.join(work_path, "phonon_dispersion_dos.png")
+        band_dos_plot = phonon.plot_band_structure_and_dos()
+        axes = plt.gcf().get_axes()
+        axes[0].set_ylabel("Frequency (THz)") # Set ylabel of phonon dispersion plot
+        band_dos_plot.savefig(band_dos_plot_path, dpi=300)
 
         return {
             "phonon_work_path": Path(work_path).absolute(),
-            "band_plot": Path(band_plot_path).absolute(),
-            "dos_plot": Path(dos_plot_path).absolute(),
+            "band_dos_plot": Path(band_dos_plot_path).absolute(),
             "entropy": float(thermal['entropy'][0]),
             "free_energy": float(thermal['free_energy'][0]),
             "heat_capacity": float(thermal['heat_capacity'][0]),

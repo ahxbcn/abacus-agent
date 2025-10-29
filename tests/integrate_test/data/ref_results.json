@@ -196,6 +196,16 @@
             "max_frequency_K": 457.5730044818178
         }
     },
+    "test_abacus_phonon_dispersion_qpath": 
+    {
+        "result": {
+            "entropy": 34.2782712749132,
+            "free_energy": 9.71960956083306,
+            "heat_capacity": 36.163577121277775,
+            "max_frequency_THz": 18.365224492366256, 
+            "max_frequency_K": 881.3911999274384
+        }
+    },
     "test_abacus_vibration_analysis_h2":
     {
         "result": {
