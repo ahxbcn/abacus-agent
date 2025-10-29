@@ -19,6 +19,10 @@ class TestToolWrapper(unittest.TestCase):
         self.stru_scf = self.abacus_inputs_dir_si_prim / "STRU_scf"
         self.abacus_inputs_dir_fe_bcc_prim = Path(__file__).parent / 'abacus_inputs_dirs/Fe-BCC-prim/'
         self.stru_fe_bcc_prim = self.abacus_inputs_dir_fe_bcc_prim / "STRU_cell_relaxed"
+        self.abacus_inputs_dir_al110 = Path(__file__).parent / 'abacus_inputs_dirs/Al110/'
+        self.stru_al110 = self.abacus_inputs_dir_al110 / "STRU"
+        self.abacus_inputs_dir_tial = Path(__file__).parent / 'abacus_inputs_dirs/gamma-TiAl-P4mmm/'
+        self.stru_tial = self.abacus_inputs_dir_tial / "STRU"
 
         self.original_cwd = os.getcwd()
         os.chdir(self.test_path)
@@ -257,3 +261,48 @@ class TestToolWrapper(unittest.TestCase):
         self.assertIsInstance(outputs['md_work_path'], get_path_type())
         self.assertIsInstance(outputs['md_traj_file'], get_path_type())
 
+    def test_run_abacus_calculation_vacancy_formation_energy(self):
+        """
+        Test the abacus_calculation_scf function to calculate vacancy formation energy
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+        test_work_dir = self.test_path / test_func_name
+        os.makedirs(test_work_dir, exist_ok=True)
+        shutil.copy2(self.stru_tial, test_work_dir / "STRU")
+        
+        outputs = run_abacus_calculation(test_work_dir / "STRU", property='vacancy_formation_energy',
+                                         vacancy_supercell = [1, 1, 1],
+                                         vacancy_element = 'Ti',
+                                         vacancy_element_index = 1)
+        
+        print(outputs)
+
+        self.assertIsInstance(outputs['supercell_jobpath'], get_path_type())
+        self.assertIsInstance(outputs['defect_supercell_jobpath'], get_path_type())
+        self.assertIsInstance(outputs['vacancy_element_crys_jobpath'], get_path_type())
+        self.assertAlmostEqual(outputs['vac_formation_energy'], ref_results['vac_formation_energy'], places=3)
+    
+    def test_run_abacus_calculation_work_function(self):
+        """
+        Test the abacus_calculation_scf function to calculate work function
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+        
+        test_work_dir = self.test_path / test_func_name
+        os.makedirs(test_work_dir, exist_ok=True)
+        shutil.copy2(self.stru_al110, test_work_dir / "STRU")
+
+        outputs = run_abacus_calculation(self.stru_al110,
+                                         vacuum_direction='y',
+                                         dipole_correction=False,
+                                         property='work_function')
+
+        print(outputs)
+
+        self.assertIsInstance(outputs['averaged_elecstat_pot_plot'], get_path_type())
+        self.assertEqual(len(outputs['work_function_results']), len(ref_results['work_function_results']))
+        for i in range(len(outputs['work_function_results'])):
+            self.assertAlmostEqual(outputs['work_function_results'][i]['work_function'], ref_results['work_function_results'][i]['work_function'], places=2)
+        
