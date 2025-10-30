@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Literal, Optional, TypedDict, Dict, Any, List, Tuple, Union
+from typing import Literal, Dict, List, Union
 
 from abacusagent.init_mcp import mcp
 from abacusagent.modules.submodules.band import abacus_cal_band as _abacus_cal_band
@@ -42,20 +42,4 @@ def abacus_cal_band(abacus_inputs_dir: Path,
     Raises:
     """
     return _abacus_cal_band(abacus_inputs_dir, mode, kpath, high_symm_points, energy_min, energy_max, insert_point_nums)
-
-@mcp.tool()
-def get_high_symm_points(abacusjob_dir: Path) -> Dict[str, Any]:
-    """
-    Get high symmetry points and kpath for STRU file in ABACUS inputs directory.
-    Args:
-        abacusjob_dir (str): Absolute path to a directory containing the INPUT, STRU, KPT, and pseudopotential or orbital files.
-    Returns:
-        A dictionary containing high symmetry points and suggested kpath for STRU file in ABACUS inputs directory. The most important keys are:
-        - path (List[List[str]]): Suggested path for the given structure.
-        - point_coords: Coordinates of high symmetry points in reciprocal space.
-    """
-    from abacusagent.modules.submodules.band import get_high_symm_points_from_abacus_inputs_dir
-
-    return get_high_symm_points_from_abacus_inputs_dir(abacusjob_dir)
-
 
