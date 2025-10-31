@@ -198,7 +198,7 @@ class TestToolWrapper(unittest.TestCase):
         ref_results = load_test_ref_result(test_func_name)
         test_work_dir = self.test_path / test_func_name
         os.makedirs(test_work_dir, exist_ok=True)
-        shutil.copy2(self._elastic, test_work_dir / "STRU")
+        shutil.copy2(self.stru_elastic, test_work_dir / "STRU")
         
         outputs = run_abacus_calculation(test_work_dir / "STRU", property='elastic_properties')
         print(outputs)
