@@ -14,6 +14,6 @@ def get_high_symm_points_from_abacus_inputs_dir(abacusjob_dir: Path) -> Dict[str
         - path (List[List[str]]): Suggested path for the given structure.
         - point_coords: Coordinates of high symmetry points in reciprocal space.
     """
-    from abacusagent.modules.submodules.band import get_high_symm_points_from_abacus_inputs_dir as _get_high_symm_points_from_abacus_inputs_dir
+    from abacusagent.modules.util.symmetry import get_high_symm_points_from_abacus_inputs_dir as _get_high_symm_points_from_abacus_inputs_dir
 
     return _get_high_symm_points_from_abacus_inputs_dir(abacusjob_dir)
