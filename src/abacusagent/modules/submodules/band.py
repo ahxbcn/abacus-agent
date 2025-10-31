@@ -1,12 +1,11 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Literal, Optional, TypedDict, Dict, Any, List, Tuple
+from typing import Literal, Optional, TypedDict, Dict, Any, List, Union
 from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteInput, WriteKpt
 
 from abacusagent.modules.util.comm import run_abacus, run_pyatb, collect_metrics
 from abacusagent.modules.util.pyatb import property_calculation_scf
-
 
 def read_band_data(band_file: Path, efermi: float):
     """
@@ -41,20 +40,13 @@ def split_array(array: List[Any], splits: List[int]):
     Split band and kline by incontinuous points
     """
     splited_array = []
-    for i in range(len(splits)):
-        if i == 0:
-            start = 0
-        else:
-            start = splits[i-1]
-        
-        if i == len(splits) - 1:
-            end = splits[-1]
-        else:
-            end = splits[i]
-        
-        splited_array.append(array[start:end])
+    start = 0
+
+    for split_point in splits:
+        splited_array.append(array[start:split_point])
+        start = split_point
     
-    splited_array.append(array[splits[-1]:])
+    splited_array.append(array[start:])
     return splited_array
 
 def read_high_symmetry_labels(abacusjob_dir: Path):
@@ -254,7 +246,7 @@ def write_pyatb_input(band_calc_path: Path):
     high_symm_nums = int(kpt_file_content[1][0])
     kpoint_label = ''
     for linenum in range(3, 3+high_symm_nums):
-        kpoint_label += kpt_file_content[linenum][-1].split('#')[1]
+        kpoint_label += kpt_file_content[linenum][-1].split('#')[-1]
         if linenum < 2+high_symm_nums:
             kpoint_label += ", "
     pyatb_input_file.write(f"    kpoint_num    {high_symm_nums}\n")
@@ -330,8 +322,11 @@ def abacus_plot_band_pyatb(band_calc_path: Path,
 
 def abacus_cal_band(abacus_inputs_dir: Path,
                     mode: Literal["nscf", "pyatb", "auto"] = "auto",
+                    kpath: Union[List[str], List[List[str]]] = None,
+                    high_symm_points: Dict[str, List[float]] = None,
                     energy_min: float = -10,
-                    energy_max: float = 10
+                    energy_max: float = 10,
+                    insert_point_nums: int = 30
 ) -> Dict[str, float|str]:
     """
     Calculate band using ABACUS based on prepared directory containing the INPUT, STRU, KPT, and pseudopotential or orbital files.
@@ -346,8 +341,17 @@ def abacus_cal_band(abacus_inputs_dir: Path,
                 -- If matrix files are in `abacus_input_dir`, `pyatb` mode will be used.
                 -- If no matrix file or charge file are in `abacus_input_dir`, will determine mode by `basis_type`. If `basis_type` is lcao, will use `pyatb` mode.
                     If `basis_type` is pw, will use `nscf` mode.
+        kpath (Tuple[List[str], List[List[str]]]): 
+                A list of name of high symmetry points in the band path. Non-continuous line of high symmetry points are stored as seperate lists.
+                For example, ['G', 'M', 'K', 'G'] and [['G', 'X', 'P', 'N', 'M', 'S'], ['S_0', 'G', R']] are both acceptable inputs.
+                Default is None. If None, will use automatically generated kpath.
+                `kpath` must be used with `high_symm_points` to take effect.
+        high_symm_points: A dictionary containing high symmetry points and their coordinates in the band path. All points in `kpath` should be included.
+                For example, {'G': [0, 0, 0], 'M': [0.5, 0.0, 0.0], 'K': [0.33333333, 0.33333333, 0.0], 'G': [0, 0, 0]}.
+                Default is None. If None, will use automatically generated high symmetry points.
         energy_min (float): Lower bound of $E - E_F$ in the plotted band.
         energy_max (float): Upper bound of $E - E_F$ in the plotted band.
+        insert_point_nums (int): Number of points to insert between two high symmetry points. Default is 30.
     Returns:
         A dictionary containing band gap, path to the work directory for calculating band and path to the plotted band.
     Raises:
@@ -357,9 +361,32 @@ def abacus_cal_band(abacus_inputs_dir: Path,
         original_stru_file = os.path.join(abacus_inputs_dir, input_params.get('stru_file', "STRU"))
         original_stru = AbacusStru.ReadStru(original_stru_file)
         band_kpt_file = os.path.join(abacus_inputs_dir, "KPT_band")
-        new_stru, point_coords, path, kpath = original_stru.get_kline(point_number=30,
+        new_stru, point_coords, path, _ = original_stru.get_kline(point_number=30,
                                                                       new_stru_file=original_stru_file,
                                                                       kpt_file=band_kpt_file)
+        
+        if kpath is not None and high_symm_points is not None:
+            kline = []
+            if all(isinstance(item, str) for item in kpath): # A whole continous kline
+                for idx, high_symm_point in enumerate(kpath):
+                    if idx == len(kpath) - 1: # Treat tail of kline
+                        kpoint = high_symm_points[high_symm_point] + [1, '# ' + high_symm_point]
+                    else:
+                        kpoint = high_symm_points[high_symm_point] + [insert_point_nums, '# ' + high_symm_point]
+                    kline.append(kpoint)
+            elif all(isinstance(item, list) for item in kpath): # kline with uncontinous points
+                kline = []
+                for sub_kpath in kpath:
+                    for idx, high_symm_point in enumerate(sub_kpath):
+                        if idx == len(sub_kpath) - 1: # Treat tail of kline
+                            kpoint = high_symm_points[high_symm_point] + [1, '# ' + high_symm_point]
+                        else:
+                            kpoint = high_symm_points[high_symm_point] + [insert_point_nums, '# ' + high_symm_point]
+                        kline.append(kpoint)
+            
+            WriteKpt(kline, band_kpt_file, model='line')
+        elif kpath is not None or high_symm_points is not None:
+            print("kpath and high_symm_points must be used together. Use auto-generated kpath and high_symm_points")
         
         force_run = True if original_stru.get_natoms() != new_stru.get_natoms() else False
         scf_output = property_calculation_scf(abacus_inputs_dir, mode, always_run=force_run)
@@ -394,8 +421,7 @@ def abacus_cal_band(abacus_inputs_dir: Path,
             return {'band_gap': plot_output['band_gap'],
                     'band_calc_dir': Path(work_path).absolute(),
                     'band_picture': Path(plot_output['band_picture']).absolute(),
-                    "message": "The band structure is computed via a non-self-consistent field (NSCF) calculation using ABACUS, \
-                                following a converged self-consistent field (SCF) calculation."}
+                    "message": "The band structure is computed via a non-self-consistent field (NSCF) calculation using ABACUS, following a converged self-consistent field (SCF) calculation."}
         else:
             raise ValueError(f"Calculation mode {mode} not in ('pyatb', 'nscf', 'auto')")
     except Exception as e:

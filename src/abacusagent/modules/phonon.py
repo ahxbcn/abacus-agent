@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Any, Literal
+from typing import Dict, List, Optional, Any, Literal, Union
 from pathlib import Path
 
 from abacusagent.init_mcp import mcp
@@ -11,6 +11,8 @@ def abacus_phonon_dispersion(
     displacement_stepsize: float = 0.01,
     temperature: Optional[float] = 298.15,
     min_supercell_length: float = 10.0,
+    qpath: Optional[Union[List[str], List[List[str]]]] = None,
+    high_symm_points: Optional[Dict[str, List[float]]] = None
 ):
     """
     Calculate phonon dispersion with finite-difference method using Phonopy with ABACUS as the calculator. 
@@ -24,6 +26,14 @@ def abacus_phonon_dispersion(
         temperature (float, optional): Temperature in Kelvin for thermal properties. Defaults to 298.15. Units in Kelvin.
         min_supercell_length (float): If supercell is not provided, the generated supercell will have a length of lattice vector
             along all 3 directions larger than min_supercell_length. Defaults to 10.0 Angstrom. Units in Angstrom.
+        qpath (Tuple[List[str], List[List[str]]]): 
+            A list of name of high symmetry points in the phonon dispersion path. Non-continuous line of high symmetry points are stored as seperate lists.
+            For example, ['G', 'M', 'K', 'G'] and [['G', 'X', 'P', 'N', 'M', 'S'], ['S_0', 'G', R']] are both acceptable inputs.
+            Default is None. If None, will use automatically generated q-point path.
+            `kpath` must be used with `high_symm_points` to take effect.
+        high_symm_points: A dictionary containing high symmetry points and their coordinates in the band path. All points in `qpath` should be included.
+            For example, {'G': [0, 0, 0], 'M': [0.5, 0.0, 0.0], 'K': [0.33333333, 0.33333333, 0.0], 'G': [0, 0, 0]}.
+            Default is None. If None, will use automatically generated high symmetry points.
     Returns:
         A dictionary containing:
             - phonon_work_path: Path to the directory containing phonon calculation results.
@@ -40,5 +50,7 @@ def abacus_phonon_dispersion(
         supercell,
         displacement_stepsize,
         temperature,
-        min_supercell_length
+        min_supercell_length,
+        qpath,
+        high_symm_points
     )

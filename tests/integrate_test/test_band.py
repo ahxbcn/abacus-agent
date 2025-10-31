@@ -125,6 +125,76 @@ class TestAbacusCalBand(unittest.TestCase):
         self.assertIsInstance(band_picture, get_path_type())
         self.assertAlmostEqual(outputs['band_gap'], ref_results['band_gap'], places=4)
     
+    def test_abacus_cal_band_nscf_kpath(self):
+        """
+        Test plot band structure using given k-path in nscf mode.
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+
+        test_work_dir = self.test_path / test_func_name
+        shutil.copytree(self.abacus_inputs_dir_si_prim, test_work_dir)
+        shutil.copy2(self.si_stru_band_supercell, test_work_dir / "STRU")
+
+        kpath = [['G', 'X', 'U', 'K', 'G', 'L', 'U', 'W', 'L', 'K'], ['U', 'X']]
+        high_symm_points = {
+            'G': [0.0, 0.0, 0.0],
+            'X': [0.5, 0.0, 0.5],
+            'U': [0.625, 0.250, 0.625],
+            'K': [0.375, 0.375, 0.750],
+            'L': [0.5, 0.5, 0.5],
+            'W': [0.5, 0.25, 0.75]
+        }
+
+        outputs = abacus_cal_band(test_work_dir, 
+                                  mode='nscf',
+                                  kpath=kpath,
+                                  high_symm_points=high_symm_points,
+                                  energy_min=-10,
+                                  energy_max=10)
+        print(outputs)
+
+        band_calc_dir = outputs['band_calc_dir']
+        band_picture = outputs['band_picture']
+        self.assertIsInstance(band_calc_dir, get_path_type())
+        self.assertIsInstance(band_picture, get_path_type())
+        self.assertAlmostEqual(outputs['band_gap'], ref_results['band_gap'], places=4)
+    
+    def test_abacus_cal_band_pyatb_kpath(self):
+        """
+        Test plot band structure using given k-path in nscf mode.
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+
+        test_work_dir = self.test_path / test_func_name
+        shutil.copytree(self.abacus_inputs_dir_si_prim, test_work_dir)
+        shutil.copy2(self.si_stru_band_supercell, test_work_dir / "STRU")
+
+        kpath = [['G', 'X', 'U', 'K', 'G', 'L', 'U', 'W', 'L', 'K'], ['U', 'X']]
+        high_symm_points = {
+            'G': [0.0, 0.0, 0.0],
+            'X': [0.5, 0.0, 0.5],
+            'U': [0.625, 0.250, 0.625],
+            'K': [0.375, 0.375, 0.750],
+            'L': [0.5, 0.5, 0.5],
+            'W': [0.5, 0.25, 0.75]
+        }
+
+        outputs = abacus_cal_band(test_work_dir, 
+                                  mode='pyatb',
+                                  kpath=kpath,
+                                  high_symm_points=high_symm_points,
+                                  energy_min=-10,
+                                  energy_max=10)
+        print(outputs)
+
+        band_calc_dir = outputs['band_calc_dir']
+        band_picture = outputs['band_picture']
+        self.assertIsInstance(band_calc_dir, get_path_type())
+        self.assertIsInstance(band_picture, get_path_type())
+        self.assertAlmostEqual(outputs['band_gap'], ref_results['band_gap'], places=4)
+    
 
 class TestAbacusCalBandPw(unittest.TestCase):
     """
