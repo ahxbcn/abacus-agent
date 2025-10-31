@@ -17,6 +17,8 @@ class TestToolWrapper(unittest.TestCase):
         self.test_path = Path(self.test_dir.name)
         self.abacus_inputs_dir_si_prim = Path(__file__).parent / 'abacus_inputs_dirs/Si-prim/'
         self.stru_scf = self.abacus_inputs_dir_si_prim / "STRU_scf"
+        self.abacus_inputs_dir_si_prim_elastic = Path(__file__).parent / 'abacus_inputs_dirs/Si-prim-elastic/'
+        self.stru_elastic = self.abacus_inputs_dir_si_prim_elastic / "STRU_cell_relaxed"
         self.abacus_inputs_dir_fe_bcc_prim = Path(__file__).parent / 'abacus_inputs_dirs/Fe-BCC-prim/'
         self.stru_fe_bcc_prim = self.abacus_inputs_dir_fe_bcc_prim / "STRU_cell_relaxed"
         self.abacus_inputs_dir_al110 = Path(__file__).parent / 'abacus_inputs_dirs/Al110/'
@@ -163,7 +165,7 @@ class TestToolWrapper(unittest.TestCase):
         badercharge_run_workpath = outputs['badercharge_run_workpath']
         self.assertIsInstance(abacus_workpath, get_path_type())
         self.assertIsInstance(badercharge_run_workpath, get_path_type())
-        for act, ref in zip(outputs['bader_charges'], ref_results['bader_charges']):
+        for act, ref in zip(outputs['net_charges'], ref_results['net_charges']):
             self.assertAlmostEqual(act, ref, places=3)
         for act, ref in zip(outputs['atom_labels'], ref_results['atom_labels']):
             self.assertEqual(act, ref)
@@ -196,7 +198,7 @@ class TestToolWrapper(unittest.TestCase):
         ref_results = load_test_ref_result(test_func_name)
         test_work_dir = self.test_path / test_func_name
         os.makedirs(test_work_dir, exist_ok=True)
-        shutil.copy2(self.stru_scf, test_work_dir / "STRU")
+        shutil.copy2(self._elastic, test_work_dir / "STRU")
         
         outputs = run_abacus_calculation(test_work_dir / "STRU", property='elastic_properties')
         print(outputs)
@@ -229,8 +231,7 @@ class TestToolWrapper(unittest.TestCase):
         print(outputs)
         
         self.assertIsInstance(outputs['phonon_work_path'], get_path_type())
-        self.assertIsInstance(outputs['band_plot'], get_path_type())
-        self.assertIsInstance(outputs['dos_plot'], get_path_type())
+        self.assertIsInstance(outputs['band_dos_plot'], get_path_type())
 
         self.assertAlmostEqual(outputs['entropy'], ref_results['entropy'], places=2)
         self.assertAlmostEqual(outputs['free_energy'], ref_results['free_energy'], places=2)
