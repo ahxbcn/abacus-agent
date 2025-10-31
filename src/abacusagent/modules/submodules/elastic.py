@@ -85,7 +85,8 @@ def abacus_cal_elastic(
     abacus_inputs_dir: Path,
     norm_strain: float = 0.01,
     shear_strain: float = 0.01,
-    kspacing: float = 0.08
+    kspacing: float = 0.08,
+    relax_force_thr_ev: float = 0.01
 ) -> Dict[str, float]:
     """
     Calculate various elastic constants for a given structure using ABACUS. 
@@ -94,6 +95,7 @@ def abacus_cal_elastic(
         norm_strain (float): Normal strain to calculate elastic constants, default is 0.01.
         shear_strain (float): Shear strain to calculate elastic constants, default is 0.01.
         kspacing (float): K-point spacing for ABACUS calculation, default is 0.08. Units in Bohr^{-1}.
+        relax_force_thr_ev (float): Threshold for force convergence of the relax calculation for each deformed structure, default is 0.02. Units in eV/Angstrom.
     Returns:
         A dictionary containing the following keys:
         - elastic_cal_dir (Path): Work path of running abacus_cal_elastic. 
@@ -127,7 +129,8 @@ def abacus_cal_elastic(
             WriteKpt(kpoint_list = kpt + [0, 0, 0],
                      file_name = os.path.join(input_stru_dir, input_params.get('kpt_file', 'KPT')))
             del input_params['kspacing']
-        input_params["calculation"] = 'scf'
+        input_params["calculation"] = 'relax'
+        input_params["force_thr_ev"] = relax_force_thr_ev
         input_params["cal_stress"] = 1
         WriteInput(input_params, os.path.join(input_stru_dir, "INPUT"))
 
