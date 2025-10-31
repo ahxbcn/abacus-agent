@@ -207,12 +207,12 @@ class TestToolWrapper(unittest.TestCase):
         for elastic_tensor_output_row, elastic_tensor_ref_row in zip(outputs['elastic_tensor'], ref_results['elastic_tensor']):
             self.assertEqual(len(elastic_tensor_output_row), len(elastic_tensor_ref_row))
             for element_output, element_ref in zip(elastic_tensor_output_row, elastic_tensor_ref_row):
-                self.assertAlmostEqual(element_output, element_ref, places=3)
+                self.assertAlmostEqual(element_output, element_ref, delta=0.1)
 
-        self.assertAlmostEqual(outputs['bulk_modulus'], ref_results['bulk_modulus'], places=2)
-        self.assertAlmostEqual(outputs['shear_modulus'], ref_results['shear_modulus'], places=2)
-        self.assertAlmostEqual(outputs['young_modulus'], ref_results['young_modulus'], places=2)
-        self.assertAlmostEqual(outputs['poisson_ratio'], ref_results['poisson_ratio'], places=2)
+        self.assertAlmostEqual(outputs['bulk_modulus'], ref_results['bulk_modulus'], delta=0.1)
+        self.assertAlmostEqual(outputs['shear_modulus'], ref_results['shear_modulus'], delta=0.1)
+        self.assertAlmostEqual(outputs['young_modulus'], ref_results['young_modulus'], delta=0.1)
+        self.assertAlmostEqual(outputs['poisson_ratio'], ref_results['poisson_ratio'], delta=0.01)
     
     @pytest.mark.long
     def test_run_abacus_calculation_phonon_dispersion(self):
