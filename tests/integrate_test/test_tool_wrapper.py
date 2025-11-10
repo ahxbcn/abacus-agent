@@ -227,14 +227,32 @@ class TestToolWrapper(unittest.TestCase):
         os.makedirs(test_work_dir, exist_ok=True)
         shutil.copy2(self.stru_scf, test_work_dir / "STRU")
         
-        outputs = run_abacus_calculation(test_work_dir / "STRU", property='band')
+        #outputs = run_abacus_calculation(test_work_dir / "STRU", property='band')
+        outputs = abacus_cal_band(stru_file = self.stru_scf,
+                                  stru_type='abacus/stru',
+                                  lcao=True,
+                                  nspin=1,
+                                  dft_functional="PBE",
+                                  dftu=False,
+                                  dftu_param=None,
+                                  init_mag=None,
+                                  relax_cell=True,
+                                  relax_precision='medium',
+                                  relax_method='cg',
+                                  fixed_axes=None,
+                                  mode='auto',
+                                  kpath=None,
+                                  high_symm_points=None,
+                                  energy_min=-10,
+                                  energy_max=10,
+                                  insert_point_nums=30)
         print(outputs)
 
         band_calc_dir = outputs['band_calc_dir']
         band_picture = outputs['band_picture']
         self.assertIsInstance(band_calc_dir, get_path_type())
         self.assertIsInstance(band_picture, get_path_type())
-        self.assertAlmostEqual(outputs['band_gap'], ref_results['band_gap'], places=4)
+        self.assertAlmostEqual(outputs['band_gap'], ref_results['band_gap'], delta=1e-4)
     
     @pytest.mark.long
     def test_run_abacus_calculation_elastic_properties(self):

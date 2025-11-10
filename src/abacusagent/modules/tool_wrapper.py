@@ -7,7 +7,7 @@ from abacusagent.modules.util.comm import get_relax_precision
 from abacusagent.modules.submodules.abacus import abacus_prepare
 from abacusagent.modules.submodules.scf import abacus_calculation_scf as _abacus_calculation_scf
 from abacusagent.modules.submodules.cube import abacus_cal_elf
-from abacusagent.modules.submodules.band import abacus_cal_band
+from abacusagent.modules.submodules.band import abacus_cal_band as _abacus_cal_band
 from abacusagent.modules.submodules.bader import abacus_badercharge_run as _abacus_badercharge_run
 from abacusagent.modules.submodules.dos import abacus_dos_run as _abacus_dos_run
 from abacusagent.modules.submodules.phonon import abacus_phonon_dispersion
@@ -491,3 +491,59 @@ def abacus_dos_run(
                                   dos_nche)
     
     return dos_results
+
+@mcp.tool()
+def abacus_cal_band(
+    stru_file: Path,
+    stru_type: Literal["cif", "poscar", "abacus/stru"] = "cif",
+    lcao: bool = True,
+    nspin: Literal[1, 2] = 1,
+    dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
+    #soc: bool = False,
+    dftu: bool = False,
+    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
+                         Literal['auto']]] = None,
+    init_mag: Optional[Dict[str, float]] = None,
+    #afm: bool = False,
+    max_steps: int = 100,
+    relax: bool = False,
+    relax_cell: bool = True,
+    relax_precision: Literal['low', 'medium', 'high'] = 'medium',
+    relax_method: Literal["cg", "bfgs", "bfgs_trad", "cg_bfgs", "sd", "fire"] = "cg",
+    fixed_axes: Literal["None", "volume", "shape", "a", "b", "c", "ab", "ac", "bc"] = None,
+    mode: Literal["nscf", "pyatb", "auto"] = "auto",
+    kpath: Union[List[str], List[List[str]]] = None,
+    high_symm_points: Dict[str, List[float]] = None,
+    energy_min: float = -10,
+    energy_max: float = 10,
+    insert_point_nums: int = 30
+) -> Dict[str, Any]:
+    """
+    """
+    abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
+                                              stru_type=stru_type,
+                                              lcao=lcao,
+                                              nspin=nspin,
+                                              dft_functional=dft_functional,
+                                              dftu=dftu,
+                                              dftu_param=dftu_param,
+                                              init_mag=init_mag)
+    
+    if relax:
+        relax_outputs = do_relax(abacus_inputs_dir=abacus_inputs_dir,
+                                 max_steps=max_steps,
+                                 relax_cell=relax_cell,
+                                 relax_precision=relax_precision,
+                                 fixed_axes=fixed_axes,
+                                 relax_method=relax_method)
+        abacus_inputs_dir = relax_outputs['new_abacus_inputs_dir']
+    
+    band_calculation_outputs = _abacus_cal_band(abacus_inputs_dir,
+                                                mode,
+                                                kpath,
+                                                high_symm_points,
+                                                energy_min,
+                                                energy_max,
+                                                insert_point_nums)
+    
+    return band_calculation_outputs
