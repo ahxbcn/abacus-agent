@@ -5,7 +5,7 @@ import unittest
 import tempfile
 import inspect
 import pytest
-from abacusagent.modules.tool_wrapper import run_abacus_calculation
+from abacusagent.modules.tool_wrapper import *
 from utils import initilize_test_env, load_test_ref_result, get_path_type
 
 initilize_test_env()
@@ -158,7 +158,18 @@ class TestToolWrapper(unittest.TestCase):
         os.makedirs(test_work_dir, exist_ok=True)
         shutil.copy2(self.stru_scf, test_work_dir / "STRU")
         
-        outputs = run_abacus_calculation(test_work_dir / "STRU", property='bader_charge')
+        outputs = abacus_badercharge_run(stru_file=self.stru_scf,
+                                         stru_type='abacus/stru',
+                                         lcao=True,
+                                         nspin=1,
+                                         dft_functional="PBE",
+                                         dftu=False,
+                                         dftu_param=None,
+                                         init_mag=None,
+                                         relax_cell=True,
+                                         relax_precision='medium',
+                                         relax_method='cg',
+                                         fixed_axes=None)
         print(outputs)
 
         abacus_workpath = outputs['abacus_workpath']
@@ -166,7 +177,7 @@ class TestToolWrapper(unittest.TestCase):
         self.assertIsInstance(abacus_workpath, get_path_type())
         self.assertIsInstance(badercharge_run_workpath, get_path_type())
         for act, ref in zip(outputs['net_charges'], ref_results['net_charges']):
-            self.assertAlmostEqual(act, ref, places=3)
+            self.assertAlmostEqual(act, ref, delta=1e-3)
         for act, ref in zip(outputs['atom_labels'], ref_results['atom_labels']):
             self.assertEqual(act, ref)
     

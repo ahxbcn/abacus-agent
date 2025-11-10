@@ -7,15 +7,98 @@ from abacusagent.modules.util.comm import get_relax_precision
 from abacusagent.modules.submodules.abacus import abacus_prepare
 from abacusagent.modules.submodules.cube import abacus_cal_elf
 from abacusagent.modules.submodules.band import abacus_cal_band
-from abacusagent.modules.submodules.bader import abacus_badercharge_run
+from abacusagent.modules.submodules.bader import abacus_badercharge_run as _abacus_badercharge_run
 from abacusagent.modules.submodules.dos import abacus_dos_run
 from abacusagent.modules.submodules.phonon import abacus_phonon_dispersion
 from abacusagent.modules.submodules.elastic import abacus_cal_elastic
 from abacusagent.modules.submodules.eos import abacus_eos
-from abacusagent.modules.submodules.relax import abacus_do_relax
+from abacusagent.modules.submodules.relax import abacus_do_relax as _abacus_do_relax
 from abacusagent.modules.submodules.md import abacus_run_md
 from abacusagent.modules.submodules.work_function import abacus_cal_work_function
 from abacusagent.modules.submodules.vacancy import abacus_cal_vacancy_formation_energy
+
+
+def prepare_abacus_inputs(
+    stru_file: Path,
+    stru_type: Literal["cif", "poscar", "abacus/stru"] = "cif",
+    lcao: bool = True,
+    nspin: Literal[1, 2, 4] = 1,
+    dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
+    #soc: bool = False,
+    dftu: bool = False,
+    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
+                         Literal['auto']]] = None,
+    init_mag: Optional[Dict[str, float]] = None,
+    #afm: bool = False,
+) -> Dict[str, Any]:
+    """
+    Commom prepare ABACUS inputs for ABACUS calculation in this file.
+    """
+    extra_input = {}
+    if dft_functional in ['PBE', 'PBEsol', 'LDA', 'SCAN']:
+        extra_input['dft_functional'] = dft_functional
+    elif dft_functional in ['R2SCAN']:
+        extra_input['dft_functional'] = 'MGGA_X_R2SCAN+MGGA_C_R2SCAN'
+    elif dft_functional in [ 'HSE', 'PBE0']:
+        print("Calculating with hybird functionals like HSE and PBE0 needs much longer time and much more meory than GGA functionals such as PBE.")
+        extra_input['dft_functional'] = dft_functional
+        os.environ['ABACUS_COMMAND'] = "OMP_NUM_THREADS=16 abacus" # Set to use OpenMP for hybrid functionals like HSE and PBE0
+    else:
+        print("DFT functional not supported now. Use dafault PBE functional.")
+    
+    abacus_prepare_outputs = abacus_prepare(stru_file=stru_file,
+                                            stru_type=stru_type,
+                                            lcao=lcao,
+                                            nspin=nspin,
+                                            #soc=soc,
+                                            dftu=dftu,
+                                            dftu_param=dftu_param,
+                                            init_mag=init_mag,
+                                            #afm=afm,
+                                            extra_input=extra_input)
+    
+    abacus_inputs_dir = abacus_prepare_outputs['abacus_inputs_dir']
+    
+    return abacus_inputs_dir
+
+def do_relax(
+    abacus_inputs_dir: Path = None,
+    max_steps: int = 100,
+    relax_cell: bool = True,
+    relax_precision: Literal['low', 'medium', 'high'] = 'medium',
+    fixed_axes: Optional[Literal["None", "volume", "shape", "a", "b", "c", "ab", "ac", "bc"]] = None,
+    relax_method: Optional[Literal["cg", "bfgs", "bfgs_trad", "cg_bfgs", "sd", "fire"]] = None,
+) -> Dict[str, Any]:
+    """
+    Do relax calculation using ABACUS.
+    """
+    relax_thresholds = get_relax_precision(relax_precision)
+    
+    if relax_cell is False: # For ABACUS LTSv3.10.0
+        relax_method = 'bfgs_trad'
+    else:
+        relax_method = 'cg'
+    
+    relax_outputs = _abacus_do_relax(abacus_inputs_dir,
+                                     force_thr_ev=relax_thresholds['force_thr_ev'],
+                                     stress_thr_kbar=relax_thresholds['stress_thr'],
+                                     max_steps=max_steps,
+                                     relax_cell=relax_cell,
+                                     relax_method=relax_method,
+                                     fixed_axes=fixed_axes)
+    
+    if relax_outputs['result']['normal_end'] is False:
+        raise ValueError('Relaxation calculation failed')
+    elif relax_outputs['result']['relax_converge'] is False:
+        return {"msg":f'Relaxation calculation did not converge in {max_steps} steps',
+                "final_stru": Path(relax_outputs['new_abacus_inputs_dir']) / "STRU",
+                **relax_outputs["result"]}
+    else:
+        print("Relax calculation completed successfully.")
+        abacus_inputs_dir = relax_outputs['new_abacus_inputs_dir']
+    
+    return {'final_stru': Path(relax_outputs['new_abacus_inputs_dir']) / "STRU",
+            **relax_outputs}
 
 @mcp.tool()
 def run_abacus_calculation(
@@ -229,4 +312,126 @@ def run_abacus_calculation(
         raise ValueError(f'Invalid property: {property}')
     
     return outputs
+
+@mcp.tool()
+def abacus_calculation_scf(
+    stru_file: Path,
+    stru_type: Literal["cif", "poscar", "abacus/stru"] = "cif",
+    relax: bool = False,
+    relax_cell: bool = True,
+    relax_precision: Literal['low', 'medium', 'high'] = 'medium',
+    lcao: bool = True,
+    nspin: Literal[1, 2] = 1,
+    dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
+    #soc: bool = False,
+    dftu: bool = False,
+    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
+                         Literal['auto']]] = None,
+    init_mag: Optional[Dict[str, float]] = None,
+    #afm: bool = False,
+) -> Dict[str, Any]:
+    """
+    Run ABACUS SCF calculation.
+
+    Args:
+        abacusjob (str): Path to the directory containing the ABACUS input files.
+    Returns:
+        A dictionary containing the path to output file of ABACUS calculation, and a dictionary containing whether the SCF calculation
+        finished normally, the SCF is converged or not, the converged SCF energy and total time used.
+    """
+    abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
+                                              stru_type=stru_type,
+                                              lcao=lcao,
+                                              nspin=nspin,
+                                              dft_functional=dft_functional,
+                                              dftu=dftu,
+                                              dftu_param=dftu_param,
+                                              init_mag=init_mag)
     
+    return abacus_calculation_scf(abacus_inputs_dir)
+
+@mcp.tool()
+def abacus_do_relax(
+    stru_file: Path,
+    stru_type: Literal["cif", "poscar", "abacus/stru"] = "cif",
+    lcao: bool = True,
+    nspin: Literal[1, 2] = 1,
+    dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
+    #soc: bool = False,
+    dftu: bool = False,
+    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
+                         Literal['auto']]] = None,
+    init_mag: Optional[Dict[str, float]] = None,
+    #afm: bool = False,
+    max_steps: int = 100,
+    relax_cell: bool = True,
+    relax_precision: Literal['low', 'medium', 'high'] = 'medium',
+    relax_method: Literal["cg", "bfgs", "bfgs_trad", "cg_bfgs", "sd", "fire"] = "cg",
+    fixed_axes: Literal["None", "volume", "shape", "a", "b", "c", "ab", "ac", "bc"] = None,
+) -> Dict[str, Any]:
+    """
+    Perform relaxation calculations using ABACUS based on the provided input files. The results of the relaxation and 
+    the new ABACUS input files containing final relaxed structure will be returned.
+    """
+    abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
+                                              stru_type=stru_type,
+                                              lcao=lcao,
+                                              nspin=nspin,
+                                              dft_functional=dft_functional,
+                                              dftu=dftu,
+                                              dftu_param=dftu_param,
+                                              init_mag=init_mag)
+    
+    relax_outputs = do_relax(abacus_inputs_dir=abacus_inputs_dir,
+                             max_steps=max_steps,
+                             relax_cell=relax_cell,
+                             relax_precision=relax_precision,
+                             fixed_axes=fixed_axes,
+                             relax_method=relax_method)
+
+    return relax_outputs
+
+@mcp.tool()
+def abacus_badercharge_run(
+    stru_file: Path,
+    stru_type: Literal["cif", "poscar", "abacus/stru"] = "cif",
+    lcao: bool = True,
+    nspin: Literal[1, 2] = 1,
+    dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
+    #soc: bool = False,
+    dftu: bool = False,
+    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
+                         Literal['auto']]] = None,
+    init_mag: Optional[Dict[str, float]] = None,
+    #afm: bool = False,
+    max_steps: int = 100,
+    relax_cell: bool = True,
+    relax_precision: Literal['low', 'medium', 'high'] = 'medium',
+    relax_method: Literal["cg", "bfgs", "bfgs_trad", "cg_bfgs", "sd", "fire"] = "cg",
+    fixed_axes: Literal["None", "volume", "shape", "a", "b", "c", "ab", "ac", "bc"] = None,
+) -> List[float]:
+    """
+    Run Bader charge calculation using ABACUS based on the provided input files. The results of the Bader charge calculation
+    will be returned.
+    """
+    abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
+                                              stru_type=stru_type,
+                                              lcao=lcao,
+                                              nspin=nspin,
+                                              dft_functional=dft_functional,
+                                              dftu=dftu,
+                                              dftu_param=dftu_param,
+                                              init_mag=init_mag)
+    
+    relax_outputs = do_relax(abacus_inputs_dir=abacus_inputs_dir,
+                             max_steps=max_steps,
+                             relax_cell=relax_cell,
+                             relax_precision=relax_precision,
+                             fixed_axes=fixed_axes,
+                             relax_method=relax_method)
+    
+    new_abacus_inputs_dir = relax_outputs['new_abacus_inputs_dir']
+
+    badercharge_results = _abacus_badercharge_run(new_abacus_inputs_dir)
+
+    return badercharge_results
