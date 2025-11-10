@@ -9,7 +9,7 @@ from abacusagent.modules.submodules.scf import abacus_calculation_scf as _abacus
 from abacusagent.modules.submodules.cube import abacus_cal_elf
 from abacusagent.modules.submodules.band import abacus_cal_band
 from abacusagent.modules.submodules.bader import abacus_badercharge_run as _abacus_badercharge_run
-from abacusagent.modules.submodules.dos import abacus_dos_run
+from abacusagent.modules.submodules.dos import abacus_dos_run as _abacus_dos_run
 from abacusagent.modules.submodules.phonon import abacus_phonon_dispersion
 from abacusagent.modules.submodules.elastic import abacus_cal_elastic
 from abacusagent.modules.submodules.eos import abacus_eos
@@ -433,3 +433,61 @@ def abacus_badercharge_run(
     badercharge_results = _abacus_badercharge_run(new_abacus_inputs_dir)
 
     return badercharge_results
+
+@mcp.tool()
+def abacus_dos_run(
+    stru_file: Path,
+    stru_type: Literal["cif", "poscar", "abacus/stru"] = "cif",
+    lcao: bool = True,
+    nspin: Literal[1, 2] = 1,
+    dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
+    #soc: bool = False,
+    dftu: bool = False,
+    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
+                         Literal['auto']]] = None,
+    init_mag: Optional[Dict[str, float]] = None,
+    #afm: bool = False,
+    max_steps: int = 100,
+    relax: bool = False,
+    relax_cell: bool = True,
+    relax_precision: Literal['low', 'medium', 'high'] = 'medium',
+    relax_method: Literal["cg", "bfgs", "bfgs_trad", "cg_bfgs", "sd", "fire"] = "cg",
+    fixed_axes: Literal["None", "volume", "shape", "a", "b", "c", "ab", "ac", "bc"] = None,
+    pdos_mode: Literal['species', 'species+shell', 'species+orbital'] = 'species+shell',
+    dos_edelta_ev: float = 0.01,
+    dos_sigma: float = 0.07,
+    dos_scale: float = 0.01,
+    dos_emin_ev: float = None,
+    dos_emax_ev: float = None,
+    dos_nche: int = None,
+) -> Dict[str, Any]:
+    """
+    """
+    abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
+                                              stru_type=stru_type,
+                                              lcao=lcao,
+                                              nspin=nspin,
+                                              dft_functional=dft_functional,
+                                              dftu=dftu,
+                                              dftu_param=dftu_param,
+                                              init_mag=init_mag)
+    
+    if relax:
+        relax_outputs = do_relax(abacus_inputs_dir=abacus_inputs_dir,
+                                 max_steps=max_steps,
+                                 relax_cell=relax_cell,
+                                 relax_precision=relax_precision,
+                                 fixed_axes=fixed_axes,
+                                 relax_method=relax_method)
+        abacus_inputs_dir = relax_outputs['new_abacus_inputs_dir']
+
+    dos_results = _abacus_dos_run(abacus_inputs_dir,
+                                  pdos_mode,
+                                  dos_edelta_ev,
+                                  dos_sigma,
+                                  dos_scale,
+                                  dos_emin_ev,
+                                  dos_emax_ev,
+                                  dos_nche)
+    
+    return dos_results

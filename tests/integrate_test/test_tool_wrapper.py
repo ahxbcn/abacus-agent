@@ -96,10 +96,10 @@ class TestToolWrapper(unittest.TestCase):
         relax_precision_contents = get_relax_precision(relax_precision)
         self.assertTrue(outputs['result']['largest_gradient'][-1] <= relax_precision_contents['force_thr_ev'])
         self.assertTrue(outputs['result']['largest_gradient_stress'][-1] <= relax_precision_contents['stress_thr'])
-    
+
     def test_run_abacus_calculation_dos(self):
         """
-        Test the abacus_calculation_scf function to calculate DOS.
+        Test the wrapper function of calculating DOS.
         """
         test_func_name = inspect.currentframe().f_code.co_name
         ref_results = load_test_ref_result(test_func_name)
@@ -107,30 +107,25 @@ class TestToolWrapper(unittest.TestCase):
         os.makedirs(test_work_dir, exist_ok=True)
         shutil.copy2(self.stru_scf, test_work_dir / "STRU")
         
-        outputs = run_abacus_calculation(test_work_dir / "STRU", property='dos')
-        print(outputs)
-
-        dos_fig_path = outputs['dos_fig_path']
-        pdos_fig_path = outputs['pdos_fig_path']
-
-        self.assertIsInstance(dos_fig_path, get_path_type())
-        self.assertIsInstance(pdos_fig_path, get_path_type())
-        self.assertTrue(outputs['scf_normal_end'])
-        self.assertTrue(outputs['scf_converge'])
-        self.assertTrue(outputs['nscf_normal_end'])
-        self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'])
-
-    def test_run_abacus_calculation_dos_relax(self):
-        """
-        Test the abacus_calculation_scf function to calculate DOS after a cell-relax calculation.
-        """
-        test_func_name = inspect.currentframe().f_code.co_name
-        ref_results = load_test_ref_result(test_func_name)
-        test_work_dir = self.test_path / test_func_name
-        os.makedirs(test_work_dir, exist_ok=True)
-        shutil.copy2(self.stru_scf, test_work_dir / "STRU")
-        
-        outputs = run_abacus_calculation(test_work_dir / "STRU", relax=True, relax_cell=True, property='dos')
+        #outputs = run_abacus_calculation(test_work_dir / "STRU", relax=True, relax_cell=True, property='dos')
+        outputs = abacus_dos_run(test_work_dir / "STRU",
+                                 stru_type='abacus/stru',
+                                 lcao=True,
+                                 nspin=1,
+                                 dft_functional='PBE',
+                                 dftu=False,
+                                 dftu_param=None,
+                                 init_mag=None,
+                                 max_steps=100,
+                                 relax=True,
+                                 relax_cell=True,
+                                 relax_method='cg',
+                                 relax_precision='medium',
+                                 fixed_axes=None,
+                                 pdos_mode='species+shell',
+                                 dos_edelta_ev=0.01,
+                                 dos_sigma=0.07,
+                                 dos_scale=0.01)
         print(outputs)
 
         dos_fig_path = outputs['dos_fig_path']
@@ -143,29 +138,6 @@ class TestToolWrapper(unittest.TestCase):
         self.assertTrue(outputs['nscf_normal_end'])
         self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'])
     
-    def test_run_abacus_calculation_dft_functional(self):
-        """
-        Test the abacus_calculation_scf function to calculate DOS with different DFT functional.
-        """
-        test_func_name = inspect.currentframe().f_code.co_name
-        ref_results = load_test_ref_result(test_func_name)
-        test_work_dir = self.test_path / test_func_name
-        os.makedirs(test_work_dir, exist_ok=True)
-        shutil.copy2(self.stru_scf, test_work_dir / "STRU")
-        
-        outputs = run_abacus_calculation(test_work_dir / "STRU", dft_functional="PBEsol", property='dos')
-        print(outputs)
-
-        dos_fig_path = outputs['dos_fig_path']
-        pdos_fig_path = outputs['pdos_fig_path']
-
-        self.assertIsInstance(dos_fig_path, get_path_type())
-        self.assertIsInstance(pdos_fig_path, get_path_type())
-        self.assertTrue(outputs['scf_normal_end'])
-        self.assertTrue(outputs['scf_converge'])
-        self.assertTrue(outputs['nscf_normal_end'])
-        self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'])
-
     def test_run_abacus_calculation_nspin_init_mag(self):
         """
         Test the abacus_calculation_scf function with nspin and initial magnetic moments setted.

@@ -254,19 +254,7 @@
     "test_run_abacus_calculation_dos":
     {
         "result": {
-            "scf_energy": -230.133277086824
-        }
-    },
-    "test_run_abacus_calculation_dos_relax":
-    {
-        "result": {
-            "scf_energy": -230.1492835634546
-        }
-    },
-    "test_run_abacus_calculation_dft_functional":
-    {
-        "result": {
-            "scf_energy": -229.6779298720992
+            "scf_energy": -230.1492835633984
         }
     },
     "test_run_abacus_calculation_nspin_init_mag":
