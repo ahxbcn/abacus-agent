@@ -237,6 +237,14 @@
     {
         "result": {}
     },
+    "test_run_abacus_calculation_scf": 
+    {
+        "result": {
+            "normal_end": true,
+            "converge": true,
+            "energy": -230.1332772649323
+        }
+    },
     "test_run_abacus_calculation_dos":
     {
         "result": {

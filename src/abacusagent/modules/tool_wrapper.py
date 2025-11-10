@@ -5,6 +5,7 @@ from typing import Literal, Optional, TypedDict, Dict, Any, List, Tuple, Union
 from abacusagent.init_mcp import mcp
 from abacusagent.modules.util.comm import get_relax_precision
 from abacusagent.modules.submodules.abacus import abacus_prepare
+from abacusagent.modules.submodules.scf import abacus_calculation_scf as _abacus_calculation_scf
 from abacusagent.modules.submodules.cube import abacus_cal_elf
 from abacusagent.modules.submodules.band import abacus_cal_band
 from abacusagent.modules.submodules.bader import abacus_badercharge_run as _abacus_badercharge_run
@@ -317,9 +318,6 @@ def run_abacus_calculation(
 def abacus_calculation_scf(
     stru_file: Path,
     stru_type: Literal["cif", "poscar", "abacus/stru"] = "cif",
-    relax: bool = False,
-    relax_cell: bool = True,
-    relax_precision: Literal['low', 'medium', 'high'] = 'medium',
     lcao: bool = True,
     nspin: Literal[1, 2] = 1,
     dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
@@ -348,7 +346,7 @@ def abacus_calculation_scf(
                                               dftu_param=dftu_param,
                                               init_mag=init_mag)
     
-    return abacus_calculation_scf(abacus_inputs_dir)
+    return _abacus_calculation_scf(abacus_inputs_dir)
 
 @mcp.tool()
 def abacus_do_relax(

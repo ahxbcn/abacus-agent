@@ -33,6 +33,33 @@ class TestToolWrapper(unittest.TestCase):
     def tearDown(self):
         os.chdir(self.original_cwd)
     
+    def test_run_abacus_calculation_scf(self):
+        """
+        Test the wrapper function of doing SCF calculation.
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+        test_work_dir = self.test_path / test_func_name
+        os.makedirs(test_work_dir, exist_ok=True)
+        shutil.copy2(self.stru_scf, test_work_dir / "STRU")
+
+        outputs = abacus_calculation_scf(test_work_dir / "STRU",
+                                         stru_type='abacus/stru',
+                                         lcao=True,
+                                         nspin=1,
+                                         dft_functional='PBE',
+                                         dftu=False,
+                                         dftu_param=None,
+                                         init_mag=None)
+        print(outputs)
+
+        scf_work_dir = Path(outputs['scf_work_dir']).absolute()
+        self.assertIsInstance(scf_work_dir, get_path_type())
+        self.assertTrue(os.path.exists(scf_work_dir))
+        self.assertTrue(outputs['normal_end'])
+        self.assertTrue(outputs['converge'])
+        self.assertAlmostEqual(outputs['energy'], ref_results['energy'], delta=1e-6)
+
     def test_run_abacus_calculation_dos(self):
         """
         Test the abacus_calculation_scf function to calculate DOS.
