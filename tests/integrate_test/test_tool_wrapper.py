@@ -59,7 +59,44 @@ class TestToolWrapper(unittest.TestCase):
         self.assertTrue(outputs['normal_end'])
         self.assertTrue(outputs['converge'])
         self.assertAlmostEqual(outputs['energy'], ref_results['energy'], delta=1e-6)
+    
+    def test_run_abacus_calculation_relax(self):
+        """
+        Test the wrapper function of doing relax calculation.
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+        test_work_dir = self.test_path / test_func_name
+        os.makedirs(test_work_dir, exist_ok=True)
+        shutil.copy2(self.stru_scf, test_work_dir / "STRU")
 
+        relax_precision='medium'
+        outputs = abacus_do_relax(test_work_dir / "STRU",
+                                  stru_type='abacus/stru',
+                                  lcao=True,
+                                  nspin=1,
+                                  dft_functional='PBE',
+                                  dftu=False,
+                                  dftu_param=None,
+                                  init_mag=None,
+                                  max_steps=100,
+                                  relax_cell=True,
+                                  relax_precision=relax_precision,
+                                  relax_method='cg',
+                                  fixed_axes=None)
+        print(outputs)
+
+        relax_work_path = outputs['job_path']
+        new_relax_work_path = outputs['new_abacus_inputs_dir']
+        self.assertIsInstance(relax_work_path, get_path_type())
+        self.assertIsInstance(new_relax_work_path, get_path_type())
+        self.assertTrue(outputs['result']['normal_end'])
+        self.assertTrue(outputs['result']['relax_converge'])
+        self.assertAlmostEqual(outputs['result']['energies'][-1], ref_results['last_energy'], delta=1e-6)
+        relax_precision_contents = get_relax_precision(relax_precision)
+        self.assertTrue(outputs['result']['largest_gradient'][-1] <= relax_precision_contents['force_thr_ev'])
+        self.assertTrue(outputs['result']['largest_gradient_stress'][-1] <= relax_precision_contents['stress_thr'])
+    
     def test_run_abacus_calculation_dos(self):
         """
         Test the abacus_calculation_scf function to calculate DOS.

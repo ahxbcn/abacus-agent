@@ -245,6 +245,12 @@
             "energy": -230.1332772649323
         }
     },
+    "test_run_abacus_calculation_relax": 
+    {
+        "result": {
+            "last_energy": -230.14928356715
+        }
+    },
     "test_run_abacus_calculation_dos":
     {
         "result": {
