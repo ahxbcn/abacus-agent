@@ -11,7 +11,7 @@ from abacusagent.modules.submodules.band import abacus_cal_band as _abacus_cal_b
 from abacusagent.modules.submodules.bader import abacus_badercharge_run as _abacus_badercharge_run
 from abacusagent.modules.submodules.dos import abacus_dos_run as _abacus_dos_run
 from abacusagent.modules.submodules.phonon import abacus_phonon_dispersion as _abacus_phonon_dispersion
-from abacusagent.modules.submodules.elastic import abacus_cal_elastic
+from abacusagent.modules.submodules.elastic import abacus_cal_elastic as _abacus_cal_elastic
 from abacusagent.modules.submodules.eos import abacus_eos
 from abacusagent.modules.submodules.relax import abacus_do_relax as _abacus_do_relax
 from abacusagent.modules.submodules.md import abacus_run_md
@@ -604,3 +604,57 @@ def abacus_phonon_dispersion(
                                                high_symm_points)
     
     return phonon_outputs
+
+@mcp.tool()
+def abacus_cal_elastic(
+    stru_file: Path,
+    stru_type: Literal["cif", "poscar", "abacus/stru"] = "cif",
+    lcao: bool = True,
+    nspin: Literal[1, 2] = 1,
+    dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
+    #soc: bool = False,
+    dftu: bool = False,
+    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
+                         Literal['auto']]] = None,
+    init_mag: Optional[Dict[str, float]] = None,
+    #afm: bool = False,
+    max_steps: int = 100,
+    relax: bool = True,
+    relax_cell: bool = True,
+    relax_precision: Literal['low', 'medium', 'high'] = 'medium',
+    relax_method: Literal["cg", "bfgs", "bfgs_trad", "cg_bfgs", "sd", "fire"] = "cg",
+    fixed_axes: Literal["None", "volume", "shape", "a", "b", "c", "ab", "ac", "bc"] = None,
+    norm_strain: float = 0.01,
+    shear_strain: float = 0.01,
+    kspacing: float = 0.08,
+    relax_force_thr_ev: float = 0.01
+) -> Dict[str, Any]:
+    """
+    Calculate elastic properties using ABACUS.
+    """
+    abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
+                                              stru_type=stru_type,
+                                              lcao=lcao,
+                                              nspin=nspin,
+                                              dft_functional=dft_functional,
+                                              dftu=dftu,
+                                              dftu_param=dftu_param,
+                                              init_mag=init_mag)
+    
+    if relax:
+        relax_outputs = do_relax(abacus_inputs_dir=abacus_inputs_dir,
+                                 max_steps=max_steps,
+                                 relax_cell=relax_cell,
+                                 relax_precision=relax_precision,
+                                 fixed_axes=fixed_axes,
+                                 relax_method=relax_method)
+        abacus_inputs_dir = relax_outputs['new_abacus_inputs_dir']
+    
+    elactic_outputs = _abacus_cal_elastic(abacus_inputs_dir,
+                                          norm_strain,
+                                          shear_strain,
+                                          kspacing,
+                                          relax_force_thr_ev)
+    
+    return elactic_outputs
+

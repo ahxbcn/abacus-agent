@@ -264,7 +264,18 @@ class TestToolWrapper(unittest.TestCase):
         os.makedirs(test_work_dir, exist_ok=True)
         shutil.copy2(self.stru_elastic, test_work_dir / "STRU")
         
-        outputs = run_abacus_calculation(test_work_dir / "STRU", property='elastic_properties')
+        outputs = abacus_cal_elastic(stru_file = self.stru_scf,
+                                     stru_type='abacus/stru',
+                                     lcao=True,
+                                     nspin=1,
+                                     dft_functional="PBE",
+                                     dftu=False,
+                                     dftu_param=None,
+                                     init_mag=None,
+                                     relax_cell=True,
+                                     relax_precision='medium',
+                                     relax_method='cg',
+                                     fixed_axes=None,)
         print(outputs)
         self.assertIsInstance(outputs['elastic_cal_dir'], get_path_type())
 
