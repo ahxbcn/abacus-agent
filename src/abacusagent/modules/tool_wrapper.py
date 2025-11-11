@@ -15,7 +15,7 @@ from abacusagent.modules.submodules.elastic import abacus_cal_elastic as _abacus
 from abacusagent.modules.submodules.eos import abacus_eos
 from abacusagent.modules.submodules.relax import abacus_do_relax as _abacus_do_relax
 from abacusagent.modules.submodules.md import abacus_run_md
-from abacusagent.modules.submodules.work_function import abacus_cal_work_function
+from abacusagent.modules.submodules.work_function import abacus_cal_work_function as _abacus_cal_work_function
 from abacusagent.modules.submodules.vacancy import abacus_cal_vacancy_formation_energy as _abacus_cal_vacancy_formation_energy
 
 
@@ -710,3 +710,52 @@ def abacus_vacancy_formation_energy(
                                                            vacancy_relax_precision)
     
     return vacancy_outputs
+
+@mcp.tool()
+def abacus_cal_work_function(
+    stru_file: Path,
+    stru_type: Literal["cif", "poscar", "abacus/stru"] = "cif",
+    lcao: bool = True,
+    nspin: Literal[1, 2] = 1,
+    dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
+    #soc: bool = False,
+    dftu: bool = False,
+    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
+                         Literal['auto']]] = None,
+    init_mag: Optional[Dict[str, float]] = None,
+    #afm: bool = False,
+    max_steps: int = 100,
+    relax: bool = True,
+    relax_cell: bool = True,
+    relax_precision: Literal['low', 'medium', 'high'] = 'medium',
+    relax_method: Literal["cg", "bfgs", "bfgs_trad", "cg_bfgs", "sd", "fire"] = "cg",
+    fixed_axes: Literal["None", "volume", "shape", "a", "b", "c", "ab", "ac", "bc"] = None,
+    vacuum_direction: Literal['x', 'y', 'z'] = 'z',
+    dipole_correction: bool = False,
+) -> Dict[str, Any]:
+    """
+    Calculate work function using ABACUS.
+    """
+    abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
+                                              stru_type=stru_type,
+                                              lcao=lcao,
+                                              nspin=nspin,
+                                              dft_functional=dft_functional,
+                                              dftu=dftu,
+                                              dftu_param=dftu_param,
+                                              init_mag=init_mag)
+    
+    if relax:
+        relax_outputs = do_relax(abacus_inputs_dir=abacus_inputs_dir,
+                                 max_steps=max_steps,
+                                 relax_cell=relax_cell,
+                                 relax_precision=relax_precision,
+                                 fixed_axes=fixed_axes,
+                                 relax_method=relax_method)
+        abacus_inputs_dir = relax_outputs['new_abacus_inputs_dir']
+    
+    work_function_outputs = _abacus_cal_work_function(abacus_inputs_dir,
+                                                      vacuum_direction,
+                                                      dipole_correction)
+    
+    return work_function_outputs

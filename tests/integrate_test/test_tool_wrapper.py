@@ -392,11 +392,21 @@ class TestToolWrapper(unittest.TestCase):
         os.makedirs(test_work_dir, exist_ok=True)
         shutil.copy2(self.stru_al110, test_work_dir / "STRU")
 
-        outputs = run_abacus_calculation(self.stru_al110,
-                                         vacuum_direction='y',
-                                         dipole_correction=False,
-                                         property='work_function')
-
+        outputs = abacus_cal_work_function(stru_file=self.stru_al110,
+                                           stru_type='abacus/stru',
+                                           lcao=True,
+                                           nspin=1,
+                                           dft_functional="PBE",
+                                           dftu=False,
+                                           dftu_param=None,
+                                           init_mag=None,
+                                           relax=False,
+                                           relax_cell=True,
+                                           relax_precision='medium',
+                                           relax_method='cg',
+                                           fixed_axes=None,
+                                           vacuum_direction='y',
+                                           dipole_correction=False,)
         print(outputs)
 
         self.assertIsInstance(outputs['averaged_elecstat_pot_plot'], get_path_type())
