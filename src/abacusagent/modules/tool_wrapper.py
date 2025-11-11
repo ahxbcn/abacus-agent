@@ -10,7 +10,7 @@ from abacusagent.modules.submodules.cube import abacus_cal_elf
 from abacusagent.modules.submodules.band import abacus_cal_band as _abacus_cal_band
 from abacusagent.modules.submodules.bader import abacus_badercharge_run as _abacus_badercharge_run
 from abacusagent.modules.submodules.dos import abacus_dos_run as _abacus_dos_run
-from abacusagent.modules.submodules.phonon import abacus_phonon_dispersion
+from abacusagent.modules.submodules.phonon import abacus_phonon_dispersion as _abacus_phonon_dispersion
 from abacusagent.modules.submodules.elastic import abacus_cal_elastic
 from abacusagent.modules.submodules.eos import abacus_eos
 from abacusagent.modules.submodules.relax import abacus_do_relax as _abacus_do_relax
@@ -547,3 +547,60 @@ def abacus_cal_band(
                                                 insert_point_nums)
     
     return band_calculation_outputs
+
+@mcp.tool()
+def abacus_phonon_dispersion(
+    stru_file: Path,
+    stru_type: Literal["cif", "poscar", "abacus/stru"] = "cif",
+    lcao: bool = True,
+    nspin: Literal[1, 2] = 1,
+    dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
+    #soc: bool = False,
+    dftu: bool = False,
+    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
+                         Literal['auto']]] = None,
+    init_mag: Optional[Dict[str, float]] = None,
+    #afm: bool = False,
+    max_steps: int = 100,
+    relax: bool = True,
+    relax_cell: bool = True,
+    relax_precision: Literal['low', 'medium', 'high'] = 'medium',
+    relax_method: Literal["cg", "bfgs", "bfgs_trad", "cg_bfgs", "sd", "fire"] = "cg",
+    fixed_axes: Literal["None", "volume", "shape", "a", "b", "c", "ab", "ac", "bc"] = None,
+    supercell: Optional[List[int]] = None,
+    displacement_stepsize: float = 0.01,
+    temperature: Optional[float] = 298.15,
+    min_supercell_length: float = 10.0,
+    qpath: Optional[Union[List[str], List[List[str]]]] = None,
+    high_symm_points: Optional[Dict[str, List[float]]] = None
+) -> Dict[str, Any]:
+    """
+    Calculate phonon dispersion with finite-difference method using Phonopy with ABACUS as the calculator.
+    """
+    abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
+                                              stru_type=stru_type,
+                                              lcao=lcao,
+                                              nspin=nspin,
+                                              dft_functional=dft_functional,
+                                              dftu=dftu,
+                                              dftu_param=dftu_param,
+                                              init_mag=init_mag)
+    
+    if relax:
+        relax_outputs = do_relax(abacus_inputs_dir=abacus_inputs_dir,
+                                 max_steps=max_steps,
+                                 relax_cell=relax_cell,
+                                 relax_precision=relax_precision,
+                                 fixed_axes=fixed_axes,
+                                 relax_method=relax_method)
+        abacus_inputs_dir = relax_outputs['new_abacus_inputs_dir']
+    
+    phonon_outputs = _abacus_phonon_dispersion(abacus_inputs_dir,
+                                               supercell,
+                                               displacement_stepsize,
+                                               temperature,
+                                               min_supercell_length,
+                                               qpath,
+                                               high_symm_points)
+    
+    return phonon_outputs

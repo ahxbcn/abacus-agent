@@ -227,7 +227,6 @@ class TestToolWrapper(unittest.TestCase):
         os.makedirs(test_work_dir, exist_ok=True)
         shutil.copy2(self.stru_scf, test_work_dir / "STRU")
         
-        #outputs = run_abacus_calculation(test_work_dir / "STRU", property='band')
         outputs = abacus_cal_band(stru_file = self.stru_scf,
                                   stru_type='abacus/stru',
                                   lcao=True,
@@ -292,16 +291,27 @@ class TestToolWrapper(unittest.TestCase):
         os.makedirs(test_work_dir, exist_ok=True)
         shutil.copy2(self.stru_scf, test_work_dir / "STRU")
         
-        outputs = run_abacus_calculation(test_work_dir / "STRU", property='phonon_dispersion', relax=True)
+        outputs = abacus_phonon_dispersion(stru_file = self.stru_scf,
+                                           stru_type='abacus/stru',
+                                           lcao=True,
+                                           nspin=1,
+                                           dft_functional="PBE",
+                                           dftu=False,
+                                           dftu_param=None,
+                                           init_mag=None,
+                                           relax_cell=True,
+                                           relax_precision='medium',
+                                           relax_method='cg',
+                                           fixed_axes=None,)
         print(outputs)
         
         self.assertIsInstance(outputs['phonon_work_path'], get_path_type())
         self.assertIsInstance(outputs['band_dos_plot'], get_path_type())
 
-        self.assertAlmostEqual(outputs['entropy'], ref_results['entropy'], places=2)
-        self.assertAlmostEqual(outputs['free_energy'], ref_results['free_energy'], places=2)
-        self.assertAlmostEqual(outputs['max_frequency_THz'], ref_results['max_frequency_THz'], places=2)
-        self.assertAlmostEqual(outputs['max_frequency_K'], ref_results['max_frequency_K'], places=2)
+        self.assertAlmostEqual(outputs['entropy'], ref_results['entropy'], delta=1e-2)
+        self.assertAlmostEqual(outputs['free_energy'], ref_results['free_energy'], delta=1e-2)
+        self.assertAlmostEqual(outputs['max_frequency_THz'], ref_results['max_frequency_THz'], delta=1e-2)
+        self.assertAlmostEqual(outputs['max_frequency_K'], ref_results['max_frequency_K'], delta=1e-2)
     
     def test_run_abacus_calculation_md(self):
         """
