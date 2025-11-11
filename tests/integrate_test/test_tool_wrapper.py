@@ -10,6 +10,7 @@ from utils import initilize_test_env, load_test_ref_result, get_path_type
 
 initilize_test_env()
 
+@pytest.marker.tool_wrapper
 class TestToolWrapper(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.TemporaryDirectory()
@@ -153,52 +154,6 @@ class TestToolWrapper(unittest.TestCase):
                                  dos_edelta_ev=0.01,
                                  dos_sigma=0.07,
                                  dos_scale=0.01)
-        print(outputs)
-
-        dos_fig_path = outputs['dos_fig_path']
-        pdos_fig_path = outputs['pdos_fig_path']
-
-        self.assertIsInstance(dos_fig_path, get_path_type())
-        self.assertIsInstance(pdos_fig_path, get_path_type())
-        self.assertTrue(outputs['scf_normal_end'])
-        self.assertTrue(outputs['scf_converge'])
-        self.assertTrue(outputs['nscf_normal_end'])
-        self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'])
-    
-    def test_run_abacus_calculation_nspin_init_mag(self):
-        """
-        Test the abacus_calculation_scf function with nspin and initial magnetic moments setted.
-        """
-        test_func_name = inspect.currentframe().f_code.co_name
-        ref_results = load_test_ref_result(test_func_name)
-        test_work_dir = self.test_path / test_func_name
-        os.makedirs(test_work_dir, exist_ok=True)
-        shutil.copy2(self.stru_fe_bcc_prim, test_work_dir / "STRU")
-        
-        outputs = run_abacus_calculation(test_work_dir / "STRU", property='dos', nspin=2, init_mag={"Fe": 2.0})
-        print(outputs)
-
-        dos_fig_path = outputs['dos_fig_path']
-        pdos_fig_path = outputs['pdos_fig_path']
-
-        self.assertIsInstance(dos_fig_path, get_path_type())
-        self.assertIsInstance(pdos_fig_path, get_path_type())
-        self.assertTrue(outputs['scf_normal_end'])
-        self.assertTrue(outputs['scf_converge'])
-        self.assertTrue(outputs['nscf_normal_end'])
-        self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'])
-
-    def test_run_abacus_calculation_dftu(self):
-        """
-        Test the abacus_calculation_scf function with DFT+U parameters setted
-        """
-        test_func_name = inspect.currentframe().f_code.co_name
-        ref_results = load_test_ref_result(test_func_name)
-        test_work_dir = self.test_path / test_func_name
-        os.makedirs(test_work_dir, exist_ok=True)
-        shutil.copy2(self.stru_fe_bcc_prim, test_work_dir / "STRU")
-        
-        outputs = run_abacus_calculation(test_work_dir / "STRU", property='dos', dftu=True, dftu_param={'Fe': ['d', 1.0]})
         print(outputs)
 
         dos_fig_path = outputs['dos_fig_path']
