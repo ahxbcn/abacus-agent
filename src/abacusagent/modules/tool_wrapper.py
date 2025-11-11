@@ -14,7 +14,7 @@ from abacusagent.modules.submodules.phonon import abacus_phonon_dispersion as _a
 from abacusagent.modules.submodules.elastic import abacus_cal_elastic as _abacus_cal_elastic
 from abacusagent.modules.submodules.eos import abacus_eos as _abacus_eos
 from abacusagent.modules.submodules.relax import abacus_do_relax as _abacus_do_relax
-from abacusagent.modules.submodules.md import abacus_run_md
+from abacusagent.modules.submodules.md import abacus_run_md as _abacus_run_md
 from abacusagent.modules.submodules.work_function import abacus_cal_work_function as _abacus_cal_work_function
 from abacusagent.modules.submodules.vacancy import abacus_cal_vacancy_formation_energy as _abacus_cal_vacancy_formation_energy
 
@@ -853,3 +853,68 @@ def abacus_eos(
                               scale_stepsize)
     
     return eos_outputs
+
+@mcp.tool()
+def abacus_run_md(
+    stru_file: Path,
+    stru_type: Literal["cif", "poscar", "abacus/stru"] = "cif",
+    lcao: bool = True,
+    nspin: Literal[1, 2] = 1,
+    dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
+    #soc: bool = False,
+    dftu: bool = False,
+    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
+                         Literal['auto']]] = None,
+    init_mag: Optional[Dict[str, float]] = None,
+    #afm: bool = False,
+    max_steps: int = 100,
+    relax: bool = False,
+    relax_cell: bool = True,
+    relax_precision: Literal['low', 'medium', 'high'] = 'medium',
+    relax_method: Literal["cg", "bfgs", "bfgs_trad", "cg_bfgs", "sd", "fire"] = "cg",
+    fixed_axes: Literal["None", "volume", "shape", "a", "b", "c", "ab", "ac", "bc"] = None,
+    md_type: Literal['nve', 'nvt', 'npt', 'langevin'] = 'nve',
+    md_nstep: int = 10,
+    md_dt: float = 1.0,
+    md_tfirst: float = 300.0,
+    md_tlast: float = 300.0,
+    md_thermostat: Literal['nhc', 'anderson', 'berendsen', 'rescaling', 'rescale_v'] = 'nhc',
+    md_pmode: Literal['iso', 'aniso', 'tri'] = 'iso',
+    md_pcouple: Literal['none', 'xy', 'xz', 'yz', 'xyz'] = 'none',
+    md_dumpfreq: int = 1,
+    md_seed: int = -1
+) -> Dict[str, Any]:
+    """
+    Use ABACUS to do ab-initio molecular dynamics calculation.
+    """
+    abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
+                                              stru_type=stru_type,
+                                              lcao=lcao,
+                                              nspin=nspin,
+                                              dft_functional=dft_functional,
+                                              dftu=dftu,
+                                              dftu_param=dftu_param,
+                                              init_mag=init_mag)
+    
+    if relax:
+        relax_outputs = do_relax(abacus_inputs_dir=abacus_inputs_dir,
+                                 max_steps=max_steps,
+                                 relax_cell=relax_cell,
+                                 relax_precision=relax_precision,
+                                 fixed_axes=fixed_axes,
+                                 relax_method=relax_method)
+        abacus_inputs_dir = relax_outputs['new_abacus_inputs_dir']
+    
+    md_outputs = _abacus_run_md(abacus_inputs_dir,
+                               md_type,
+                               md_nstep,
+                               md_dt,
+                               md_tfirst,
+                               md_tlast,
+                               md_thermostat,
+                               md_pmode,
+                               md_pcouple,
+                               md_dumpfreq,
+                               md_seed)
+    
+    return md_outputs

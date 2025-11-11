@@ -25,6 +25,8 @@ class TestToolWrapper(unittest.TestCase):
         self.stru_al110 = self.abacus_inputs_dir_al110 / "STRU"
         self.abacus_inputs_dir_tial = Path(__file__).parent / 'abacus_inputs_dirs/gamma-TiAl-P4mmm/'
         self.stru_tial = self.abacus_inputs_dir_tial / "STRU"
+        self.abacus_inputs_dir_nacl_prim = Path(__file__).parent / 'abacus_inputs_dirs/NaCl-prim/'
+        self.stru_nacl_eos_cubic = self.abacus_inputs_dir_nacl_prim / "STRU_cubic_eos"
 
         self.original_cwd = os.getcwd()
         os.chdir(self.test_path)
@@ -360,12 +362,22 @@ class TestToolWrapper(unittest.TestCase):
         shutil.copy2(self.stru_scf, test_work_dir / "STRU")
         
         md_nstep = 5
-        outputs = run_abacus_calculation(test_work_dir / "STRU", property='md',
-                                         md_type = 'nve',
-                                         md_nstep = md_nstep,
-                                         md_dt = 1.0,
-                                         md_tfirst = 300)
-        
+        outputs = abacus_run_md(stru_file = self.stru_tial,
+                                stru_type='abacus/stru',
+                                lcao=True,
+                                nspin=1,
+                                dft_functional="PBE",
+                                dftu=False,
+                                dftu_param=None,
+                                init_mag=None,
+                                relax_cell=True,
+                                relax_precision='medium',
+                                relax_method='cg',
+                                fixed_axes=None,
+                                md_type='nve',
+                                md_nstep=md_nstep,
+                                md_dt=1.0,
+                                md_tfirst=300)
         print(outputs)
         
         self.assertTrue(outputs['normal_end'])
