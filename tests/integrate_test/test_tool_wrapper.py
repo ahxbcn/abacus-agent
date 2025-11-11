@@ -10,7 +10,7 @@ from utils import initilize_test_env, load_test_ref_result, get_path_type
 
 initilize_test_env()
 
-@pytest.marker.tool_wrapper
+@pytest.mark.tool_wrapper
 class TestToolWrapper(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.TemporaryDirectory()
