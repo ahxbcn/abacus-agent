@@ -358,10 +358,21 @@ class TestToolWrapper(unittest.TestCase):
         os.makedirs(test_work_dir, exist_ok=True)
         shutil.copy2(self.stru_tial, test_work_dir / "STRU")
         
-        outputs = run_abacus_calculation(test_work_dir / "STRU", property='vacancy_formation_energy',
-                                         vacancy_supercell = [1, 1, 1],
-                                         vacancy_element = 'Ti',
-                                         vacancy_element_index = 1)
+        outputs = abacus_vacancy_formation_energy(stru_file = self.stru_tial,
+                                                  stru_type='abacus/stru',
+                                                  lcao=True,
+                                                  nspin=1,
+                                                  dft_functional="PBE",
+                                                  dftu=False,
+                                                  dftu_param=None,
+                                                  init_mag=None,
+                                                  relax_cell=True,
+                                                  relax_precision='medium',
+                                                  relax_method='cg',
+                                                  fixed_axes=None,
+                                                  supercell=[1, 1, 1],
+                                                  vacancy_element = 'Ti',
+                                                  vacancy_element_index = 1)
         
         print(outputs)
 

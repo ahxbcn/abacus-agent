@@ -8,6 +8,7 @@ from ase.build import bulk
 
 from abacustest.lib_prepare.abacus import AbacusStru, ReadInput, WriteInput
 from abacustest.lib_model.comm import check_abacus_inputs
+from abacustest.constant import ELEMENT_CRYSTAL_STRUCTURES, A2BOHR
 
 from abacusagent.modules.util.comm import generate_work_path, link_abacusjob, run_abacus, get_relax_precision
 from abacusagent.modules.submodules.structure_generator import ELEMENT_CRYSTAL_STRUCTURES
@@ -40,15 +41,15 @@ def build_most_stable_elementary_crys_stru(element: str, pp: str, orb: str) -> A
         else:
             raise ValueError(f"Crystal structure {crystal_structure['crystal']} not supported.")
     
-    structure_file = f"{element}_{crystal_structure['crystal']}.STRU"
-    stru.write(structure_file, format="abacus")
-
-    stru_abacus = AbacusStru.ReadStru(structure_file)
+    stru_abacus = AbacusStru(label=stru.get_chemical_symbols(),
+                             cell=stru.get_cell(),
+                             coord=stru.get_positions(),
+                             lattice_constant=A2BOHR,
+                             cartesian=True)
     stru_abacus.set_pp([pp])
     stru_abacus.set_orb([orb])
-    os.unlink(structure_file)
+
     return stru_abacus
-    
 def abacus_cal_vacancy_formation_energy(
     abacus_inputs_dir: Path,
     supercell: List[int] = [1, 1, 1],
@@ -97,6 +98,7 @@ def abacus_cal_vacancy_formation_energy(
 
         input_params['calculation'] = 'cell-relax'
         input_params['relax_method'] = 'cg'
+        input_params['ntype'] = None
         input_params.update(get_relax_precision(relax_precision))
 
         if vacancy_element is None:
