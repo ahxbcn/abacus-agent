@@ -60,6 +60,31 @@ class TestToolWrapper(unittest.TestCase):
         self.assertTrue(outputs['converge'])
         self.assertAlmostEqual(outputs['energy'], ref_results['energy'], delta=1e-6)
     
+    def test_run_abacus_calculation_elf(self):
+        """
+        Test the wrapper function of doing SCF calculation.
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+        test_work_dir = self.test_path / test_func_name
+        os.makedirs(test_work_dir, exist_ok=True)
+        shutil.copy2(self.stru_scf, test_work_dir / "STRU")
+
+        outputs = abacus_cal_elf(test_work_dir / "STRU",
+                                 stru_type='abacus/stru',
+                                 lcao=True,
+                                 nspin=1,
+                                 dft_functional='PBE',
+                                 dftu=False,
+                                 dftu_param=None,
+                                 init_mag=None)
+        print(outputs)
+
+        self.assertIsInstance(outputs['elf_work_path'], get_path_type())
+        self.assertTrue(os.path.exists(outputs['elf_work_path']))
+        self.assertIsInstance(outputs['elf_file'], get_path_type())
+        self.assertTrue(os.path.exists(outputs['elf_file']))
+    
     def test_run_abacus_calculation_relax(self):
         """
         Test the wrapper function of doing relax calculation.
