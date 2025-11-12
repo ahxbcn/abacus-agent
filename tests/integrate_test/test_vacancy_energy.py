@@ -40,17 +40,12 @@ class TestAbacusEos(unittest.TestCase):
 
         outputs = abacus_cal_vacancy_formation_energy(test_work_dir,
                                                       supercell=[1, 1, 1],
-                                                      vacancy_element="Ti",
-                                                      vacancy_element_index=1)
+                                                      vacancy_index=1)
         
         print(outputs)
 
-        self.assertTrue(outputs['supercell_job_normal_end'])
-        self.assertTrue(outputs['defect_supercell_job_normal_end'])
-        self.assertTrue(outputs['vacancy_element_crys_job_normal_end'])
         self.assertTrue(outputs['supercell_job_relax_converge'])
         self.assertTrue(outputs['defect_supercell_job_relax_converge'])
-        self.assertTrue(outputs['vacancy_element_crys_job_relax_converge'])
         self.assertAlmostEqual(outputs['vac_formation_energy'], ref_results['vac_formation_energy'], places=2)
 
 

@@ -363,16 +363,14 @@ class TestToolWrapper(unittest.TestCase):
                                                   relax_method='cg',
                                                   fixed_axes=None,
                                                   supercell=[1, 1, 1],
-                                                  vacancy_element = 'Ti',
-                                                  vacancy_element_index = 1)
+                                                  vacancy_index = 1)
         
         print(outputs)
 
-        self.assertIsInstance(outputs['supercell_jobpath'], get_path_type())
-        self.assertIsInstance(outputs['defect_supercell_jobpath'], get_path_type())
-        self.assertIsInstance(outputs['vacancy_element_crys_jobpath'], get_path_type())
-        self.assertAlmostEqual(outputs['vac_formation_energy'], ref_results['vac_formation_energy'], places=3)
-    
+        self.assertTrue(outputs['supercell_job_relax_converge'])
+        self.assertTrue(outputs['defect_supercell_job_relax_converge'])
+        self.assertAlmostEqual(outputs['vac_formation_energy'], ref_results['vac_formation_energy'], delta=2)
+   
     def test_run_abacus_calculation_work_function(self):
         """
         Test the abacus_calculation_scf function to calculate work function

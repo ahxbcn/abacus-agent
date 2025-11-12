@@ -808,8 +808,7 @@ def abacus_vacancy_formation_energy(
     relax_method: Literal["cg", "bfgs", "bfgs_trad", "cg_bfgs", "sd", "fire"] = "cg",
     fixed_axes: Literal["None", "volume", "shape", "a", "b", "c", "ab", "ac", "bc"] = None,
     supercell: List[int] = [1, 1, 1],
-    vacancy_element: str = None,
-    vacancy_element_index: int = 1,
+    vacancy_index: int = 1,
     vacancy_relax_precision: Literal['low', 'medium', 'high'] = 'low',
 ) -> Dict[str, Any]:
     """
@@ -854,19 +853,19 @@ def abacus_vacancy_formation_energy(
             - ab: fix both a and b axes
             - ac: fix both a and c axes
             - bc: fix both b and c axes
-        supercell_matrix (List[int]): Supercell matrix. Defaults to [1, 1, 1], which means no supercell.
-        vacancy_element (str): Element to be removed. Default is None, which means the first type of element in the structure.
-        vacancy_element_index (int): Index of the vacancy element. The index starts from 1 and is in the original structure. Defaults to 1.
-        vacancy_relax_precision (Literal['low', 'medium', 'high']): Precision of the relax calculation for the supercell and defect supercell structure. The unit of `force_thr_ev` is eV/Angstrom, and the unit of `stress_thr` is kbar.
-            - 'low' means the relax calculation will be done with force_thr_ev=0.05 and stress_thr=5.0.
-            - 'medium' means the relax calculation will be done with force_thr_ev=0.01 and stress_thr=1.0.
-            - 'high' means the relax calculation will be done with force_thr_ev=0.005 and stress_thr=0.5.
+        abacus_inputs_dir (Path): Path to the directory containing the ABACUS inputs.
+        supercell (List[int]): Supercell matrix. Defaults to [1, 1, 1], which means no supercell.
+        vacancy_index (int): Index of the vacancy element. The index starts from 1 and is in the original structure. Defaults to 1.
+        relax_precision (Literal['low', 'medium', 'high']): Precision of the relax calculation. The unit of `force_thr_ev` is eV/Angstrom, and the unit of `stress_thr` is kbar.
+        - 'low' means the relax calculation will be done with force_thr_ev=0.05 and stress_thr=5.0.
+        - 'medium' means the relax calculation will be done with force_thr_ev=0.01 and stress_thr=1.0.
+        - 'high' means the relax calculation will be done with force_thr_ev=0.005 and stress_thr=0.5.
     Returns:
         A dictionary containing:
         - "vacancy_formation_energy": Calculated vacancy formation energy.
-        - "supercell_jobpath": Path to the supercell calculation job directory.
-        - "defect_supercell_jobpath": Path to the defect supercell calculation job directory.
-        - "vacancy_element_crys_jobpath": Path to the most stable crystal structure calculation job directory.
+        - "work_path": Path to the work path of vacancy formation energy calculation.
+        - "supercell_job_relax_converge": If the supercell relax calculation is converged.
+        - "defect_supercell_job_relax_converge": If the defect supercell relax calculation is converged.
     """
     abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
                                               stru_type=stru_type,
@@ -888,8 +887,7 @@ def abacus_vacancy_formation_energy(
     
     vacancy_outputs = _abacus_cal_vacancy_formation_energy(abacus_inputs_dir,
                                                            supercell,
-                                                           vacancy_element,
-                                                           vacancy_element_index,
+                                                           vacancy_index,
                                                            vacancy_relax_precision)
     
     return vacancy_outputs
