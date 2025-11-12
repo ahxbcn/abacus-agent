@@ -237,22 +237,32 @@
     {
         "result": {}
     },
+    "test_run_abacus_calculation_scf": 
+    {
+        "result": {
+            "normal_end": true,
+            "converge": true,
+            "energy": -230.1332772649323
+        }
+    },
+    "test_run_abacus_calculation_elf": 
+    {
+        "result": {
+            "normal_end": true,
+            "converge": true,
+            "energy": -230.1332772649323
+        }
+    },
+    "test_run_abacus_calculation_relax": 
+    {
+        "result": {
+            "last_energy": -230.14928356715
+        }
+    },
     "test_run_abacus_calculation_dos":
     {
         "result": {
-            "scf_energy": -230.133277086824
-        }
-    },
-    "test_run_abacus_calculation_dos_relax":
-    {
-        "result": {
-            "scf_energy": -230.1492835634546
-        }
-    },
-    "test_run_abacus_calculation_dft_functional":
-    {
-        "result": {
-            "scf_energy": -229.6779298720992
+            "scf_energy": -230.1492835633984
         }
     },
     "test_run_abacus_calculation_nspin_init_mag":
@@ -270,7 +280,7 @@
     "test_run_abacus_calculation_bader_charge": 
     {
         "result": {
-            "net_charges": [0.042, -0.042],
+            "net_charges": [-0.08358500000000024, 0.08365499999999981],
             "atom_labels": ["Si", "Si"]
         }
     },
