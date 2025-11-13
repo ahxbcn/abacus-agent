@@ -125,7 +125,7 @@ def main():
     from abacusagent.init_mcp import mcp
     
     if args.matmaster:
-        from abacusagent.modules.tool_wrapper import run_abacus_calculation
+        import abacusagent.modules.tool_wrapper
     else:
         load_tools(args.screen_modules)  
 
