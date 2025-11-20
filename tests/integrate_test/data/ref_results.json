@@ -357,5 +357,13 @@
         "result": {
             "vac_formation_energy": 1.166700944879949
         }
+    },
+    "test_run_abacus_calculation_dftu_initmag": 
+    {
+        "result": {
+            "normal_end": true,
+            "converge": true,
+            "energy": -11792.093196541542
+        }
     }
 }

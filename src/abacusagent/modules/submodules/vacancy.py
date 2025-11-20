@@ -49,7 +49,7 @@ def abacus_cal_vacancy_formation_energy(
 
         job_dirs = prepare_vacancy_jobs([original_inputs_dir],
                                         supercell=supercell,
-                                        vacancy_indices=[vacancy_index],
+                                        original_vacancy_indices=[vacancy_index],
                                         cal_reference=True,
                                         ref_dir=ref_dir,
                                         max_step=100,
