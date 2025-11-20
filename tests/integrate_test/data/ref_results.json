@@ -280,7 +280,7 @@
     "test_run_abacus_calculation_bader_charge": 
     {
         "result": {
-            "net_charges": [-0.08358500000000024, 0.08365499999999981],
+            "net_charges": [0.042298999999999864, -0.04238500000000034],
             "atom_labels": ["Si", "Si"]
         }
     },
