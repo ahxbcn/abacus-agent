@@ -28,6 +28,8 @@ class TestToolWrapper(unittest.TestCase):
         self.stru_tial = self.abacus_inputs_dir_tial / "STRU"
         self.abacus_inputs_dir_nacl_prim = Path(__file__).parent / 'abacus_inputs_dirs/NaCl-prim/'
         self.stru_nacl_eos_cubic = self.abacus_inputs_dir_nacl_prim / "STRU_cubic_eos"
+        self.abacus_inputs_dir_zno = Path(__file__).parent / 'abacus_inputs_dirs/ZnO/'
+        self.stru_zno = self.abacus_inputs_dir_zno / "STRU"
 
         self.original_cwd = os.getcwd()
         os.chdir(self.test_path)
@@ -63,6 +65,43 @@ class TestToolWrapper(unittest.TestCase):
         self.assertTrue(outputs['converge'])
         self.assertAlmostEqual(outputs['energy'], ref_results['energy'], delta=1e-6)
     
+    def test_run_abacus_calculation_dftu_initmag(self):
+        """
+        Test the wrapper function of doing SCF calculation with DFT+U and initial magnetic moment.
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+        test_work_dir = self.test_path / test_func_name
+        os.makedirs(test_work_dir, exist_ok=True)
+        shutil.copy2(self.stru_zno, test_work_dir / "STRU")
+
+        dftu_param = {
+            'element': ['Zn', 'O'],
+            'orbital': ['d', 'p'],
+            'U_value': [4.0, 1.0]
+        }
+        init_mag = {
+            'element': ['Zn', 'O'],
+            'mag': [1.0, 0.5]
+        }
+
+        outputs = abacus_calculation_scf(test_work_dir / "STRU",
+                                         stru_type='abacus/stru',
+                                         lcao=True,
+                                         nspin=2,
+                                         dft_functional='PBE',
+                                         dftu=True,
+                                         dftu_param=dftu_param,
+                                         init_mag=init_mag)
+        print(outputs)
+
+        scf_work_dir = Path(outputs['scf_work_dir']).absolute()
+        self.assertIsInstance(scf_work_dir, get_path_type())
+        self.assertTrue(os.path.exists(scf_work_dir))
+        self.assertTrue(outputs['normal_end'])
+        self.assertTrue(outputs['converge'])
+        self.assertAlmostEqual(outputs['energy'], ref_results['energy'], delta=1e-6)
+
     def test_run_abacus_calculation_elf(self):
         """
         Test the wrapper function of doing SCF calculation.

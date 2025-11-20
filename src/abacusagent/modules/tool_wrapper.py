@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
-from typing import Literal, Optional, TypedDict, Dict, Any, List, Tuple, Union
+from typing import Literal, Optional, Dict, Any, List, Tuple, Union
+from typing_extensions import TypedDict
 
 from abacusagent.init_mcp import mcp
 from abacusagent.modules.util.comm import get_relax_precision
@@ -18,6 +19,39 @@ from abacusagent.modules.submodules.md import abacus_run_md as _abacus_run_md
 from abacusagent.modules.submodules.work_function import abacus_cal_work_function as _abacus_cal_work_function
 from abacusagent.modules.submodules.vacancy import abacus_cal_vacancy_formation_energy as _abacus_cal_vacancy_formation_energy
 
+class DFTUParam(TypedDict):
+    """Definition of DFT+U params"""
+    element: List[str]
+    orbital: List[Literal['p', 'd', 'f']]
+    U_value: List[float]
+
+class InitMagParam(TypedDict):
+    """Definition of initial magnetic params"""
+    element: List[str]
+    mag: List[float]
+
+def transform_dftu_param(dftu_param):
+    """
+    Transform DFT+U param definition used in tools in this file to the format used by abacus_prepare.
+    """
+    assert len(dftu_param['element']) == len(dftu_param['orbital'])
+    assert len(dftu_param['element']) == len(dftu_param['U_value'])
+    dftu_param_new = {}
+    for i in range(len(dftu_param['element'])):
+        dftu_param_new[dftu_param['element'][i]] = (dftu_param['orbital'][i], dftu_param['U_value'][i])
+
+    return dftu_param_new
+
+def transform_initmag_param(initmag_param):
+    """
+    Transform initial magnetic param definition used in tools in this file to the format used by abacus_prepare.
+    """
+    assert len(initmag_param['element']) == len(initmag_param['mag'])
+    initmag_param_new = {}
+    for i in range(len(initmag_param['element'])):
+        initmag_param_new[initmag_param['element'][i]] = initmag_param['mag'][i]
+
+    return initmag_param_new
 
 def prepare_abacus_inputs(
     stru_file: Path,
@@ -110,9 +144,8 @@ def abacus_calculation_scf(
     dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
     #soc: bool = False,
     dftu: bool = False,
-    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
-                         Literal['auto']]] = None,
-    init_mag: Optional[Dict[str, float]] = None,
+    dftu_param: DFTUParam = None,
+    init_mag: InitMagParam = None,
     #afm: bool = False,
 ) -> Dict[str, Any]:
     """
@@ -127,19 +160,22 @@ def abacus_calculation_scf(
         dft_functional (Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN']): The DFT functional to use, can be 'PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', 'PBE0', or 'R2SCAN'. Default is 'PBE'.
             If hybrid functionals like HSE and PBE0 are used, the calculation may be much slower than GGA functionals like PBE.
         dftu (bool): Whether to use DFT+U, default is False.
-        dftu_param (dict): The DFT+U parameters, should be 'auto' or a dict
-            If dft_param is set to 'auto', hubbard U parameters will be set to d-block and f-block elements automatically. For d-block elements, default U=4eV will
-                be set to d orbital. For f-block elements, default U=6eV will be set to f orbital.
-            If dft_param is a dict, the keys should be name of elements and the value has two choices:
-                - A float number, which is the Hubbard U value of the element. The corrected orbital will be infered from the name of the element.
-                - A list containing two elements: the corrected orbital (should be 'p', 'd' or 'f') and the Hubbard U value.
-                For example, {"Fe": ["d", 4], "O": ["p", 1]} means applying DFT+U to Fe 3d orbital with U=4 eV and O 2p orbital with U=1 eV.
-        init_mag ( dict or None): The initial magnetic moment for magnetic elements, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the initial magnetic moment.
+        dftu_param (dict or None): The DFT+U parameters, should be a dict containing the following keys:
+            - 'element' (List[str]): List of elements to apply DFT+U to.
+            - 'orbital' (List[str]): List of orbitals to apply DFT+U to for each element. Should be 'p', 'd' or 'f'.
+            - 'U_value' (List[float]): List of Hubbard U values for each element.
+            The length of list for each key in dftu_param should be the same.
+        init_mag (dict or None): The initial magnetic moment for magnetic elements, should be a dict containing the following keys:
+            - 'element': List of elements to apply initial magnetic moment to.
+            - 'mag': List of initial magnetic moments for each element.
+            The length of list for each key in init_mag should be the same.
 
     Returns:
         A dictionary containing the path to output file of ABACUS calculation, and a dictionary containing whether the SCF calculation
         finished normally, the SCF is converged or not, the converged SCF energy and total time used.
     """
+    dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
+    init_mag = transform_initmag_param(init_mag) if init_mag is not None else None
     abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
                                               stru_type=stru_type,
                                               lcao=lcao,
@@ -160,9 +196,8 @@ def abacus_do_relax(
     dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
     #soc: bool = False,
     dftu: bool = False,
-    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
-                         Literal['auto']]] = None,
-    init_mag: Optional[Dict[str, float]] = None,
+    dftu_param: DFTUParam = None,
+    init_mag: InitMagParam = None,
     #afm: bool = False,
     max_steps: int = 100,
     relax_cell: bool = False,
@@ -182,14 +217,15 @@ def abacus_do_relax(
         dft_functional (Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN']): The DFT functional to use, can be 'PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', 'PBE0', or 'R2SCAN'. Default is 'PBE'.
             If hybrid functionals like HSE and PBE0 are used, the calculation may be much slower than GGA functionals like PBE.
         dftu (bool): Whether to use DFT+U, default is False.
-        dftu_param (dict): The DFT+U parameters, should be 'auto' or a dict
-            If dft_param is set to 'auto', hubbard U parameters will be set to d-block and f-block elements automatically. For d-block elements, default U=4eV will
-                be set to d orbital. For f-block elements, default U=6eV will be set to f orbital.
-            If dft_param is a dict, the keys should be name of elements and the value has two choices:
-                - A float number, which is the Hubbard U value of the element. The corrected orbital will be infered from the name of the element.
-                - A list containing two elements: the corrected orbital (should be 'p', 'd' or 'f') and the Hubbard U value.
-                For example, {"Fe": ["d", 4], "O": ["p", 1]} means applying DFT+U to Fe 3d orbital with U=4 eV and O 2p orbital with U=1 eV.
-        init_mag ( dict or None): The initial magnetic moment for magnetic elements, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the initial magnetic moment.
+        dftu_param (dict or None): The DFT+U parameters, should be a dict containing the following keys:
+            - 'element' (List[str]): List of elements to apply DFT+U to.
+            - 'orbital' (List[str]): List of orbitals to apply DFT+U to for each element. Should be 'p', 'd' or 'f'.
+            - 'U_value' (List[float]): List of Hubbard U values for each element.
+            The length of list for each key in dftu_param should be the same.
+        init_mag (dict or None): The initial magnetic moment for magnetic elements, should be a dict containing the following keys:
+            - 'element': List of elements to apply initial magnetic moment to.
+            - 'mag': List of initial magnetic moments for each element.
+            The length of list for each key in init_mag should be the same.
         max_steps: Maximum number of relaxation steps, default is 100.
         relax_cell: Whether to relax the cell parameters, default is False.
         relax_precision (Literal['low', 'medium', 'high']): The precision of the relax calculation, can be 'low', 'medium', or 'high'. Default is 'medium'.
@@ -218,8 +254,9 @@ def abacus_do_relax(
             - largest_gradient: The largest force gradient during the relaxation.
             - relax_converge: Whether the relaxation converged.
             - energies: The energies at each step of the relaxation.
-
     """
+    dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
+    init_mag = transform_initmag_param(init_mag) if init_mag is not None else None
     abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
                                               stru_type=stru_type,
                                               lcao=lcao,
@@ -247,9 +284,8 @@ def abacus_badercharge_run(
     dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
     #soc: bool = False,
     dftu: bool = False,
-    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
-                         Literal['auto']]] = None,
-    init_mag: Optional[Dict[str, float]] = None,
+    dftu_param: DFTUParam = None,
+    init_mag: InitMagParam = None,
     #afm: bool = False,
     max_steps: int = 100,
     relax: bool = False,
@@ -272,14 +308,15 @@ def abacus_badercharge_run(
         dft_functional (Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN']): The DFT functional to use, can be 'PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', 'PBE0', or 'R2SCAN'. Default is 'PBE'.
             If hybrid functionals like HSE and PBE0 are used, the calculation may be much slower than GGA functionals like PBE.
         dftu (bool): Whether to use DFT+U, default is False.
-        dftu_param (dict): The DFT+U parameters, should be 'auto' or a dict
-            If dft_param is set to 'auto', hubbard U parameters will be set to d-block and f-block elements automatically. For d-block elements, default U=4eV will
-                be set to d orbital. For f-block elements, default U=6eV will be set to f orbital.
-            If dft_param is a dict, the keys should be name of elements and the value has two choices:
-                - A float number, which is the Hubbard U value of the element. The corrected orbital will be infered from the name of the element.
-                - A list containing two elements: the corrected orbital (should be 'p', 'd' or 'f') and the Hubbard U value.
-                For example, {"Fe": ["d", 4], "O": ["p", 1]} means applying DFT+U to Fe 3d orbital with U=4 eV and O 2p orbital with U=1 eV.
-        init_mag ( dict or None): The initial magnetic moment for magnetic elements, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the initial magnetic moment.
+        dftu_param (dict or None): The DFT+U parameters, should be a dict containing the following keys:
+            - 'element' (List[str]): List of elements to apply DFT+U to.
+            - 'orbital' (List[str]): List of orbitals to apply DFT+U to for each element. Should be 'p', 'd' or 'f'.
+            - 'U_value' (List[float]): List of Hubbard U values for each element.
+            The length of list for each key in dftu_param should be the same.
+        init_mag (dict or None): The initial magnetic moment for magnetic elements, should be a dict containing the following keys:
+            - 'element': List of elements to apply initial magnetic moment to.
+            - 'mag': List of initial magnetic moments for each element.
+            The length of list for each key in init_mag should be the same.
         max_steps (int): The maximum number of steps for the relax calculation. Default is 100.
         relax: Whether to do a relax calculation before doing the property calculation. Default is False.
             If the calculated property is phonon dispersion or elastic properties, the crystal should be relaxed first with relax_cell set to True and `relax_precision` is strongly recommended be set to `high`.
@@ -307,8 +344,9 @@ def abacus_badercharge_run(
         - atom_labels: Labels of atoms in the structure.
         - abacus_workpath: Absolute path to the ABACUS work directory.
         - badercharge_run_workpath: Absolute path to the Bader analysis work directory.
-
     """
+    dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
+    init_mag = transform_initmag_param(init_mag) if init_mag is not None else None
     abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
                                               stru_type=stru_type,
                                               lcao=lcao,
@@ -373,14 +411,15 @@ def abacus_dos_run(
         dft_functional (Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN']): The DFT functional to use, can be 'PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', 'PBE0', or 'R2SCAN'. Default is 'PBE'.
             If hybrid functionals like HSE and PBE0 are used, the calculation may be much slower than GGA functionals like PBE.
         dftu (bool): Whether to use DFT+U, default is False.
-        dftu_param (dict): The DFT+U parameters, should be 'auto' or a dict
-            If dft_param is set to 'auto', hubbard U parameters will be set to d-block and f-block elements automatically. For d-block elements, default U=4eV will
-                be set to d orbital. For f-block elements, default U=6eV will be set to f orbital.
-            If dft_param is a dict, the keys should be name of elements and the value has two choices:
-                - A float number, which is the Hubbard U value of the element. The corrected orbital will be infered from the name of the element.
-                - A list containing two elements: the corrected orbital (should be 'p', 'd' or 'f') and the Hubbard U value.
-                For example, {"Fe": ["d", 4], "O": ["p", 1]} means applying DFT+U to Fe 3d orbital with U=4 eV and O 2p orbital with U=1 eV.
-        init_mag ( dict or None): The initial magnetic moment for magnetic elements, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the initial magnetic moment.
+        dftu_param (dict or None): The DFT+U parameters, should be a dict containing the following keys:
+            - 'element' (List[str]): List of elements to apply DFT+U to.
+            - 'orbital' (List[str]): List of orbitals to apply DFT+U to for each element. Should be 'p', 'd' or 'f'.
+            - 'U_value' (List[float]): List of Hubbard U values for each element.
+            The length of list for each key in dftu_param should be the same.
+        init_mag (dict or None): The initial magnetic moment for magnetic elements, should be a dict containing the following keys:
+            - 'element': List of elements to apply initial magnetic moment to.
+            - 'mag': List of initial magnetic moments for each element.
+            The length of list for each key in init_mag should be the same.
         max_steps (int): The maximum number of steps for the relax calculation. Default is 100.
         relax: Whether to do a relax calculation before doing the property calculation. Default is False.
             If the calculated property is phonon dispersion or elastic properties, the crystal should be relaxed first with relax_cell set to True and `relax_precision` is strongly recommended be set to `high`.
@@ -423,6 +462,8 @@ def abacus_dos_run(
             - nscf_work_path: Path to the work directory of NSCF calculation.
             - nscf_normal_end: If the SCF calculation ended normally.
     """
+    dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
+    init_mag = transform_initmag_param(init_mag) if init_mag is not None else None
     abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
                                               stru_type=stru_type,
                                               lcao=lcao,
@@ -461,9 +502,8 @@ def abacus_cal_band(
     dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
     #soc: bool = False,
     dftu: bool = False,
-    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
-                         Literal['auto']]] = None,
-    init_mag: Optional[Dict[str, float]] = None,
+    dftu_param: DFTUParam = None,
+    init_mag: InitMagParam = None,
     #afm: bool = False,
     max_steps: int = 100,
     relax: bool = False,
@@ -491,14 +531,15 @@ def abacus_cal_band(
         dft_functional (Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN']): The DFT functional to use, can be 'PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', 'PBE0', or 'R2SCAN'. Default is 'PBE'.
             If hybrid functionals like HSE and PBE0 are used, the calculation may be much slower than GGA functionals like PBE.
         dftu (bool): Whether to use DFT+U, default is False.
-        dftu_param (dict): The DFT+U parameters, should be 'auto' or a dict
-            If dft_param is set to 'auto', hubbard U parameters will be set to d-block and f-block elements automatically. For d-block elements, default U=4eV will
-                be set to d orbital. For f-block elements, default U=6eV will be set to f orbital.
-            If dft_param is a dict, the keys should be name of elements and the value has two choices:
-                - A float number, which is the Hubbard U value of the element. The corrected orbital will be infered from the name of the element.
-                - A list containing two elements: the corrected orbital (should be 'p', 'd' or 'f') and the Hubbard U value.
-                For example, {"Fe": ["d", 4], "O": ["p", 1]} means applying DFT+U to Fe 3d orbital with U=4 eV and O 2p orbital with U=1 eV.
-        init_mag ( dict or None): The initial magnetic moment for magnetic elements, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the initial magnetic moment.
+        dftu_param (dict or None): The DFT+U parameters, should be a dict containing the following keys:
+            - 'element' (List[str]): List of elements to apply DFT+U to.
+            - 'orbital' (List[str]): List of orbitals to apply DFT+U to for each element. Should be 'p', 'd' or 'f'.
+            - 'U_value' (List[float]): List of Hubbard U values for each element.
+            The length of list for each key in dftu_param should be the same.
+        init_mag (dict or None): The initial magnetic moment for magnetic elements, should be a dict containing the following keys:
+            - 'element': List of elements to apply initial magnetic moment to.
+            - 'mag': List of initial magnetic moments for each element.
+            The length of list for each key in init_mag should be the same.
         max_steps (int): The maximum number of steps for the relax calculation. Default is 100.
         relax: Whether to do a relax calculation before doing the property calculation. Default is False.
             If the calculated property is phonon dispersion or elastic properties, the crystal should be relaxed first with relax_cell set to True and `relax_precision` is strongly recommended be set to `high`.
@@ -540,6 +581,8 @@ def abacus_cal_band(
     Returns:
         A dictionary containing band gap, path to the work directory for calculating band and path to the plotted band.
     """
+    dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
+    init_mag = transform_initmag_param(init_mag) if init_mag is not None else None
     abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
                                               stru_type=stru_type,
                                               lcao=lcao,
@@ -577,9 +620,8 @@ def abacus_phonon_dispersion(
     dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
     #soc: bool = False,
     dftu: bool = False,
-    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
-                         Literal['auto']]] = None,
-    init_mag: Optional[Dict[str, float]] = None,
+    dftu_param: DFTUParam = None,
+    init_mag: InitMagParam = None,
     #afm: bool = False,
     max_steps: int = 100,
     relax: bool = True,
@@ -606,14 +648,15 @@ def abacus_phonon_dispersion(
         dft_functional (Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN']): The DFT functional to use, can be 'PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', 'PBE0', or 'R2SCAN'. Default is 'PBE'.
             If hybrid functionals like HSE and PBE0 are used, the calculation may be much slower than GGA functionals like PBE.
         dftu (bool): Whether to use DFT+U, default is False.
-        dftu_param (dict): The DFT+U parameters, should be 'auto' or a dict
-            If dft_param is set to 'auto', hubbard U parameters will be set to d-block and f-block elements automatically. For d-block elements, default U=4eV will
-                be set to d orbital. For f-block elements, default U=6eV will be set to f orbital.
-            If dft_param is a dict, the keys should be name of elements and the value has two choices:
-                - A float number, which is the Hubbard U value of the element. The corrected orbital will be infered from the name of the element.
-                - A list containing two elements: the corrected orbital (should be 'p', 'd' or 'f') and the Hubbard U value.
-                For example, {"Fe": ["d", 4], "O": ["p", 1]} means applying DFT+U to Fe 3d orbital with U=4 eV and O 2p orbital with U=1 eV.
-        init_mag ( dict or None): The initial magnetic moment for magnetic elements, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the initial magnetic moment.
+        dftu_param (dict or None): The DFT+U parameters, should be a dict containing the following keys:
+            - 'element' (List[str]): List of elements to apply DFT+U to.
+            - 'orbital' (List[str]): List of orbitals to apply DFT+U to for each element. Should be 'p', 'd' or 'f'.
+            - 'U_value' (List[float]): List of Hubbard U values for each element.
+            The length of list for each key in dftu_param should be the same.
+        init_mag (dict or None): The initial magnetic moment for magnetic elements, should be a dict containing the following keys:
+            - 'element': List of elements to apply initial magnetic moment to.
+            - 'mag': List of initial magnetic moments for each element.
+            The length of list for each key in init_mag should be the same.
         max_steps (int): The maximum number of steps for the relax calculation. Default is 100.
         relax: Whether to do a relax calculation before doing the property calculation. Default is False.
             If the calculated property is phonon dispersion or elastic properties, the crystal should be relaxed first with relax_cell set to True and `relax_precision` is strongly recommended be set to `high`.
@@ -658,6 +701,8 @@ def abacus_phonon_dispersion(
             - max_frequency_THz: Maximum phonon frequency in THz.
             - max_frequency_K: Maximum phonon frequency in Kelvin.
     """
+    dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
+    init_mag = transform_initmag_param(init_mag) if init_mag is not None else None
     abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
                                               stru_type=stru_type,
                                               lcao=lcao,
@@ -695,9 +740,8 @@ def abacus_cal_elastic(
     dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
     #soc: bool = False,
     dftu: bool = False,
-    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
-                         Literal['auto']]] = None,
-    init_mag: Optional[Dict[str, float]] = None,
+    dftu_param: DFTUParam = None,
+    init_mag: InitMagParam = None,
     #afm: bool = False,
     max_steps: int = 100,
     relax: bool = True,
@@ -722,14 +766,15 @@ def abacus_cal_elastic(
         dft_functional (Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN']): The DFT functional to use, can be 'PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', 'PBE0', or 'R2SCAN'. Default is 'PBE'.
             If hybrid functionals like HSE and PBE0 are used, the calculation may be much slower than GGA functionals like PBE.
         dftu (bool): Whether to use DFT+U, default is False.
-        dftu_param (dict): The DFT+U parameters, should be 'auto' or a dict
-            If dft_param is set to 'auto', hubbard U parameters will be set to d-block and f-block elements automatically. For d-block elements, default U=4eV will
-                be set to d orbital. For f-block elements, default U=6eV will be set to f orbital.
-            If dft_param is a dict, the keys should be name of elements and the value has two choices:
-                - A float number, which is the Hubbard U value of the element. The corrected orbital will be infered from the name of the element.
-                - A list containing two elements: the corrected orbital (should be 'p', 'd' or 'f') and the Hubbard U value.
-                For example, {"Fe": ["d", 4], "O": ["p", 1]} means applying DFT+U to Fe 3d orbital with U=4 eV and O 2p orbital with U=1 eV.
-        init_mag ( dict or None): The initial magnetic moment for magnetic elements, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the initial magnetic moment.
+        dftu_param (dict or None): The DFT+U parameters, should be a dict containing the following keys:
+            - 'element' (List[str]): List of elements to apply DFT+U to.
+            - 'orbital' (List[str]): List of orbitals to apply DFT+U to for each element. Should be 'p', 'd' or 'f'.
+            - 'U_value' (List[float]): List of Hubbard U values for each element.
+            The length of list for each key in dftu_param should be the same.
+        init_mag (dict or None): The initial magnetic moment for magnetic elements, should be a dict containing the following keys:
+            - 'element': List of elements to apply initial magnetic moment to.
+            - 'mag': List of initial magnetic moments for each element.
+            The length of list for each key in init_mag should be the same.
         max_steps (int): The maximum number of steps for the relax calculation. Default is 100.
         relax: Whether to do a relax calculation before doing the property calculation. Default is False.
             If the calculated property is phonon dispersion or elastic properties, the crystal should be relaxed first with relax_cell set to True and `relax_precision` is strongly recommended be set to `high`.
@@ -762,6 +807,8 @@ def abacus_cal_elastic(
         - young_modulus (float): Calculated Young's modulus in GPa.
         - poisson_ratio (float): Calculated Poisson's ratio.
     """
+    dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
+    init_mag = transform_initmag_param(init_mag) if init_mag is not None else None
     abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
                                               stru_type=stru_type,
                                               lcao=lcao,
@@ -797,9 +844,8 @@ def abacus_vacancy_formation_energy(
     dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
     #soc: bool = False,
     dftu: bool = False,
-    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
-                         Literal['auto']]] = None,
-    init_mag: Optional[Dict[str, float]] = None,
+    dftu_param: DFTUParam = None,
+    init_mag: InitMagParam = None,
     #afm: bool = False,
     max_steps: int = 100,
     relax: bool = True,
@@ -827,14 +873,15 @@ def abacus_vacancy_formation_energy(
         dft_functional (Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN']): The DFT functional to use, can be 'PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', 'PBE0', or 'R2SCAN'. Default is 'PBE'.
             If hybrid functionals like HSE and PBE0 are used, the calculation may be much slower than GGA functionals like PBE.
         dftu (bool): Whether to use DFT+U, default is False.
-        dftu_param (dict): The DFT+U parameters, should be 'auto' or a dict
-            If dft_param is set to 'auto', hubbard U parameters will be set to d-block and f-block elements automatically. For d-block elements, default U=4eV will
-                be set to d orbital. For f-block elements, default U=6eV will be set to f orbital.
-            If dft_param is a dict, the keys should be name of elements and the value has two choices:
-                - A float number, which is the Hubbard U value of the element. The corrected orbital will be infered from the name of the element.
-                - A list containing two elements: the corrected orbital (should be 'p', 'd' or 'f') and the Hubbard U value.
-                For example, {"Fe": ["d", 4], "O": ["p", 1]} means applying DFT+U to Fe 3d orbital with U=4 eV and O 2p orbital with U=1 eV.
-        init_mag ( dict or None): The initial magnetic moment for magnetic elements, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the initial magnetic moment.
+        dftu_param (dict or None): The DFT+U parameters, should be a dict containing the following keys:
+            - 'element' (List[str]): List of elements to apply DFT+U to.
+            - 'orbital' (List[str]): List of orbitals to apply DFT+U to for each element. Should be 'p', 'd' or 'f'.
+            - 'U_value' (List[float]): List of Hubbard U values for each element.
+            The length of list for each key in dftu_param should be the same.
+        init_mag (dict or None): The initial magnetic moment for magnetic elements, should be a dict containing the following keys:
+            - 'element': List of elements to apply initial magnetic moment to.
+            - 'mag': List of initial magnetic moments for each element.
+            The length of list for each key in init_mag should be the same.
         max_steps (int): The maximum number of steps for the relax calculation. Default is 100.
         relax: Whether to do a relax calculation before doing the property calculation. Default is False.
             If the calculated property is phonon dispersion or elastic properties, the crystal should be relaxed first with relax_cell set to True and `relax_precision` is strongly recommended be set to `high`.
@@ -867,6 +914,8 @@ def abacus_vacancy_formation_energy(
         - "supercell_job_relax_converge": If the supercell relax calculation is converged.
         - "defect_supercell_job_relax_converge": If the defect supercell relax calculation is converged.
     """
+    dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
+    init_mag = transform_initmag_param(init_mag) if init_mag is not None else None
     abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
                                               stru_type=stru_type,
                                               lcao=lcao,
@@ -885,6 +934,12 @@ def abacus_vacancy_formation_energy(
                                  relax_method=relax_method)
         abacus_inputs_dir = relax_outputs['new_abacus_inputs_dir']
     
+    if stru_type in ['cif', 'poscar']:
+        # Get actual atom index in transformed STRU file
+        from abacustest.lib_model.model_017_vacancy import get_categorized_idx
+        categorized_idx = get_categorized_idx(stru_file, stru_type)
+        vacancy_index = categorized_idx.index(vacancy_index-1) + 1
+
     vacancy_outputs = _abacus_cal_vacancy_formation_energy(abacus_inputs_dir,
                                                            supercell,
                                                            vacancy_index,
@@ -901,9 +956,8 @@ def abacus_cal_work_function(
     dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
     #soc: bool = False,
     dftu: bool = False,
-    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
-                         Literal['auto']]] = None,
-    init_mag: Optional[Dict[str, float]] = None,
+    dftu_param: DFTUParam = None,
+    init_mag: InitMagParam = None,
     #afm: bool = False,
     max_steps: int = 100,
     relax: bool = False,
@@ -926,14 +980,15 @@ def abacus_cal_work_function(
         dft_functional (Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN']): The DFT functional to use, can be 'PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', 'PBE0', or 'R2SCAN'. Default is 'PBE'.
             If hybrid functionals like HSE and PBE0 are used, the calculation may be much slower than GGA functionals like PBE.
         dftu (bool): Whether to use DFT+U, default is False.
-        dftu_param (dict): The DFT+U parameters, should be 'auto' or a dict
-            If dft_param is set to 'auto', hubbard U parameters will be set to d-block and f-block elements automatically. For d-block elements, default U=4eV will
-                be set to d orbital. For f-block elements, default U=6eV will be set to f orbital.
-            If dft_param is a dict, the keys should be name of elements and the value has two choices:
-                - A float number, which is the Hubbard U value of the element. The corrected orbital will be infered from the name of the element.
-                - A list containing two elements: the corrected orbital (should be 'p', 'd' or 'f') and the Hubbard U value.
-                For example, {"Fe": ["d", 4], "O": ["p", 1]} means applying DFT+U to Fe 3d orbital with U=4 eV and O 2p orbital with U=1 eV.
-        init_mag ( dict or None): The initial magnetic moment for magnetic elements, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the initial magnetic moment.
+        dftu_param (dict or None): The DFT+U parameters, should be a dict containing the following keys:
+            - 'element' (List[str]): List of elements to apply DFT+U to.
+            - 'orbital' (List[str]): List of orbitals to apply DFT+U to for each element. Should be 'p', 'd' or 'f'.
+            - 'U_value' (List[float]): List of Hubbard U values for each element.
+            The length of list for each key in dftu_param should be the same.
+        init_mag (dict or None): The initial magnetic moment for magnetic elements, should be a dict containing the following keys:
+            - 'element': List of elements to apply initial magnetic moment to.
+            - 'mag': List of initial magnetic moments for each element.
+            The length of list for each key in init_mag should be the same.
         max_steps (int): The maximum number of steps for the relax calculation. Default is 100.
         relax: Whether to do a relax calculation before doing the property calculation. Default is False.
             If the calculated property is phonon dispersion or elastic properties, the crystal should be relaxed first with relax_cell set to True and `relax_precision` is strongly recommended be set to `high`.
@@ -966,6 +1021,8 @@ def abacus_cal_work_function(
             - 'plateau_start_fractional': Fractional coordinate of start of the identified plateau in the given vacuum direction
             - 'plateau_end_fractional': Fractional coordinate of end of the identified plateau in the given vacuum direction
     """
+    dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
+    init_mag = transform_initmag_param(init_mag) if init_mag is not None else None
     abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
                                               stru_type=stru_type,
                                               lcao=lcao,
@@ -999,9 +1056,8 @@ def abacus_cal_elf(
     dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
     #soc: bool = False,
     dftu: bool = False,
-    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
-                         Literal['auto']]] = None,
-    init_mag: Optional[Dict[str, float]] = None,
+    dftu_param: DFTUParam = None,
+    init_mag: InitMagParam = None,
     #afm: bool = False,
     max_steps: int = 100,
     relax: bool = False,
@@ -1021,14 +1077,15 @@ def abacus_cal_elf(
         dft_functional (Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN']): The DFT functional to use, can be 'PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', 'PBE0', or 'R2SCAN'. Default is 'PBE'.
             If hybrid functionals like HSE and PBE0 are used, the calculation may be much slower than GGA functionals like PBE.
         dftu (bool): Whether to use DFT+U, default is False.
-        dftu_param (dict): The DFT+U parameters, should be 'auto' or a dict
-            If dft_param is set to 'auto', hubbard U parameters will be set to d-block and f-block elements automatically. For d-block elements, default U=4eV will
-                be set to d orbital. For f-block elements, default U=6eV will be set to f orbital.
-            If dft_param is a dict, the keys should be name of elements and the value has two choices:
-                - A float number, which is the Hubbard U value of the element. The corrected orbital will be infered from the name of the element.
-                - A list containing two elements: the corrected orbital (should be 'p', 'd' or 'f') and the Hubbard U value.
-                For example, {"Fe": ["d", 4], "O": ["p", 1]} means applying DFT+U to Fe 3d orbital with U=4 eV and O 2p orbital with U=1 eV.
-        init_mag ( dict or None): The initial magnetic moment for magnetic elements, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the initial magnetic moment.
+        dftu_param (dict or None): The DFT+U parameters, should be a dict containing the following keys:
+            - 'element' (List[str]): List of elements to apply DFT+U to.
+            - 'orbital' (List[str]): List of orbitals to apply DFT+U to for each element. Should be 'p', 'd' or 'f'.
+            - 'U_value' (List[float]): List of Hubbard U values for each element.
+            The length of list for each key in dftu_param should be the same.
+        init_mag (dict or None): The initial magnetic moment for magnetic elements, should be a dict containing the following keys:
+            - 'element': List of elements to apply initial magnetic moment to.
+            - 'mag': List of initial magnetic moments for each element.
+            The length of list for each key in init_mag should be the same.
         max_steps (int): The maximum number of steps for the relax calculation. Default is 100.
         relax: Whether to do a relax calculation before doing the property calculation. Default is False.
             If the calculated property is phonon dispersion or elastic properties, the crystal should be relaxed first with relax_cell set to True and `relax_precision` is strongly recommended be set to `high`.
@@ -1052,6 +1109,8 @@ def abacus_cal_elf(
          - elf_work_path: Path to the directory containing ABACUS input files and output files when calculating ELF.
          - elf_file: ELF file path (in .cube file format).
     """
+    dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
+    init_mag = transform_initmag_param(init_mag) if init_mag is not None else None
     abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
                                               stru_type=stru_type,
                                               lcao=lcao,
@@ -1083,9 +1142,8 @@ def abacus_eos(
     dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
     #soc: bool = False,
     dftu: bool = False,
-    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
-                         Literal['auto']]] = None,
-    init_mag: Optional[Dict[str, float]] = None,
+    dftu_param: DFTUParam = None,
+    init_mag: InitMagParam = None,
     #afm: bool = False,
     max_steps: int = 100,
     relax: bool = False,
@@ -1108,14 +1166,15 @@ def abacus_eos(
         dft_functional (Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN']): The DFT functional to use, can be 'PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', 'PBE0', or 'R2SCAN'. Default is 'PBE'.
             If hybrid functionals like HSE and PBE0 are used, the calculation may be much slower than GGA functionals like PBE.
         dftu (bool): Whether to use DFT+U, default is False.
-        dftu_param (dict): The DFT+U parameters, should be 'auto' or a dict
-            If dft_param is set to 'auto', hubbard U parameters will be set to d-block and f-block elements automatically. For d-block elements, default U=4eV will
-                be set to d orbital. For f-block elements, default U=6eV will be set to f orbital.
-            If dft_param is a dict, the keys should be name of elements and the value has two choices:
-                - A float number, which is the Hubbard U value of the element. The corrected orbital will be infered from the name of the element.
-                - A list containing two elements: the corrected orbital (should be 'p', 'd' or 'f') and the Hubbard U value.
-                For example, {"Fe": ["d", 4], "O": ["p", 1]} means applying DFT+U to Fe 3d orbital with U=4 eV and O 2p orbital with U=1 eV.
-        init_mag ( dict or None): The initial magnetic moment for magnetic elements, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the initial magnetic moment.
+        dftu_param (dict or None): The DFT+U parameters, should be a dict containing the following keys:
+            - 'element' (List[str]): List of elements to apply DFT+U to.
+            - 'orbital' (List[str]): List of orbitals to apply DFT+U to for each element. Should be 'p', 'd' or 'f'.
+            - 'U_value' (List[float]): List of Hubbard U values for each element.
+            The length of list for each key in dftu_param should be the same.
+        init_mag (dict or None): The initial magnetic moment for magnetic elements, should be a dict containing the following keys:
+            - 'element': List of elements to apply initial magnetic moment to.
+            - 'mag': List of initial magnetic moments for each element.
+            The length of list for each key in init_mag should be the same.
         max_steps (int): The maximum number of steps for the relax calculation. Default is 100.
         relax: Whether to do a relax calculation before doing the property calculation. Default is False.
             If the calculated property is phonon dispersion or elastic properties, the crystal should be relaxed first with relax_cell set to True and `relax_precision` is strongly recommended be set to `high`.
@@ -1146,6 +1205,8 @@ def abacus_eos(
             - "B0" (float): Bulk modulus (in GPa) at equilibrium volume.
             - "B0_deriv" (float): Pressure derivative of the bulk modulus.
     """
+    dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
+    init_mag = transform_initmag_param(init_mag) if init_mag is not None else None
     abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
                                               stru_type=stru_type,
                                               lcao=lcao,
@@ -1179,9 +1240,8 @@ def abacus_run_md(
     dft_functional: Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN'] = 'PBE',
     #soc: bool = False,
     dftu: bool = False,
-    dftu_param: Optional[Union[Dict[str, Union[float, Tuple[Literal["p", "d", "f"], float]]],
-                         Literal['auto']]] = None,
-    init_mag: Optional[Dict[str, float]] = None,
+    dftu_param: DFTUParam = None,
+    init_mag: InitMagParam = None,
     #afm: bool = False,
     max_steps: int = 100,
     relax: bool = False,
@@ -1212,14 +1272,15 @@ def abacus_run_md(
         dft_functional (Literal['PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', "PBE0", 'R2SCAN']): The DFT functional to use, can be 'PBE', 'PBEsol', 'LDA', 'SCAN', 'HSE', 'PBE0', or 'R2SCAN'. Default is 'PBE'.
             If hybrid functionals like HSE and PBE0 are used, the calculation may be much slower than GGA functionals like PBE.
         dftu (bool): Whether to use DFT+U, default is False.
-        dftu_param (dict): The DFT+U parameters, should be 'auto' or a dict
-            If dft_param is set to 'auto', hubbard U parameters will be set to d-block and f-block elements automatically. For d-block elements, default U=4eV will
-                be set to d orbital. For f-block elements, default U=6eV will be set to f orbital.
-            If dft_param is a dict, the keys should be name of elements and the value has two choices:
-                - A float number, which is the Hubbard U value of the element. The corrected orbital will be infered from the name of the element.
-                - A list containing two elements: the corrected orbital (should be 'p', 'd' or 'f') and the Hubbard U value.
-                For example, {"Fe": ["d", 4], "O": ["p", 1]} means applying DFT+U to Fe 3d orbital with U=4 eV and O 2p orbital with U=1 eV.
-        init_mag ( dict or None): The initial magnetic moment for magnetic elements, should be a dict like {"Fe": 4, "Ti": 1}, where the key is the element symbol and the value is the initial magnetic moment.
+        dftu_param (dict or None): The DFT+U parameters, should be a dict containing the following keys:
+            - 'element' (List[str]): List of elements to apply DFT+U to.
+            - 'orbital' (List[str]): List of orbitals to apply DFT+U to for each element. Should be 'p', 'd' or 'f'.
+            - 'U_value' (List[float]): List of Hubbard U values for each element.
+            The length of list for each key in dftu_param should be the same.
+        init_mag (dict or None): The initial magnetic moment for magnetic elements, should be a dict containing the following keys:
+            - 'element': List of elements to apply initial magnetic moment to.
+            - 'mag': List of initial magnetic moments for each element.
+            The length of list for each key in init_mag should be the same.
         max_steps (int): The maximum number of steps for the relax calculation. Default is 100.
         relax: Whether to do a relax calculation before doing the property calculation. Default is False.
             If the calculated property is phonon dispersion or elastic properties, the crystal should be relaxed first with relax_cell set to True and `relax_precision` is strongly recommended be set to `high`.
@@ -1278,6 +1339,8 @@ def abacus_run_md(
             - traj_frame_nums (int): Number of frames in returned trajectory file.
             - normal_end (bool): Whether the ab-initio molecular dynamics calculation ended normally.
     """
+    dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
+    init_mag = transform_initmag_param(init_mag) if init_mag is not None else None
     abacus_inputs_dir = prepare_abacus_inputs(stru_file=stru_file,
                                               stru_type=stru_type,
                                               lcao=lcao,
