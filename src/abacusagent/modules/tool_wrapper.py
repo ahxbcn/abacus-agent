@@ -34,6 +34,8 @@ def transform_dftu_param(dftu_param):
     """
     Transform DFT+U param definition used in tools in this file to the format used by abacus_prepare.
     """
+    assert len(dftu_param['element']) == len(dftu_param['orbital'])
+    assert len(dftu_param['element']) == len(dftu_param['U_value'])
     dftu_param_new = {}
     for i in range(len(dftu_param['element'])):
         dftu_param_new[dftu_param['element'][i]] = (dftu_param['orbital'][i], dftu_param['U_value'][i])
@@ -44,6 +46,7 @@ def transform_initmag_param(initmag_param):
     """
     Transform initial magnetic param definition used in tools in this file to the format used by abacus_prepare.
     """
+    assert len(initmag_param['element']) == len(initmag_param['mag'])
     initmag_param_new = {}
     for i in range(len(initmag_param['element'])):
         initmag_param_new[initmag_param['element'][i]] = initmag_param['mag'][i]
