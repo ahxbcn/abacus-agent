@@ -931,6 +931,12 @@ def abacus_vacancy_formation_energy(
                                  relax_method=relax_method)
         abacus_inputs_dir = relax_outputs['new_abacus_inputs_dir']
     
+    if stru_type in ['cif', 'poscar']:
+        # Get actual atom index in transformed STRU file
+        from abacustest.lib_model.model_017_vacancy import get_categorized_idx
+        categorized_idx = get_categorized_idx(stru_file, stru_type)
+        vacancy_index = categorized_idx.index(vacancy_index-1) + 1
+
     vacancy_outputs = _abacus_cal_vacancy_formation_energy(abacus_inputs_dir,
                                                            supercell,
                                                            vacancy_index,
