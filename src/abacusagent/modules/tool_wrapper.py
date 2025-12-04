@@ -171,8 +171,7 @@ def abacus_calculation_scf(
             The length of list for each key in init_mag should be the same.
 
     Returns:
-        A dictionary containing the path to output file of ABACUS calculation, and a dictionary containing whether the SCF calculation
-        finished normally, the SCF is converged or not, the converged SCF energy and total time used.
+        A dictionary containing whether the SCF calculation finished normally, the SCF is converged or not and the converged SCF energy.
     """
     dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
     init_mag = transform_initmag_param(init_mag) if init_mag is not None else None
@@ -185,7 +184,11 @@ def abacus_calculation_scf(
                                               dftu_param=dftu_param,
                                               init_mag=init_mag)
     
-    return _abacus_calculation_scf(abacus_inputs_dir)
+    results =  _abacus_calculation_scf(abacus_inputs_dir)
+
+    return {'energy': results.get('energy', None),
+            'converge': results.get('converge', None),
+            'normal_end': results.get('normal_end', None)}
 
 @mcp.tool()
 def abacus_do_relax(
@@ -244,16 +247,10 @@ def abacus_do_relax(
             - ac: fix both a and c axes
             - bc: fix both b and c axes
     Returns:
-        A dictionary containing:
-        - job_path: The job path of the relaxation calculation.
-        - new_abacus_inputs_dir: The path to the new ABACUS input files using relaxed structure in STRU file from the relaxation results.
-                                  Property calculation should be performed using this new ABACUS input files.
-        - result: The result of the relaxation calculation with a dictionary containing:
-            - normal_end: Whether the relaxation calculation ended normally.
+        A dictionary containing result of the relaxation calculation:
+            - final_stru: The final STRU file path after relaxation.
             - relax_steps: The number of relaxation steps taken.
-            - largest_gradient: The largest force gradient during the relaxation.
             - relax_converge: Whether the relaxation converged.
-            - energies: The energies at each step of the relaxation.
     """
     dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
     init_mag = transform_initmag_param(init_mag) if init_mag is not None else None
@@ -273,7 +270,9 @@ def abacus_do_relax(
                              fixed_axes=fixed_axes,
                              relax_method=relax_method)
 
-    return relax_outputs
+    return {'final_stru': relax_outputs.get('final_stru', None),
+            'relax_converge': relax_outputs.get('relax_converge', None),
+            'relax_steps': relax_outputs.get('relax_steps', None),}
 
 @mcp.tool()
 def abacus_badercharge_run(
@@ -339,11 +338,7 @@ def abacus_badercharge_run(
     Returns:
     dict: A dictionary containing: 
         - net_bader_charges: List of net Bader charge for each atom. Core charge is included.
-        - bader_charges: List of Bader charge for each atom. The value represents the number of valence electrons for each atom, and core charge is not included.
-        - atom_core_charges: List of core charge for each atom.
         - atom_labels: Labels of atoms in the structure.
-        - abacus_workpath: Absolute path to the ABACUS work directory.
-        - badercharge_run_workpath: Absolute path to the Bader analysis work directory.
     """
     dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
     init_mag = transform_initmag_param(init_mag) if init_mag is not None else None
@@ -368,7 +363,8 @@ def abacus_badercharge_run(
 
     badercharge_results = _abacus_badercharge_run(abacus_inputs_dir)
 
-    return badercharge_results
+    return {'net_bader_charges': badercharge_results.get('net_charges', None),
+            'atom_labels': badercharge_results.get('atom_labels', None)}
 
 @mcp.tool()
 def abacus_dos_run(
@@ -454,12 +450,9 @@ def abacus_dos_run(
         Dict[str, Any]: A dictionary containing:
             - dos_fig_path: Path to the plotted DOS.
             - pdos_fig_path: Path to the plotted PDOS. Only for LCAO basis.
-            - scf_work_path: Path to the work directory of SCF calculation.
             - scf_normal_end: If the SCF calculation ended normally.
-            - scf_steps: Number of steps of SCF iteration.
             - scf_converge: If the SCF calculation converged.
             - scf_energy: The calculated energy of SCF calculation.
-            - nscf_work_path: Path to the work directory of NSCF calculation.
             - nscf_normal_end: If the SCF calculation ended normally.
     """
     dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
@@ -491,7 +484,12 @@ def abacus_dos_run(
                                   dos_emax_ev,
                                   dos_nche)
     
-    return dos_results
+    return {'dos_fig_path': dos_results.get('dos_fig_path', None),
+            'pdos_fig_path': dos_results.get('pdos_fig_path', None),
+            'scf_normal_end': dos_results.get('scf_normal_end', None),
+            'scf_converge': dos_results.get('scf_converge', None),
+            'scf_energy': dos_results.get('scf_energy', None),
+            'nscf_normal_end': dos_results.get('nscf_normal_end', None)}
 
 @mcp.tool()
 def abacus_cal_band(
@@ -579,7 +577,7 @@ def abacus_cal_band(
         insert_point_nums (int): Number of points to insert between two high symmetry points. Default is 30.
     
     Returns:
-        A dictionary containing band gap, path to the work directory for calculating band and path to the plotted band.
+        A dictionary containing band gap and path to the plotted band.
     """
     dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
     init_mag = transform_initmag_param(init_mag) if init_mag is not None else None
@@ -609,7 +607,9 @@ def abacus_cal_band(
                                                 energy_max,
                                                 insert_point_nums)
     
-    return band_calculation_outputs
+    return {'band_gap': band_calculation_outputs.get('band_gap', None),
+            'band_picture': band_calculation_outputs.get('band_picture', None),
+            'message': band_calculation_outputs.get('message', None),}
 
 @mcp.tool()
 def abacus_phonon_dispersion(
@@ -693,7 +693,6 @@ def abacus_phonon_dispersion(
     
     Returns:
         A dictionary containing:
-            - phonon_work_path: Path to the directory containing phonon calculation results.
             - band_dos_plot: Path to the phonon dispersion plot.
             - entropy: Entropy at the specified temperature.
             - free_energy: Free energy at the specified temperature.
@@ -729,7 +728,12 @@ def abacus_phonon_dispersion(
                                                qpath,
                                                high_symm_points)
     
-    return phonon_outputs
+    return {'band_dos_plot': phonon_outputs.get('band_dos_plot', None),
+            'entropy': phonon_outputs.get('entropy', None),
+            'free_energy': phonon_outputs.get('free_energy', None),
+            'heat_capacity': phonon_outputs.get('heat_capacity', None),
+            'max_frequency_THz': phonon_outputs.get('max_frequency_THz', None),
+            'max_frequency_K': phonon_outputs.get('max_frequency_K', None)}
 
 @mcp.tool()
 def abacus_cal_elastic(
@@ -800,8 +804,7 @@ def abacus_cal_elastic(
     
     Returns:
         A dictionary containing the following keys:
-        - elastic_cal_dir (Path): Work path of running abacus_cal_elastic. 
-        - elastic_constants (np.array in (6,6) dimension): Calculated elastic constants in Voigt notation. Units in GPa.
+        - elastic_tensor (np.array in (6,6) dimension): Calculated elastic constants in Voigt notation. Units in GPa.
         - bulk_modulus (float): Calculated bulk modulus in GPa.
         - shear_modulus (float): Calculated shear modulus in GPa.
         - young_modulus (float): Calculated Young's modulus in GPa.
@@ -833,7 +836,11 @@ def abacus_cal_elastic(
                                           kspacing,
                                           relax_force_thr_ev)
     
-    return elactic_outputs
+    return {'elastic_tensor': elactic_outputs.get('elastic_tensor', None),
+            'bulk_modulus': elactic_outputs.get('bulk_modulus', None),
+            'shear_modulus': elactic_outputs.get('shear_modulus', None),
+            'young_modulus': elactic_outputs.get('young_modulus', None),
+            'poisson_ratio': elactic_outputs.get('poisson_ratio', None),}
 
 @mcp.tool()
 def abacus_vacancy_formation_energy(
@@ -910,7 +917,6 @@ def abacus_vacancy_formation_energy(
     Returns:
         A dictionary containing:
         - "vacancy_formation_energy": Calculated vacancy formation energy.
-        - "work_path": Path to the work path of vacancy formation energy calculation.
         - "supercell_job_relax_converge": If the supercell relax calculation is converged.
         - "defect_supercell_job_relax_converge": If the defect supercell relax calculation is converged.
     """
@@ -945,7 +951,9 @@ def abacus_vacancy_formation_energy(
                                                            vacancy_index,
                                                            vacancy_relax_precision)
     
-    return vacancy_outputs
+    return {'vacancy_formation_energy': vacancy_outputs.get('vac_formation_energy', None),
+            'supercell_job_relax_converge': vacancy_outputs.get('supercell_job_relax_converge', None),
+            'defect_supercell_job_relax_converge': vacancy_outputs.get('defect_supercell_job_relax_converge', None),}
 
 @mcp.tool()
 def abacus_cal_work_function(
@@ -1012,7 +1020,6 @@ def abacus_cal_work_function(
     
     Returns:
         A dictionary containing:
-        - elecstat_pot_work_function_work_path (Path): Path to the ABACUS job directory calculating electrostatic potential and work function.
         - elecstat_pot_file (Path): Path to the cube file containing the electrostatic potential.
         - averaged_elecstat_pot_plot (Path): Path to the plot of the averaged electrostatic potential.
         - work_function_results (list): A list of 1 or 2 dictionary. If dipole correction is not used, only 1 dictionaray will be returned. 
@@ -1045,7 +1052,9 @@ def abacus_cal_work_function(
                                                       vacuum_direction,
                                                       dipole_correction)
     
-    return work_function_outputs
+    return {'elecstat_pot_file': work_function_outputs.get('elecstat_pot_file', None),
+            'averaged_elecstat_pot_plot': work_function_outputs.get('averaged_elecstat_pot_plot', None),
+            'work_function_results': work_function_outputs.get('work_function_results', None)}
 
 @mcp.tool()
 def abacus_cal_elf(
@@ -1106,7 +1115,6 @@ def abacus_cal_elf(
             - bc: fix both b and c axes
     Returns:
         Dict[str, Any]: A dictionary containing:
-         - elf_work_path: Path to the directory containing ABACUS input files and output files when calculating ELF.
          - elf_file: ELF file path (in .cube file format).
     """
     dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
@@ -1131,7 +1139,7 @@ def abacus_cal_elf(
     
     elf_outputs = _abacus_cal_elf(abacus_inputs_dir)
 
-    return elf_outputs
+    return {'elf_file': elf_outputs.get('elf_file', None)}
 
 @mcp.tool()
 def abacus_eos(
@@ -1198,7 +1206,6 @@ def abacus_eos(
 
     Returns:
         Dict[str, Any]: A dictionary containing EOS calculation results:
-            - "eos_work_path" (Path): Working directory for the EOS calculation.
             - "eos_fig_path" (Path): Path to the EOS fitting plot (energy vs. volume).
             - "E0" (float): Minimum energy (in eV) from the EOS fit.
             - "V0" (float): Equilibrium volume (in Å³) corresponding to E0.
@@ -1229,7 +1236,11 @@ def abacus_eos(
                               stru_scale_number,
                               scale_stepsize)
     
-    return eos_outputs
+    return {'eos_fig_path': eos_outputs.get('eos_fig_path', None),
+            'E0': eos_outputs.get('E0', None),
+            'V0': eos_outputs.get('V0', None),
+            'B0': eos_outputs.get('B0', None),
+            'B0_deriv': eos_outputs.get('B0_deriv', None)}
 
 @mcp.tool()
 def abacus_run_md(
@@ -1371,4 +1382,6 @@ def abacus_run_md(
                                md_dumpfreq,
                                md_seed)
     
-    return md_outputs
+    return {'md_traj_file': md_outputs.get('md_traj_file', None),
+            'traj_frame_nums': md_outputs.get('traj_frame_nums', None),
+            'normal_end': md_outputs.get('normal_end', None)}
