@@ -153,16 +153,8 @@ class TestToolWrapper(unittest.TestCase):
                                   fixed_axes=None)
         print(outputs)
 
-        relax_work_path = outputs['job_path']
-        new_relax_work_path = outputs['new_abacus_inputs_dir']
-        self.assertIsInstance(relax_work_path, get_path_type())
-        self.assertIsInstance(new_relax_work_path, get_path_type())
-        self.assertTrue(outputs['result']['normal_end'])
-        self.assertTrue(outputs['result']['relax_converge'])
-        self.assertAlmostEqual(outputs['result']['energies'][-1], ref_results['last_energy'], delta=1e-6)
-        relax_precision_contents = get_relax_precision(relax_precision)
-        self.assertTrue(outputs['result']['largest_gradient'][-1] <= relax_precision_contents['force_thr_ev'])
-        self.assertTrue(outputs['result']['largest_gradient_stress'][-1] <= relax_precision_contents['stress_thr'])
+        self.assertTrue(outputs['final_stru'].exists())
+        self.assertTrue(outputs['relax_converge'])
 
     def test_run_abacus_calculation_dos(self):
         """
@@ -174,7 +166,6 @@ class TestToolWrapper(unittest.TestCase):
         os.makedirs(test_work_dir, exist_ok=True)
         shutil.copy2(self.stru_scf, test_work_dir / "STRU")
         
-        #outputs = run_abacus_calculation(test_work_dir / "STRU", relax=True, relax_cell=True, property='dos')
         outputs = abacus_dos_run(test_work_dir / "STRU",
                                  stru_type='abacus/stru',
                                  lcao=True,

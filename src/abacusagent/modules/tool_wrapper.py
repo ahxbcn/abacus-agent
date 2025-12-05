@@ -122,9 +122,9 @@ def do_relax(
                                      relax_method=relax_method,
                                      fixed_axes=fixed_axes)
     
-    if relax_outputs['result']['normal_end'] is False:
+    if relax_outputs['normal_end'] is False:
         raise ValueError('Relaxation calculation failed')
-    elif relax_outputs['result']['relax_converge'] is False:
+    elif relax_outputs['relax_converge'] is False:
         return {"msg":f'Relaxation calculation did not converge in {max_steps} steps',
                 "final_stru": Path(relax_outputs['new_abacus_inputs_dir']) / "STRU",
                 **relax_outputs["result"]}

@@ -109,7 +109,7 @@ def abacus_do_relax(
         return {
             "job_path": Path(work_path).absolute(),
             "new_abacus_inputs_dir": Path(new_abacus_inputs_dir).absolute(),
-            "result": results
+            **results
         }
     except Exception as e:
         return {"message": f"Relaxation calculation failed: {e}"}
