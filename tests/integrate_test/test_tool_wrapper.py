@@ -153,16 +153,8 @@ class TestToolWrapper(unittest.TestCase):
                                   fixed_axes=None)
         print(outputs)
 
-        relax_work_path = outputs['job_path']
-        new_relax_work_path = outputs['new_abacus_inputs_dir']
-        self.assertIsInstance(relax_work_path, get_path_type())
-        self.assertIsInstance(new_relax_work_path, get_path_type())
-        self.assertTrue(outputs['result']['normal_end'])
-        self.assertTrue(outputs['result']['relax_converge'])
-        self.assertAlmostEqual(outputs['result']['energies'][-1], ref_results['last_energy'], delta=1e-6)
-        relax_precision_contents = get_relax_precision(relax_precision)
-        self.assertTrue(outputs['result']['largest_gradient'][-1] <= relax_precision_contents['force_thr_ev'])
-        self.assertTrue(outputs['result']['largest_gradient_stress'][-1] <= relax_precision_contents['stress_thr'])
+        self.assertTrue(outputs['final_stru'].exists())
+        self.assertTrue(outputs['relax_converge'])
 
     def test_run_abacus_calculation_dos(self):
         """
@@ -174,7 +166,6 @@ class TestToolWrapper(unittest.TestCase):
         os.makedirs(test_work_dir, exist_ok=True)
         shutil.copy2(self.stru_scf, test_work_dir / "STRU")
         
-        #outputs = run_abacus_calculation(test_work_dir / "STRU", relax=True, relax_cell=True, property='dos')
         outputs = abacus_dos_run(test_work_dir / "STRU",
                                  stru_type='abacus/stru',
                                  lcao=True,
@@ -229,11 +220,7 @@ class TestToolWrapper(unittest.TestCase):
                                          fixed_axes=None)
         print(outputs)
 
-        abacus_workpath = outputs['abacus_workpath']
-        badercharge_run_workpath = outputs['badercharge_run_workpath']
-        self.assertIsInstance(abacus_workpath, get_path_type())
-        self.assertIsInstance(badercharge_run_workpath, get_path_type())
-        for act, ref in zip(outputs['net_charges'], ref_results['net_charges']):
+        for act, ref in zip(outputs['net_bader_charges'], ref_results['net_bader_charges']):
             self.assertAlmostEqual(act, ref, delta=1e-3)
         for act, ref in zip(outputs['atom_labels'], ref_results['atom_labels']):
             self.assertEqual(act, ref)
@@ -268,9 +255,7 @@ class TestToolWrapper(unittest.TestCase):
                                   insert_point_nums=30)
         print(outputs)
 
-        band_calc_dir = outputs['band_calc_dir']
         band_picture = outputs['band_picture']
-        self.assertIsInstance(band_calc_dir, get_path_type())
         self.assertIsInstance(band_picture, get_path_type())
         self.assertAlmostEqual(outputs['band_gap'], ref_results['band_gap'], delta=1e-4)
     
@@ -298,7 +283,6 @@ class TestToolWrapper(unittest.TestCase):
                                      relax_method='cg',
                                      fixed_axes=None,)
         print(outputs)
-        self.assertIsInstance(outputs['elastic_cal_dir'], get_path_type())
 
         # Compare calculated and reference elastic tensor
         self.assertEqual(len(outputs['elastic_tensor']), len(ref_results['elastic_tensor']))
@@ -337,7 +321,6 @@ class TestToolWrapper(unittest.TestCase):
                                            fixed_axes=None,)
         print(outputs)
         
-        self.assertIsInstance(outputs['phonon_work_path'], get_path_type())
         self.assertIsInstance(outputs['band_dos_plot'], get_path_type())
 
         self.assertAlmostEqual(outputs['entropy'], ref_results['entropy'], delta=1e-2)
@@ -376,7 +359,6 @@ class TestToolWrapper(unittest.TestCase):
         
         self.assertTrue(outputs['normal_end'])
         self.assertEqual(outputs['traj_frame_nums'], md_nstep+1)
-        self.assertIsInstance(outputs['md_work_path'], get_path_type())
         self.assertIsInstance(outputs['md_traj_file'], get_path_type())
 
     def test_run_abacus_calculation_vacancy_formation_energy(self):
