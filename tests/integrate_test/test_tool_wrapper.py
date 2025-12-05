@@ -220,11 +220,7 @@ class TestToolWrapper(unittest.TestCase):
                                          fixed_axes=None)
         print(outputs)
 
-        abacus_workpath = outputs['abacus_workpath']
-        badercharge_run_workpath = outputs['badercharge_run_workpath']
-        self.assertIsInstance(abacus_workpath, get_path_type())
-        self.assertIsInstance(badercharge_run_workpath, get_path_type())
-        for act, ref in zip(outputs['net_charges'], ref_results['net_charges']):
+        for act, ref in zip(outputs['net_bader_charges'], ref_results['net_bader_charges']):
             self.assertAlmostEqual(act, ref, delta=1e-3)
         for act, ref in zip(outputs['atom_labels'], ref_results['atom_labels']):
             self.assertEqual(act, ref)
@@ -259,9 +255,7 @@ class TestToolWrapper(unittest.TestCase):
                                   insert_point_nums=30)
         print(outputs)
 
-        band_calc_dir = outputs['band_calc_dir']
         band_picture = outputs['band_picture']
-        self.assertIsInstance(band_calc_dir, get_path_type())
         self.assertIsInstance(band_picture, get_path_type())
         self.assertAlmostEqual(outputs['band_gap'], ref_results['band_gap'], delta=1e-4)
     
@@ -289,7 +283,6 @@ class TestToolWrapper(unittest.TestCase):
                                      relax_method='cg',
                                      fixed_axes=None,)
         print(outputs)
-        self.assertIsInstance(outputs['elastic_cal_dir'], get_path_type())
 
         # Compare calculated and reference elastic tensor
         self.assertEqual(len(outputs['elastic_tensor']), len(ref_results['elastic_tensor']))
@@ -328,7 +321,6 @@ class TestToolWrapper(unittest.TestCase):
                                            fixed_axes=None,)
         print(outputs)
         
-        self.assertIsInstance(outputs['phonon_work_path'], get_path_type())
         self.assertIsInstance(outputs['band_dos_plot'], get_path_type())
 
         self.assertAlmostEqual(outputs['entropy'], ref_results['entropy'], delta=1e-2)
@@ -367,7 +359,6 @@ class TestToolWrapper(unittest.TestCase):
         
         self.assertTrue(outputs['normal_end'])
         self.assertEqual(outputs['traj_frame_nums'], md_nstep+1)
-        self.assertIsInstance(outputs['md_work_path'], get_path_type())
         self.assertIsInstance(outputs['md_traj_file'], get_path_type())
 
     def test_run_abacus_calculation_vacancy_formation_energy(self):
