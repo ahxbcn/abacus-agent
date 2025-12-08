@@ -510,8 +510,6 @@ def abacus_cal_band(
     relax_method: Literal["cg", "bfgs", "bfgs_trad", "cg_bfgs", "sd", "fire"] = "cg",
     fixed_axes: Literal["None", "volume", "shape", "a", "b", "c", "ab", "ac", "bc"] = None,
     mode: Literal["nscf", "pyatb", "auto"] = "auto",
-    kpath: Union[List[str], List[List[str]]] = None,
-    high_symm_points: Dict[str, List[float]] = None,
     energy_min: float = -10,
     energy_max: float = 10,
     insert_point_nums: int = 30
@@ -564,14 +562,6 @@ def abacus_cal_band(
                 -- If matrix files are in `abacus_input_dir`, `pyatb` mode will be used.
                 -- If no matrix file or charge file are in `abacus_input_dir`, will determine mode by `basis_type`. If `basis_type` is lcao, will use `pyatb` mode.
                     If `basis_type` is pw, will use `nscf` mode.
-        kpath (Tuple[List[str], List[List[str]]]): 
-                A list of name of high symmetry points in the band path. Non-continuous line of high symmetry points are stored as seperate lists.
-                For example, ['G', 'M', 'K', 'G'] and [['G', 'X', 'P', 'N', 'M', 'S'], ['S_0', 'G', R']] are both acceptable inputs.
-                Default is None. If None, will use automatically generated kpath.
-                `kpath` must be used with `high_symm_points` to take effect.
-        high_symm_points: A dictionary containing high symmetry points and their coordinates in the band path. All points in `kpath` should be included.
-                For example, {'G': [0, 0, 0], 'M': [0.5, 0.0, 0.0], 'K': [0.33333333, 0.33333333, 0.0], 'G': [0, 0, 0]}.
-                Default is None. If None, will use automatically generated high symmetry points.
         energy_min (float): Lower bound of $E - E_F$ in the plotted band.
         energy_max (float): Upper bound of $E - E_F$ in the plotted band.
         insert_point_nums (int): Number of points to insert between two high symmetry points. Default is 30.
@@ -601,11 +591,11 @@ def abacus_cal_band(
     
     band_calculation_outputs = _abacus_cal_band(abacus_inputs_dir,
                                                 mode,
-                                                kpath,
-                                                high_symm_points,
-                                                energy_min,
-                                                energy_max,
-                                                insert_point_nums)
+                                                kpath=None,
+                                                high_symm_points=None,
+                                                energy_min=energy_min,
+                                                energy_max=energy_max,
+                                                insert_point_nums=insert_point_nums)
     
     return {'band_gap': band_calculation_outputs.get('band_gap', None),
             'band_picture': band_calculation_outputs.get('band_picture', None),
@@ -633,8 +623,8 @@ def abacus_phonon_dispersion(
     displacement_stepsize: float = 0.01,
     temperature: Optional[float] = 298.15,
     min_supercell_length: float = 10.0,
-    qpath: Optional[Union[List[str], List[List[str]]]] = None,
-    high_symm_points: Optional[Dict[str, List[float]]] = None
+    #qpath: Optional[Union[List[str], List[List[str]]]] = None,
+    #high_symm_points: Optional[Dict[str, List[float]]] = None
 ) -> Dict[str, Any]:
     """
     Calculate phonon dispersion with finite-difference method using Phonopy with ABACUS as the calculator. 
@@ -682,14 +672,6 @@ def abacus_phonon_dispersion(
         temperature (float, optional): Temperature in Kelvin for thermal properties. Defaults to 298.15. Units in Kelvin.
         min_supercell_length (float): If supercell is not provided, the generated supercell will have a length of lattice vector
             along all 3 directions larger than min_supercell_length. Defaults to 10.0 Angstrom. Units in Angstrom.
-        qpath (Tuple[List[str], List[List[str]]]): 
-            A list of name of high symmetry points in the phonon dispersion path. Non-continuous line of high symmetry points are stored as seperate lists.
-            For example, ['G', 'M', 'K', 'G'] and [['G', 'X', 'P', 'N', 'M', 'S'], ['S_0', 'G', R']] are both acceptable inputs.
-            Default is None. If None, will use automatically generated q-point path.
-            `kpath` must be used with `high_symm_points` to take effect.
-        high_symm_points: A dictionary containing high symmetry points and their coordinates in the band path. All points in `qpath` should be included.
-            For example, {'G': [0, 0, 0], 'M': [0.5, 0.0, 0.0], 'K': [0.33333333, 0.33333333, 0.0], 'G': [0, 0, 0]}.
-            Default is None. If None, will use automatically generated high symmetry points.
     
     Returns:
         A dictionary containing:
@@ -725,8 +707,8 @@ def abacus_phonon_dispersion(
                                                displacement_stepsize,
                                                temperature,
                                                min_supercell_length,
-                                               qpath,
-                                               high_symm_points)
+                                               qpath=None,
+                                               high_symm_points=None)
     
     return {'band_dos_plot': phonon_outputs.get('band_dos_plot', None),
             'entropy': phonon_outputs.get('entropy', None),
