@@ -285,3 +285,58 @@ def generate_molecule_structure(
         }
     except Exception as e:
         return {"message": f"Generating molecule structure failed: {e}"}
+
+def get_ieee_standard_structure(
+    stru_file: Path,
+    stru_type: Literal["poscar", "abacus/stru"] = "abacus/stru",
+) -> Dict[str, Any]:
+    """
+    Rotate the input crystal structure to the 1987 IEEE standard orientation.
+
+    Args:
+        stru_file: The path to the input crystal structure file.
+        stru_type: The type of the input crystal structure file. Can be "poscar" or "abacus/stru".
+
+    Returns:
+        A dictionary containing:
+        - standard_stru_file: The absolute path to the rotated crystal structure file.
+    """
+    from pymatgen.core.tensors import Tensor
+
+    if stru_type == 'poscar':
+        stru_type = 'vasp' # Convert to ASE format convention
+
+    if stru_type in ['vasp']:
+        from pymatgen.io.ase import AseAtomsAdaptor
+        stru = read(stru_file, format=stru_type)
+        stru_pymatgen = AseAtomsAdaptor.get_structure(stru)
+    elif stru_type in ['abacus/stru']:
+        from abacustest.lib_prepare.abacus import AbacusStru
+        stru = AbacusStru.ReadStru(stru_file)
+        stru_pymatgen = stru.to_pymatgen()
+    elif stru_type in ['cif']:
+        raise ValueError(f'CIF file only contains lattice parameters and fractional coordinates, and rotation is not required.')
+    else:
+        raise ValueError(f"Unsupported structure file type: {stru_type}")
+    
+    rotation = Tensor.get_ieee_rotation(stru_pymatgen)
+
+    standard_stru_filename = Path(f"{stru_file.parent}/{stru_file.stem}_standard{stru_file.suffix}").absolute()
+
+    if stru_type in ['vasp']:
+        standard_stru = Atoms(symbols = stru.get_chemical_symbols(),
+                              cell = stru.get_cell() @ rotation.T,
+                              scaled_positions = stru.get_scaled_positions())
+        standard_stru.write(standard_stru_filename, format=stru_type)
+    elif stru_type in ['abacus/stru']:
+        #TODO: add support for setting magnetic moment for atoms
+        standard_stru = AbacusStru(label=stru.get_label(total=True),
+                                   cell=stru.get_cell() @ rotation.T,
+                                   coord=stru.get_coord(direct=True),
+                                   cartesian=False,
+                                   pp=stru.get_pp(total=True),
+                                   orb=stru.get_orb(total=True),
+                                   move=stru.get_move())
+        standard_stru.write(standard_stru_filename)
+
+    return {'standard_stru_file': Path(standard_stru_filename).absolute()}
