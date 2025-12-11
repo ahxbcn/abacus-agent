@@ -5,6 +5,7 @@ from abacusagent.init_mcp import mcp
 from abacusagent.modules.submodules.structure_generator import generate_bulk_structure as _generate_bulk_structure
 from abacusagent.modules.submodules.structure_generator import generate_molecule_structure as _generate_molecule_structure
 from abacusagent.modules.submodules.structure_generator import generate_bulk_structure_from_wyckoff_position as _generate_bulk_structure_from_wyckoff_position
+from abacusagent.modules.submodules.structure_generator import get_ieee_standard_structure as _get_ieee_standard_structure
 
 @mcp.tool()
 def generate_bulk_structure(element: str, 
@@ -136,3 +137,21 @@ def generate_molecule_structure(
         - coordinate: The atomic coordinates of the generated structure as a list of lists.
     """
     return _generate_molecule_structure(molecule_name, cell, vacuum, output_file_format)
+
+@mcp.tool()
+def get_ieee_standard_structure(
+    stru_file: Path,
+    stru_type: Literal["poscar", "abacus/stru"] = "abacus/stru",
+) -> Dict[str, Any]:
+    """
+    Rotate the input crystal structure to the 1987 IEEE standard orientation.
+
+    Args:
+        stru_file: The path to the input crystal structure file.
+        stru_type: The type of the input crystal structure file. Can be "poscar" or "abacus/stru".
+
+    Returns:
+        A dictionary containing:
+        - standard_stru_file: The absolute path to the rotated crystal structure file.
+    """
+    return _get_ieee_standard_structure(stru_file, stru_type)
