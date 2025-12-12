@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import shutil
 from typing import List, Dict, Any, Literal
 
 from abacustest.lib_model.comm import check_abacus_inputs
@@ -58,11 +59,20 @@ def abacus_cal_vacancy_formation_energy(
         
         run_abacus(job_dirs)
 
+        final_scf_job_dirs = []
+        for job_dir in job_dirs:
+            if os.path.basename(job_dir).startswith('vacancy'):
+                scf_dir = os.path.join(job_dir, 'final_scf')
+                shutil.copy(os.path.join(job_dir, "OUT.ABACUS/STRU_ION_D"), os.path.join(scf_dir, 'STRU'))
+                final_scf_job_dirs.append(scf_dir)
+
+        run_abacus(final_scf_job_dirs)
+
         results, ref_atom_energy = postprocess_vacancy(jobs=[original_inputs_dir],
                                                        ref_dir=ref_dir)
         
         full_return_dict = results[list(results.keys())[0]]
-        returned_keys = ['vac_formation_energy', 'supercell_job_relax_converge', 'defect_supercell_job_relax_converge']
+        returned_keys = ['vac_formation_energy', 'original_stru_job_relax_converge', 'defect_supercell_job_relax_converge']
         returned_dict = {k: full_return_dict[k] for k in returned_keys}
         returned_dict['work_path'] = Path(work_path).absolute()
         return returned_dict
