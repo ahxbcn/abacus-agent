@@ -19,10 +19,13 @@ def abacus_badercharge_run(
     
     Returns:
     dict: A dictionary containing: 
-        - bader_charges: List of Bader charge for each atom.
+        - net_bader_charges: List of net Bader charge for each atom. Core charge is included.
+        - number_of_electrons: List of number of electrons around each atom. Core charge is not included.
+        - core_charges: List of core charge for each atom.
         - atom_labels: Labels of atoms in the structure.
         - abacus_workpath: Absolute path to the ABACUS work directory.
         - badercharge_run_workpath: Absolute path to the Bader analysis work directory.
+        - bader_result_csv: Absolute path to the CSV file containing detailed Bader charge results
     """
     return _abacus_badercharge_run(abacus_inputs_dir)
 
@@ -40,7 +43,7 @@ def calculate_bader_charge_from_cube(
     
     Returns:
     dict: A dictionary containing:
-        - net_charges: List of net charge for each atom. Core charge is included.
+        - net_bader_charges: List of net charge for each atom. Core charge is included.
         - number_of_electrons: List of number of electrons around each atom. Core charge is not included.
         - core_charges: List of core charge for each atom.
         - work_path: Absolute path to the work directory.
