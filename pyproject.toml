@@ -39,7 +39,7 @@ testpaths = ["tests"]
 addopts = "-v"        
 
 [project.optional-dependencies]
-dev = ["mcp>=1.9.0",
-       "abacustest>=0.4.37",
+dev = ["mcp>=1.10.0",
+       "abacustest>=0.4.49",
        "science-agent-sdk"
 ]
