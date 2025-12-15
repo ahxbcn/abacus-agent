@@ -241,7 +241,7 @@ def calculate_bader_charge_from_cube(
     net_bader_charges = (np.array(cube_data["chg"]) - np.array(bader_charges)).tolist()
     atom_labels = [Element.from_Z(i).symbol for i in cube_data['atomz']]
 
-    bader_charge_json = Path("./bader_charge_results.json").absolute()
+    bader_charge_json = os.path.join(work_path, 'bader_charge_results.json')
     with open(bader_charge_json, "w") as fout:
         json.dump({
             "number_of_electrons": bader_charges,
