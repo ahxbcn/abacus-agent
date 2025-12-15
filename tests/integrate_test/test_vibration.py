@@ -39,6 +39,35 @@ class TestAbacusVibrationAnalysis(unittest.TestCase):
                                             stepsize = 0.01,
                                             nfree = 2,
                                             temperature=400)
+        print(outputs)
+        
+        self.assertIsInstance(outputs['vib_analysis_work_dir'], get_path_type())
+
+        for freq_output, freq_ref in zip(outputs['frequencies'], ref_results['frequencies']):
+            self.assertAlmostEqual(freq_output, freq_ref, places=2)
+
+        self.assertAlmostEqual(outputs['zero_point_energy'], ref_results['zero_point_energy'], places=4)
+        self.assertAlmostEqual(outputs['vib_entropy'], ref_results['vib_entropy'], places=4)
+        self.assertAlmostEqual(outputs['vib_free_energy'], ref_results['vib_free_energy'], places=4)
+
+    def test_abacus_vibration_analysis_h2_selected(self):
+        """
+        Test the abacus_vibration_analysis function for relaxed H2 molecule.
+        Only 1 atom are selected for vibration analysis.
+        """
+        test_func_name = inspect.currentframe().f_code.co_name
+        ref_results = load_test_ref_result(test_func_name)
+
+        test_work_dir = self.test_path / test_func_name
+        shutil.copytree(self.abacus_inputs_dir_h2, test_work_dir)
+        shutil.copy2(self.stru_h2_relaxed, test_work_dir / "STRU")
+
+        outputs = abacus_vibration_analysis(test_work_dir,
+                                            selected_atoms = [1],
+                                            stepsize = 0.01,
+                                            nfree = 2,
+                                            temperature=400)
+        print(outputs)
         
         self.assertIsInstance(outputs['vib_analysis_work_dir'], get_path_type())
 

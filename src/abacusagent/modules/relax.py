@@ -1,14 +1,8 @@
-import os
-import json
 from pathlib import Path
 from typing import Literal, Optional,  Dict, Any
-from abacustest.lib_prepare.abacus import ReadInput, WriteInput
-from abacustest.lib_collectdata.collectdata import RESULT
-from abacustest.lib_model.comm import check_abacus_inputs
 
 from abacusagent.init_mcp import mcp
-from abacusagent.modules.util.comm import run_abacus, link_abacusjob, generate_work_path, collect_metrics
-
+from abacusagent.modules.submodules.relax import abacus_do_relax as _abacus_do_relax
 
 @mcp.tool()
 def abacus_do_relax(
@@ -81,149 +75,13 @@ def abacus_do_relax(
         
         When the relaxation is not converged, please try to use other relaxation methods.
     """
-    try:
-        is_valid, msg = check_abacus_inputs(abacus_inputs_dir)
-        if not is_valid:
-            raise RuntimeError(f"Invalid ABACUS input files: {msg}")
-        
-        abacus_inputs_dir = Path(abacus_inputs_dir).absolute()
-        work_path = Path(generate_work_path()).absolute()
-        link_abacusjob(src=abacus_inputs_dir,
-                       dst=work_path,
-                       copy_files=["INPUT", "STRU", "KPT"])
-
-        prepare_relax_inputs(
-            work_path=work_path,
-            force_thr_ev=force_thr_ev,
-            stress_thr_kbar=stress_thr_kbar,
-            max_steps=max_steps,
-            relax_cell=relax_cell,
-            fixed_axes=fixed_axes,
-            relax_method=relax_method,
-            relax_new=relax_new,
-        )
-
-        run_abacus(work_path)
-
-        results = relax_postprocess(work_path)
-
-        new_abacus_inputs_dir = abacus_prepare_inputs_from_relax_results(work_path)['job_path']
-
-        return {
-            "job_path": Path(work_path).absolute(),
-            "new_abacus_inputs_dir": Path(new_abacus_inputs_dir).absolute(),
-            "result": results
-        }
-    except Exception as e:
-        return {"message": f"Relaxation calculation failed: {e}"}
-
-#@mcp.tool()
-def abacus_prepare_inputs_from_relax_results(
-    relax_jobpath: Path
-)-> Dict[str, Any]:
-    """
-    Prepare ABACUS input files based on the structure of the last relaxation step.
-    The INPUT/KPT and pseudopotential/orbital files will be copied from the relaxation job directory.
+    return _abacus_do_relax(abacus_inputs_dir,
+                           force_thr_ev=force_thr_ev,
+                           stress_thr_kbar=stress_thr_kbar,
+                           max_steps=max_steps,
+                           relax_cell=relax_cell,
+                           fixed_axes=fixed_axes,
+                           relax_method=relax_method,
+                           relax_new=relax_new
+    )
     
-    Args:
-        relax_jobpath: Path to the relaxation results.
-    
-    Returns:
-        A dictionary containing the job path.
-        - 'job_path': The absolute path to the job directory.
-        - 'input_content': The content of the generated INPUT file.
-        - 'input_files': A list of files in the job directory.
-    """
-    try:
-        relax_jobpath = Path(relax_jobpath).absolute()
-        rs = RESULT(path=relax_jobpath, fmt="abacus")
-        final_stru = Path(os.path.join(relax_jobpath, f"OUT.{rs.SUFFIX}", "STRU_ION_D")).absolute() # the structure file of the last relax step
-
-        if not os.path.isfile(final_stru):
-            raise FileNotFoundError(f"We can not find the structure file of last relax step {final_stru}. \
-                Please check the path and ensure the relaxation calculation has completed successfully.")
-
-        work_path = Path(generate_work_path()).absolute()
-
-        link_abacusjob(
-            src=relax_jobpath,
-            dst=work_path,
-            copy_files=["INPUT", "STRU", "KPT"],
-            exclude=["OUT.*", "*.log", "*.out", "*.json", "log"],
-            exclude_directories=True
-        )
-        if os.path.isfile(os.path.join(work_path, "STRU")):
-            os.unlink(os.path.join(work_path, "STRU"))
-        os.symlink(final_stru, os.path.join(work_path, "STRU"))
-
-        return {
-            "job_path": Path(work_path).absolute(),
-            "input_content": ReadInput(os.path.join(work_path, "INPUT")),
-        }
-    except Exception as e:
-        return {
-            "job_path": None,
-            "input_content": None,
-            "message": f"Prepare new ABACUS input files from relax or cell-relax calculation output files failed: {e}"
-        }
-
-
-def prepare_relax_inputs(
-    work_path: Path,
-    force_thr_ev: Optional[float] = None,
-    stress_thr_kbar: Optional[float] = None,
-    max_steps: Optional[int] = None,
-    relax_cell: Optional[bool] = None,
-    fixed_axes: Literal["None", "volume", "shape", "a", "b", "c", "ab", "ac", "bc"] = None,
-    relax_method: Literal["cg", "bfgs", "bfgs_trad", "cg_bfgs", "sd", "fire"] = None,
-    relax_new: Optional[bool] = None,):
-    """
-    Prepare the ABACUS input files for relaxation calculations.
-    """
-    work_path = Path(work_path).absolute()
-    
-    input_param = ReadInput(os.path.join(work_path, "INPUT"))
-    
-    # check calculation type
-    if relax_cell is None and "calculation" not in input_param:
-        input_param["calculation"] = "relax"
-    elif relax_cell:
-        input_param["calculation"] = "cell-relax"
-    else:
-        input_param["calculation"] = "relax"
-        
-    # check force threshold
-    if force_thr_ev is not None:
-        input_param["force_thr_ev"] = force_thr_ev
-        if "force_thr" in input_param:
-            del input_param["force_thr"]
-    
-    if stress_thr_kbar is not None:
-        input_param["stress_thr"] = stress_thr_kbar
-    
-    if max_steps is not None:
-        input_param["relax_nmax"] = max_steps
-        
-    if fixed_axes is not None:
-        input_param["fixed_axes"] = fixed_axes
-        
-    if relax_method is not None:
-        input_param["relax_method"] = relax_method
-        if relax_method == "fire":
-            print("Using FIRE method for relaxation. Setting calculation type to 'md'.")
-            input_param["calculation"] = "md"
-            input_param["md_type"] = "fire"
-            input_param.pop("relax_method", None)
-    
-    if relax_new is not None:
-        input_param["relax_new"] = relax_new
-    
-    WriteInput(input_param, os.path.join(work_path, "INPUT"))
-    
-
-def relax_postprocess(work_path: Path) -> Dict[str, Any]:
-    """Collect the key metrics from the relaxation results."""
-    return collect_metrics(work_path, 
-                          metrics_names=["normal_end", "relax_steps", "largest_gradient",
-                                         "largest_gradient_stress", "relax_converge", "energies"])
-

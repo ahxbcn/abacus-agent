@@ -1,0 +1,15 @@
+MAX_ANGULAR_MOMENTUM_OF_ELEMENTS = {
+    "H": "s", "He": "s",
+    "Li": "p", "Be": "p", "B": "p", "C": "p", "N": "p", "O": "p", "F": "p", "Ne": "p",
+    "Na": "p", "Mg": "p", "Al": "p", "Si": "p", "P": "p", "S": "p", "Cl": "p", "Ar": "p",
+    "K": "p", "Ca": "p", "Ga": "p", "Ge": "p", "As": "p", "Se": "p", "Br": "p", "Kr": "p",
+    "Rb": "p", "Sr": "p", "In": "p", "Sn": "p", "Sb": "p", "Te": "p", "I": "p", "Xe": "p",
+    "Cs": "p", "Ba": "p", "Tl": "p", "Pb": "p", "Bi": "p", "Po": "p", "At": "p", "Rn": "p",
+    "Fr": "p", "Ra": "p", "Nh": "p", "Fl": "p", "Mc": "p", "Lv": "p", "Ts": "p", "Og": "p",
+    "Sc": "d", "Ti": "d", "V": "d", "Cr": "d", "Mn": "d", "Fe": "d", "Co": "d", "Ni": "d", "Cu": "d", "Zn": "d",
+    "Y": "d", "Zr": "d", "Nb": "d", "Mo": "d", "Tc": "d", "Ru": "d", "Rh": "d", "Pd": "d", "Ag": "d", "Cd": "d",
+    "Hf": "d", "Ta": "d", "W": "d", "Re": "d", "Os": "d", "Ir": "d", "Pt": "d", "Au": "d", "Hg": "d",
+    "Rf": "d", "Db": "d", "Sg": "d", "Bh": "d", "Hs": "d", "Mt": "d", "Ds": "d", "Rg": "d", "Cn": "d",
+    "La": "f", "Ce": "f", "Pr": "f", "Nd": "f", "Pm": "f", "Sm": "f", "Eu": "f", "Gd": "f", "Tb": "f", "Dy": "f", "Ho": "f", "Er": "f", "Tm": "f", "Yb": "f", "Lu": "f",
+    "Ac": "f", "Th": "f", "Pa": "f", "U": "f", "Np" : "f", "Pu": "f", "Am": "f", "Cm": "f", "Bk": "f", "Cf": "f", "Es": "f", "Fm": "f", "Md": "f", "No": "f", "Lr": "f",
+}

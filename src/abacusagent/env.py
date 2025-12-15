@@ -31,6 +31,9 @@ ENVS = {
     "ABACUS_ORB_PATH": "",  # abacus orbital library path
     "ABACUS_SOC_PP_PATH": "",  # abacus SOC pseudopotential library path
     "ABACUS_SOC_ORB_PATH": "",  # abacus SOC orbital library path
+
+    # PYATB settings
+    "PYATB_COMMAND": "OMP_NUM_THREADS=1 pyatb",
     
     "_comments":{
         "ABACUS_WORK_PATH": "The working directory for AbacusAgent, where all temporary files will be stored.",
@@ -53,6 +56,7 @@ ENVS = {
         "ABACUS_ORB_PATH": "The path to the orbital library for ABACUS_PP_PATH",
         "ABACUS_SOC_PP_PATH": "The path to the SOC pseudopotential library for Abacus.",
         "ABACUS_SOC_ORB_PATH": "The path to the orbital library for ABACUS_SOC_PP_PATH.",
+        "PYATB_COMMAND": "The command to execute PYATB on local machine.",
         "_comments": "This dictionary contains the default environment variables for AbacusAgent."
     }
 }

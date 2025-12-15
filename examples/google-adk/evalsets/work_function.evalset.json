@@ -1,0 +1,82 @@
+{
+  "eval_set_id": "work_function",
+  "name": "work_function",
+  "description": null,
+  "eval_cases": [
+    {
+      "eval_id": "Al110",
+      "conversation": [
+        {
+          "invocation_id": "e-bef4844e-5b50-4d31-b393-fc110e547b47",
+          "user_content": {
+            "parts": [
+              {
+                "video_metadata": null,
+                "thought": null,
+                "inline_data": null,
+                "file_data": null,
+                "thought_signature": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "function_call": null,
+                "function_response": null,
+                "text": "请计算Al(110)面的功函数，Al(110)面的结构文件位于/personal/google-adk-eval-stru/Al110.cif，并且真空层位于y方向上"
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "video_metadata": null,
+                "thought": null,
+                "inline_data": null,
+                "file_data": null,
+                "thought_signature": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "function_call": null,
+                "function_response": null,
+                "text": "Al(110)面的功函数计算结果如下：\n\n**功函数**: 4.23 eV  \n\n### 计算细节：\n1. **输入文件准备**：使用`abacus_prepare`工具基于`Al110.cif`结构文件生成ABACUS输入文件，设置`out_pot=1`以输出静电势。\n2. **功函数计算**：调用`abacus_cal_work_function`工具，指定真空方向为`y`，通过分析静电势分布得到功函数。\n\n### 关键输出文件路径：\n- 静电势文件：[ElecStaticPot.cube](https://bohrium.oss-cn-zhangjiakou.aliyuncs.com/13756/112260/store/3602088e-d52f-419a-aaf3-a029cd0954ad/outputs/elecstat_pot_file/ElecStaticPot.cube)  \n- 静电势分布图：[elecstat_pot_profile.png](https://bohrium.oss-cn-zhangjiakou.aliyuncs.com/13756/112260/store/3602088e-d52f-419a-aaf3-a029cd0954ad/outputs/averaged_elecstat_pot_plot/elecstat_pot_profile.png)  \n\n（注：功函数值通过拟合真空层静电势平均值与费米能级差值获得，结果单位为eV。）"
+              }
+            ],
+            "role": null
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": "call_9assfv7w017gefym60bt1r4j",
+                "args": {
+                  "stru_file": "/personal/google-adk-eval-stru/Al110.cif",
+                  "stru_type": "cif",
+                  "job_type": "scf",
+                  "extra_input": {
+                    "out_pot": 1
+                  }
+                },
+                "name": "abacus_prepare"
+              },
+              {
+                "id": "call_s6ofydu711to6g4aceszqvu6",
+                "args": {
+                  "abacus_inputs_dir": "https://bohrium.oss-cn-zhangjiakou.aliyuncs.com/13756/112260/store/ace2ca1d-ef95-43e6-999e-fde307b8008c/outputs/abacus_inputs_dir/000000.tgz",
+                  "vacuum_direction": "y"
+                },
+                "name": "abacus_cal_work_function"
+              }
+            ],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 1760518122.86717
+        }
+      ],
+      "session_input": {
+        "app_name": "abacus_agent",
+        "user_id": "user",
+        "state": {}
+      },
+      "creation_timestamp": 1760518330.462202
+    }
+  ],
+  "creation_timestamp": 1760518318.7184591
+}

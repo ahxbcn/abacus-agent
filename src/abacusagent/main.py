@@ -13,7 +13,7 @@ def load_tools(screen_modules: List[str] = []):
     module_dir = Path(__file__).parent / "modules"
     
     for py_file in sorted(module_dir.glob("*.py")):
-        if py_file.name.startswith("_") or py_file.stem in ["utils", "comm"] + screen_modules: 
+        if py_file.name.startswith("_") or py_file.stem in ["utils", "comm", "tool_wrapper"] + screen_modules:
             continue  # skipt __init__.py and utils.py
         
         module_name = f"abacusagent.modules.{py_file.stem}"
@@ -71,6 +71,11 @@ def parse_args():
         default=[],
         help="List of modules to screen for loading. If not specified, all modules will be loaded."
     )
+    parser.add_argument(
+        "--matmaster",
+        action="store_true",
+        help="Start the MCP server for MatMaster"
+    )
     
     args = parser.parse_args()
     
@@ -118,7 +123,11 @@ def main():
     create_workpath()
 
     from abacusagent.init_mcp import mcp
-    load_tools(args.screen_modules)  
+    
+    if args.matmaster:
+        import abacusagent.modules.tool_wrapper
+    else:
+        load_tools(args.screen_modules)  
 
     print_address()
     mcp.run(transport=os.environ["ABACUSAGENT_TRANSPORT"])

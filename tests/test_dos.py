@@ -3,7 +3,7 @@ import os, sys, glob
 from pathlib import Path
 os.environ["ABACUSAGENT_MODEL"] = "test"
 
-from abacusagent.modules.dos import plot_dos_pdos as mkplots 
+from abacusagent.modules.submodules.dos import plot_dos_pdos as mkplots 
 
 class TestPlotDos(unittest.TestCase):
     def setUp(self):

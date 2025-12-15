@@ -33,11 +33,11 @@ def run_command(
         for fd in readable:
             if fd == process.stdout:
                 line = process.stdout.readline()
-                print(line.decode()[:-1])
+                #struprint(line.decode()[:-1])
                 out += line.decode()
             elif fd == process.stderr:
                 line = process.stderr.readline()
-                print("STDERR:", line.decode()[:-1])
+                #print("STDERR:", line.decode()[:-1])
                 err += line.decode()
 
         return_code = process.poll()
@@ -200,6 +200,20 @@ def run_abacus(job_paths: Union[str, List[str], Path, List[Path]],
     else:
         raise ValueError("Invalid ABACUSAGENT_SUBMIT_TYPE. Must be 'local' or 'bohrium'.")
             
+def run_pyatb(abacus_inputs_path):
+    """
+    Run the Abacus on the given job paths on local machine.
+    The abacus_inputs_path are limited to a single path now.
+    """
+    original_dir = os.getcwd()
+    os.chdir(abacus_inputs_path)
+    pyatb_command = os.getenv("PYATB_COMMAND", "OMP_NUM_THREADS=1 pyatb")
+    return_code, out, err = run_command(pyatb_command)
+    if return_code != 0:
+        raise RuntimeError(f"pyatb failed with return code {return_code}, out: {out}, err: {err}")
+    
+    os.chdir(original_dir)
+
 
 def link_abacusjob(src: str, 
                    dst: str, 
@@ -233,7 +247,6 @@ def link_abacusjob(src: str,
     
     if dst.is_file():
         raise ValueError(f"{dst} is a file, not a directory.")
-    os.makedirs(dst, exist_ok=True)
     
     if include is None:
         include = ["*"]
@@ -247,6 +260,7 @@ def link_abacusjob(src: str,
     for pattern in exclude:
         exclude_files.extend(src.glob(pattern))
     
+    os.makedirs(dst, exist_ok=True)
     # Remove excluded files from included files
     include_files = [f for f in include_files if f not in exclude_files]
     if not include_files:
@@ -257,6 +271,8 @@ def link_abacusjob(src: str,
               )
     else:
         for file in include_files:
+            if file == dst:
+                continue
             if exclude_directories and os.path.isdir(file):
                 continue
             
@@ -330,6 +346,25 @@ def has_pyatb_matrix_files(work_path: Path) -> bool:
             os.path.isfile(os.path.join(work_path, "OUT." + suffix, "data-SR-sparse_SPIN0.csr")) and 
             os.path.isfile(os.path.join(work_path, "OUT." + suffix, "data-rR-sparse.csr")))
     
+def get_relax_precision(relax_precision: str = "medium"):
+    """
+    Return precision of the relax calculation, can be 'low', 'medium', or 'high'. Default is 'medium'.
+    The unit of `force_thr_ev` is eV/Angstrom, and the unit of `stress_thr` is kbar.
+        - 'low' means the relax calculation will be done with force_thr_ev=0.05 and stress_thr=5.0.
+        - 'medium' means the relax calculation will be done with force_thr_ev=0.01 and stress_thr=1.0.
+        - 'high' means the relax calculation will be done with force_thr_ev=0.005 and stress_thr=0.5.
+    """
+    if relax_precision == "low":
+        relax_params = {"force_thr_ev": 0.05, "stress_thr": 5, "force_thr": None} # force_thr is superior to force_thr_ev if both are specified, so we set force_thr=None
+    elif relax_precision == "medium":
+        relax_params = {"force_thr_ev": 0.01, "stress_thr": 1, "force_thr": None}
+    elif relax_precision == "high":
+        relax_params =  {"force_thr_ev": 0.005, "stress_thr": 0.1, "force_thr": None}
+    else:
+        raise ValueError(f"Invalid relax_precision: {relax_precision}")
+    
+    return relax_params
+
 def collect_metrics(abacusjob: Union[str, Path], 
                     metrics_names: List[str] = ["normal_end", "converge", "energy", "total_time"], 
                     ) -> Dict[str, Any]:

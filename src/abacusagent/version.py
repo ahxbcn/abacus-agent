@@ -1,7 +1,7 @@
 import subprocess
 import os
 
-BASE_VERSION = "v0.2.0"
+BASE_VERSION = "v0.2.4"
 
 def _no_need_subversion():
     try:
@@ -17,9 +17,9 @@ def _no_need_subversion():
         if current_file in modified_files:
             return True
         
-        # If codes in the abacustest directory are modified, indicating the main version is not updated
+        # If codes in the abacusagent directory are modified, indicating the main version is not updated
         for i in modified_files:
-            if i.startswith("abacustest/"):
+            if i.startswith("abacusagent/"):
                 return False
         
         return True

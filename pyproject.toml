@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=45", "setuptools_scm>=6.2"]
+requires = ["setuptools>=45"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,13 +8,22 @@ dynamic = ["version"]
 description = "Abacus agent"
 requires-python = ">=3.11"
 
+dependencies = [
+       "abacustest>=0.4.49",
+       "numpy<2.0",
+       "pymatgen>=2025.5.28",
+       "bohr-agent-sdk==0.1.100",
+       "bohrium-sdk==0.13.0",
+       "dpdata>=0.2.24",
+       "regex==2024.11.6",
+       "pyatb==1.1.1"
+]
+
 [project.scripts]
 abacusagent = "abacusagent.main:main"
 
 [tool.setuptools]
 package-dir = { "abacusagent" = "src/abacusagent" }
-
-[tool.setuptools_scm]
 
 [tool.setuptools.dynamic]
 version = { attr = "abacusagent.version.__version__" }
@@ -30,7 +39,7 @@ testpaths = ["tests"]
 addopts = "-v"        
 
 [project.optional-dependencies]
-dev = ["mcp>=1.9.0",
-       "abacustest",
+dev = ["mcp>=1.10.0",
+       "abacustest>=0.4.49",
        "science-agent-sdk"
 ]

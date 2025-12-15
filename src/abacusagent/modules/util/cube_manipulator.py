@@ -121,7 +121,7 @@ def axpy(x, y=None, alpha=1.0, beta=1.0):
     else:
         return alpha * x + beta * y
     
-def profile1d(data: dict, axis: str):
+def profile1d(data: dict, axis: str, average: bool = False):
     """integrate the 3D cube data to 2D plane.
     Args:
         data (dict): the dictionary containing the cube data.
@@ -133,12 +133,18 @@ def profile1d(data: dict, axis: str):
     import numpy as np
     
     mat3d = data["data"].reshape(int(data["nx"]), int(data["ny"]), int(data["nz"]))
+
+    func = np.mean if average else np.sum
     if axis == "x":
-        val = np.sum(mat3d, axis=2).sum(axis=1)
+        val = func(mat3d, axis=2)
+        val = func(val, axis=1)
     elif axis == "y":
-        val = np.sum(mat3d, axis=0).sum(axis=1)
+        val = func(mat3d, axis=0)
+        val = func(val, axis=1)
     elif axis == "z":
-        val = np.sum(mat3d, axis=0).sum(axis=0)
+        val = func(mat3d, axis=0)
+        val = func(val, axis=0)
+
     # remember to write the axis data
     ngrid = data["nx"] if axis == "x" else data["ny"] if axis == "y" else data["nz"]
     var = np.linspace(0, 1, int(ngrid))

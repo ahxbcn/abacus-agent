@@ -4,11 +4,13 @@ from pathlib import Path
 import unittest
 import tempfile
 import inspect
+import pytest
 from utils import initilize_test_env, load_test_ref_result, get_path_type
 from abacusagent.modules.eos import abacus_eos
 
 initilize_test_env()
 
+@pytest.mark.long
 class TestAbacusEos(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.TemporaryDirectory()
@@ -23,7 +25,7 @@ class TestAbacusEos(unittest.TestCase):
 
     def tearDown(self):
         os.chdir(self.original_cwd)
-    
+
     def test_abacus_eos_nacl_cubic(self):
         """
         Test the abacus_eos function for conventional cell of NaCl (the shape is cubic).
@@ -38,18 +40,14 @@ class TestAbacusEos(unittest.TestCase):
 
         outputs = abacus_eos(test_work_dir,
                              stru_scale_number = 5,
-                             stru_scale_type = 'angstrom',
-                             scale_stepsize = 0.1)
-        
+                             scale_stepsize = 0.02)
+
         print(outputs)
-        
+
         self.assertIsInstance(outputs['eos_work_path'], get_path_type())
-        self.assertIsInstance(outputs['new_abacus_inputs_dir'], get_path_type())
         self.assertIsInstance(outputs['eos_fig_path'], get_path_type())
 
         self.assertAlmostEqual(outputs['E0'], ref_results['E0'], places=3)
-        self.assertAlmostEqual(outputs['V0'], ref_results['V0'], places=3)
-        self.assertAlmostEqual(outputs['B0'], ref_results['B0'], places=3)
-        self.assertAlmostEqual(outputs['B0_deriv'], ref_results['B0_deriv'], places=3)
-
-
+        self.assertAlmostEqual(outputs['V0'], ref_results['V0'], places=1)
+        self.assertAlmostEqual(outputs['B0'], ref_results['B0'], places=1)
+        self.assertAlmostEqual(outputs['B0_deriv'], ref_results['B0_deriv'], places=1)

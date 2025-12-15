@@ -27,14 +27,14 @@
     "test_abacus_badercharge_run_nspin1": 
     {
         "result": {
-            "bader_charges": [0.930, -0.930],
+            "net_bader_charges": [0.930, -0.930],
             "atom_labels": ["Na", "Cl"]
         }
     },
     "test_abacus_badercharge_run_nspin2": 
     {
         "result": {
-            "bader_charges": [0.930, -0.930],
+            "net_bader_charges": [0.930, -0.930],
             "atom_labels": ["Na", "Cl"]
         }
     },
@@ -62,6 +62,24 @@
             "band_gap": 0.0
         }
     },
+    "test_abacus_cal_band_pyatb_supercell": 
+    {
+        "result": {
+            "band_gap": 0.6702
+        }
+    },
+    "test_abacus_cal_band_nscf_kpath":
+    {
+        "result": {
+            "band_gap": 0.5804
+        }
+    },
+    "test_abacus_cal_band_pyatb_kpath":
+    {
+        "result": {
+            "band_gap": 0.6702
+        }
+    },
     "test_abacus_cal_band_pyatb_pw": 
     {
         "result": {
@@ -78,6 +96,12 @@
     {
         "result": {
             "band_gap": 0.0
+        }
+    },
+    "test_abacus_cal_band_nscf_supercell": 
+    {
+        "result": {
+            "band_gap": 0.5583
         }
     },
     "test_abacus_dos_run_species": 
@@ -131,35 +155,35 @@
     "test_abacus_cal_elastic_si_prim":
     {
         "result": {
-            "elastic_tensor": [[112.52866370100037, 186.4920636728006, 149.58784495160054, 52.35257766160018, 0.0, 0.0], 
-                               [167.98341593440057, 131.03733348100042, 149.58785530040055, -26.189682495000095, 45.33066025400016, -32.036729146200116], 
-                               [167.98341597780063, 131.03733342940046, 149.58785529980045, -26.189682564600087, -45.33066037380015, 32.03672922980011], 
-                               [154.93534577879998, -52.200659693600024, -104.1306408299, 73.2265804774, 0.0, 0.0], 
-                               [-0.46194834079999847, 103.19663438510003, -104.13064079950003, -36.6436901792, 63.3973322095, 89.65960380920001], 
-                               [-0.4619483611999965, -104.13018973480001, 103.19618329940002, 36.64496669100001, 63.404224003800024, 89.65473012850003]],
-            "bulk_modulus": 149.5361979720227,
-            "shear_modulus": 39.08813446687997,
-            "young_modulus": 107.86584380090542,
-            "poisson_ratio": 0.3797773323296093
+            "elastic_tensor": [[155.82247639400057,  58.0540830928002,  58.0540830928002,  0.0,  0.0,  0.0],
+                               [58.0540830928002,  155.82247639400057,  58.0540830928002,  0.0,  0.0,  0.0],
+                               [58.05408309260019,  58.05408309260019,  155.82247639400057,  0.0,  0.0,  0.0],
+                               [0.0,  0.0,  0.0,  76.44323239550002,  0.0,  0.0],
+                               [0.0,  0.0,  0.0,  0.0,  76.44323249340002,  0.0],
+                               [0.0,  0.0,  0.0,  0.0,  0.0,  76.44323249340002]],
+            "bulk_modulus": 90.64354752648921,
+            "shear_modulus": 65.41961813670008,
+            "young_modulus": 158.19995596965313,
+            "poisson_ratio": 0.20911708502394763
         }
     },
     "test_abacus_eos_nacl_cubic":
     {
         "result": {
-            "E0": -6773.5543006369235,
-            "V0": 211.5655744695652,
-            "B0": 18.995907024224003,
-            "B0_deriv": 4.5405237260803615
+            "E0": -6773.553713708202,
+            "V0": 211.52386389113457,
+            "B0": 18.952691892347843,
+            "B0_deriv": 4.572466599628588
         }
     },
     "test_abacus_phonon_dispersion_nspin1": 
     {
         "result": {
-            "entropy": 34.27791643853491,
-            "free_energy": 9.719805286625483,
-            "heat_capacity": 36.163381863807714,
-            "max_frequency_THz": 18.36540344775355, 
-            "max_frequency_K": 881.3997884259676
+            "entropy": 34.2782712749132,
+            "free_energy": 9.71960956083306,
+            "heat_capacity": 36.163577121277775,
+            "max_frequency_THz": 18.365224492366256, 
+            "max_frequency_K": 881.3911999274384
         }
     },
     "test_abacus_phonon_dispersion_nspin2": 
@@ -172,14 +196,33 @@
             "max_frequency_K": 457.5730044818178
         }
     },
+    "test_abacus_phonon_dispersion_qpath": 
+    {
+        "result": {
+            "entropy": 34.2782712749132,
+            "free_energy": 9.71960956083306,
+            "heat_capacity": 36.163577121277775,
+            "max_frequency_THz": 18.365224492366256, 
+            "max_frequency_K": 881.3911999274384
+        }
+    },
     "test_abacus_vibration_analysis_h2":
     {
         "result": {
-            "frequencies": [-0.050159882295798514, -0.05015987951926836, -0.005149307147273863,
-                            83.47082119114941, 83.47082119115237, 4293.5374023360655],
-            "zero_point_energy": 0.2765209954303826,
-            "vib_entropy": 0.0003803556727265372,
-            "vib_free_energy": 0.18347896292569157
+            "frequencies": [-0.0501606537504112, -0.050160608028635985, -0.005148919858357725,
+                             83.46962536067358, 83.46962536067723, 4293.495475257419],
+            "zero_point_energy": 0.2765182480876804,
+            "vib_entropy": 0.0003803581234134816,
+            "vib_free_energy": 0.1834753687243439
+        }
+    },
+    "test_abacus_vibration_analysis_h2_selected":
+    {
+        "result": {
+            "frequencies": [58.98644787490194, 58.98644787490194, 3035.9634063376648],
+            "zero_point_energy": 0.19551913052685363,
+            "vib_entropy": 0.0004398879187182639,
+            "vib_free_energy": 0.08145444835006974
         }
     },
     "test_abacus_run_md_nve":
@@ -193,5 +236,134 @@
     "test_abacus_run_md_npt":
     {
         "result": {}
+    },
+    "test_run_abacus_calculation_scf": 
+    {
+        "result": {
+            "normal_end": true,
+            "converge": true,
+            "energy": -230.1332772649323
+        }
+    },
+    "test_run_abacus_calculation_elf": 
+    {
+        "result": {
+            "normal_end": true,
+            "converge": true,
+            "energy": -230.1332772649323
+        }
+    },
+    "test_run_abacus_calculation_relax": 
+    {
+        "result": {
+            "last_energy": -230.14928356715
+        }
+    },
+    "test_run_abacus_calculation_dos":
+    {
+        "result": {
+            "scf_energy": -230.1492835633984
+        }
+    },
+    "test_run_abacus_calculation_nspin_init_mag":
+    {
+        "result": {
+            "scf_energy": -3220.427378240614
+        }
+    },
+    "test_run_abacus_calculation_dftu":
+    {
+        "result": {
+            "scf_energy": -3218.975525525896
+        }
+    },
+    "test_run_abacus_calculation_bader_charge": 
+    {
+        "result": {
+            "net_bader_charges": [0.042298999999999864, -0.04238500000000034],
+            "atom_labels": ["Si", "Si"]
+        }
+    },
+    "test_run_abacus_calculation_band":
+    {
+        "result": {
+            "band_gap": 0.6063
+        }
+    },
+    "test_run_abacus_calculation_elastic_properties":
+    {
+        "result": {
+            "elastic_tensor": [[155.82247639400057,  58.0540830928002,  58.0540830928002,  0.0,  0.0,  0.0],
+                               [58.0540830928002,  155.82247639400057,  58.0540830928002,  0.0,  0.0,  0.0],
+                               [58.05408309260019,  58.05408309260019,  155.82247639400057,  0.0,  0.0,  0.0],
+                               [0.0,  0.0,  0.0,  76.44323239550002,  0.0,  0.0],
+                               [0.0,  0.0,  0.0,  0.0,  76.44323249340002,  0.0],
+                               [0.0,  0.0,  0.0,  0.0,  0.0,  76.44323249340002]],
+            "bulk_modulus": 90.64354752648921,
+            "shear_modulus": 65.41961813670008,
+            "young_modulus": 158.19995596965313,
+            "poisson_ratio": 0.20911708502394763
+        }
+    },
+    "test_run_abacus_calculation_phonon_dispersion": 
+    {
+        "result": {
+            "entropy": 38.65484930147255,
+            "free_energy": 6.827416636728532,
+            "heat_capacity": 39.69874114943025,
+            "max_frequency_THz": 15.270295385823896, 
+            "max_frequency_K": 732.8581242746149
+        }
+    },
+    "test_run_abacus_calculation_md":
+    {
+        "result": {}
+    },
+    "test_run_abacus_calculation_work_function":
+    {
+        "result": {
+            "work_function_results": [{"work_function": 4.328994681259157, 
+                                       "plateau_start_fractional": 0.5637860082304527, 
+                                       "plateau_end_fractional": 0.8353909465020576}]
+        }
+    },
+    "test_run_abacus_calculation_vacancy_formation_energy":
+    {
+        "result": {
+            "vac_formation_energy": 1.166700944879949
+        }
+    },
+    "test_abacus_cal_work_function_al110":
+    {
+        "result": {
+            "work_function_results": [{"work_function": 4.328994681259157, 
+                                       "plateau_start_fractional": 0.5637860082304527, 
+                                       "plateau_end_fractional": 0.8353909465020576}]
+        }
+    },
+    "test_abacus_cal_work_function_zno0001_dipole_corr":
+    {
+        "result": {
+            "work_function_results": [{"work_function": 2.6146683619622704, 
+                                       "plateau_start_fractional": 0.37109375, 
+                                       "plateau_end_fractional": 0.62109375}, 
+                                      {"work_function": 7.8168926011874955, 
+                                       "plateau_start_fractional": 0.73046875, 
+                                       "plateau_end_fractional": 0.92578125}]
+        }
+    },
+    "test_abacus_cal_vacancy_formation_energy_gamma_tial":
+    {
+        "result": {
+            "vac_formation_energy": 1.166700944879949
+        }
+    },
+    "test_run_abacus_calculation_dftu_initmag": 
+    {
+        "result": {
+            "normal_end": true,
+            "converge": true,
+            "energy": -11792.093196541542
+        }
     }
 }
