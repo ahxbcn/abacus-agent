@@ -144,19 +144,23 @@ Visit http://your-node-address.dp.tech:50002 in your browser, where:
 ## Supported functions
 Functions of ABACUS Agent tools are in active development. Currently, the following functions are supported:
 - Generate cif/POSCAR/ABACUS STRU file of simple crystals and molecules, and generate crystal structure using Wyckoff positions
+- Rotate crystal to IEEE standard orientation (important for anisotropic properties, e.g. elastic tensor and orbital-resolved DOS)
 - Prepare ABACUS input files (INPUT, STRU, KPT, pseudopotential and orbital files) from given structure file
 - Modify INPUT and STRU file in prepared ABACUS directory
 - SCF, relax, cell-relax and molecule dynamics calculation using ABACUS
 - Bader charge
 - Density of states (DOS) and projected density of states (PDOS) (supports nspin=1 and nspin=2)
 - Band calculation (supports nspin=1 and nspin=2)
-- Phonon dispersion curve
+- Phonon dispersion curve and phonon DOS
 - Elastic tensor and related Young's modulus, shear modulus, bulk modulus and possion ratio
 - Electron localization function (ELF)
 - Vibrational frequency of molecules using finite-difference method
-- Charge density difference
-- Using Birch-Murganhan equation to fit equation of state for cubic crystals
+- Charge density difference and spin density
+- Using Birch-Murganhan equation to fit equation of state
+- Joint density of states (JDOS)
+- Work function
+- Vacancy formation energy of non-charged defects
 
-Besides, a wrapper function which accepts a structure file and some key parameters to do ABACUS calculation is also provided.
+Besides, wrapper functions for MatMaster are provided, which accepts a structure file and some key parameters to do ABACUS calculation/
 
-You can use `abacusagent --screen-modules` to hide tool function in some modules. The `--matmaster` option will only allow the wrapper function to be loaded.
+You can use `abacusagent --screen-modules` to hide tool functions in some modules. The `--matmaster` option will only allow the wrapper function to be loaded.
