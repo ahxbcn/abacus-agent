@@ -6,12 +6,13 @@ import re
 import glob
 import shutil
 import json
+import csv
+import unittest
 from typing import List, Dict, Optional, Any
-
 from pathlib import Path
 
 import numpy as np
-import unittest
+from pymatgen.core.periodic_table import Element
 
 from abacustest.lib_prepare.abacus import ReadInput, WriteInput, AbacusStru
 from abacustest.lib_model.comm import check_abacus_inputs
@@ -204,7 +205,14 @@ def calculate_bader_charge_from_cube(
     fcube (list|str): List of cube files or a single cube file path.
     
     Returns:
-    list: A list of Bader charges.
+    dict: A dictionary containing:
+        - atom_labels: List of atom labels.
+        - net_bader_charges: List of net charge for each atom. Core charge is included.
+        - number_of_electrons: List of number of electrons around each atom. Core charge is not included.
+        - core_charge: List of core charge for each atom.
+        - work_path: Absolute path to the work directory.
+        - cube_file: Absolute path to the cube file used in this tool.
+        - charge_results_json: Absolute path to the JSON file containing detailed Bader charge results
     """
     if not isinstance(fcube, (list, tuple)):
         fcube = [fcube]
@@ -231,19 +239,22 @@ def calculate_bader_charge_from_cube(
     bader_charges = read_bader_acf(Path(work_path) / 'ACF.dat')
     cube_data = read_gaussian_cube(merged_cube_file)
     net_bader_charges = (np.array(cube_data["chg"]) - np.array(bader_charges)).tolist()
+    atom_labels = [Element.from_Z(i).symbol for i in cube_data['atomz']]
 
     bader_charge_json = Path("./bader_charge_results.json").absolute()
     with open(bader_charge_json, "w") as fout:
         json.dump({
             "number_of_electrons": bader_charges,
             "core_charge": cube_data["chg"],
-            "net_charges": net_bader_charges
+            "net_bader_charges": net_bader_charges,
+            "atom_labels": atom_labels
         }, fout)
 
     return {
+        "atom_labels": atom_labels,
+        "net_bader_charges": net_bader_charges,
         "number_of_electrons": bader_charges,
         "core_charge": cube_data["chg"],
-        "net_charges": net_bader_charges,
         "work_path": Path(work_path).absolute(),
         "cube_file": Path(merged_cube_file).absolute(),
         "charge_results_json": bader_charge_json.absolute(),
@@ -264,11 +275,12 @@ def abacus_badercharge_run(
     Returns:
     dict: A dictionary containing: 
         - net_bader_charges: List of net Bader charge for each atom. Core charge is included.
-        - bader_charges: List of Bader charge for each atom. The value represents the number of valence electrons for each atom, and core charge is not included.
-        - atom_core_charges: List of core charge for each atom.
+        - number_of_electrons: List of number of electrons around each atom. Core charge is not included.
+        - core_charges: List of core charge for each atom.
         - atom_labels: Labels of atoms in the structure.
         - abacus_workpath: Absolute path to the ABACUS work directory.
         - badercharge_run_workpath: Absolute path to the Bader analysis work directory.
+        - bader_result_csv: Absolute path to the CSV file containing detailed Bader charge results
     """
     try:
         is_valid, msg = check_abacus_inputs(abacus_inputs_dir)
@@ -289,13 +301,23 @@ def abacus_badercharge_run(
         # Postprocess the charge density to obtain Bader charges
         bader_results = calculate_bader_charge_from_cube(fcube)
 
+        # Write necessary results to csv file
+        bader_result_csv = Path("./bader_charge_results.csv").absolute()
+
+        with open(bader_result_csv, "w") as fout:
+            writer = csv.writer(fout)
+            writer.writerow(['atom_label', 'net_bader_charge'])
+            for label, charge in zip(bader_results["atom_labels"], bader_results["net_bader_charges"]):
+                writer.writerow([label, f"{charge: .6f}"])
+
         return {
-            "net_charges": bader_results["net_charges"],
+            "net_bader_charges": bader_results["net_bader_charges"],
             "number_of_electrons": bader_results["number_of_electrons"],
             "core_charges": bader_results["core_charge"],
-            "atom_labels": atom_labels,
+            "atom_labels": atom_labels, # Use atom labels from ABACUS STRU file, not from cube file
             "abacus_workpath": Path(abacus_jobpath).absolute(),
             "badercharge_run_workpath": Path(bader_results["work_path"]).absolute(),
+            "bader_result_csv": Path(bader_result_csv).absolute()
         }
     except Exception as e:
         return {"message": f"Calculating Bader charge failed: {e}"}

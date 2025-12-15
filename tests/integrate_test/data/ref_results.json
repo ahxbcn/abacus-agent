@@ -27,14 +27,14 @@
     "test_abacus_badercharge_run_nspin1": 
     {
         "result": {
-            "net_charges": [0.930, -0.930],
+            "net_bader_charges": [0.930, -0.930],
             "atom_labels": ["Na", "Cl"]
         }
     },
     "test_abacus_badercharge_run_nspin2": 
     {
         "result": {
-            "net_charges": [0.930, -0.930],
+            "net_bader_charges": [0.930, -0.930],
             "atom_labels": ["Na", "Cl"]
         }
     },
