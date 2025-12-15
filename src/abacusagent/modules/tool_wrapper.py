@@ -337,8 +337,6 @@ def abacus_badercharge_run(
 
     Returns:
     dict: A dictionary containing: 
-        - net_bader_charges: List of net Bader charge for each atom. Core charge is included.
-        - atom_labels: Labels of atoms in the structure.
         - bader_results_csv: Path to the Bader results csv file.
     """
     dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
@@ -364,9 +362,7 @@ def abacus_badercharge_run(
 
     badercharge_results = _abacus_badercharge_run(abacus_inputs_dir)
 
-    return {'net_bader_charges': badercharge_results.get('net_bader_charges', None),
-            'atom_labels': badercharge_results.get('atom_labels', None),
-            "bader_result_csv": Path(badercharge_results['bader_result_csv']).absolute()}
+    return {"bader_result_csv": Path(badercharge_results['bader_result_csv']).absolute()}
 
 @mcp.tool()
 def abacus_dos_run(
