@@ -220,10 +220,11 @@ class TestToolWrapper(unittest.TestCase):
                                          fixed_axes=None)
         print(outputs)
 
+        self.assertIsInstance(outputs['bader_result_csv'], get_path_type())
         for act, ref in zip(outputs['net_bader_charges'], ref_results['net_bader_charges']):
             self.assertAlmostEqual(act, ref, delta=1e-3)
         for act, ref in zip(outputs['atom_labels'], ref_results['atom_labels']):
-            self.assertEqual(act, ref)
+            self.assertEqual(act, ref)    
     
     def test_run_abacus_calculation_band(self):
         """
