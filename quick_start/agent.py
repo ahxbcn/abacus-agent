@@ -5,7 +5,7 @@ from google.adk.tools.mcp_tool.mcp_session_manager import SseServerParams, Strea
 
 import os, json
 
-from abacusagent.constant import EXAMPLE_ABACUS_AGENT_INSTRUCTION
+from abacusagent.prompt import EXAMPLE_ABACUS_AGENT_INSTRUCTION
 
 # Set the secret key in ~/.abacusagent/env.json or as an environment variable, or modify the code to set it directly.
 env_file = os.path.expanduser("~/.abacusagent/env.json")
