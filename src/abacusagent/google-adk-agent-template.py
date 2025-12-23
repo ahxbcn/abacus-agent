@@ -5,8 +5,6 @@ from google.adk.tools.mcp_tool.mcp_session_manager import SseServerParams, Strea
 
 import os, json
 
-from abacusagent.prompt import EXAMPLE_ABACUS_AGENT_INSTRUCTION
-
 # Set the secret key in ~/.abacusagent/env.json or as an environment variable, or modify the code to set it directly.
 env_file = os.path.expanduser("~/.abacusagent/env.json")
 if os.path.isfile(env_file):
@@ -41,6 +39,8 @@ executor = {
     },
     "local": {"type": "local",}
 }
+
+instructions = "{instructions}"
 
 EXECUTOR_MAP = {
     "generate_bulk_structure": executor["local"],
@@ -83,6 +83,6 @@ root_agent = Agent(
     description=(
         "Do ABACUS calculations."
     ),
-    instruction=EXAMPLE_ABACUS_AGENT_INSTRUCTION,
+    instruction=instructions,
     tools=[toolset]
 )
