@@ -6,6 +6,7 @@ from abacusagent.modules.submodules.abacus import abacus_prepare as _abacus_prep
 from abacusagent.modules.submodules.abacus import abacus_collect_data as _abacus_collect_data
 from abacusagent.modules.submodules.abacus import abacus_modify_input as _abacus_modify_input
 from abacusagent.modules.submodules.abacus import abacus_modify_stru as _abacus_modify_stru
+from abacusagent.modules.submodules.abacus import read_abacus_input_kpt as _read_abacus_input_kpt
 
 
 @mcp.tool()
@@ -258,3 +259,18 @@ def abacus_collect_data(
         RuntimeError: If error occured during collectring data using abacustest
     """
     return _abacus_collect_data(abacus_outputs_dir, metrics)
+
+@mcp.tool()
+def read_abacus_input_kpt(
+    abacus_inputs_dir: Path,
+) -> Dict[str, Any]:
+    """
+    Read ABACUS INPUT file and k-points information.
+    Args:
+        abacus_inputs_dir (str): Path to the directory containing the ABACUS input files.
+    Returns:
+        A dictionary containing the content of the INPUT file and k-points information.
+    Raises:
+        FileNotFoundError: If path of given INPUT file does not exist
+    """
+    return _read_abacus_input_kpt(abacus_inputs_dir)

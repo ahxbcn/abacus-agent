@@ -498,7 +498,7 @@ def abacus_collect_data(
     except Exception as e:
         return {'message': f'Collectiong results from ABACUS output files failed: {e}'}
 
-#@mcp.tool()
+
 def run_abacus_onejob(
     abacus_inputs_dir: Path,
 ) -> Dict[str, Any]:
@@ -517,3 +517,60 @@ def run_abacus_onejob(
     except Exception as e:
         return {'message': f"Run ABACUS using given input file failed: {e}"}
 
+def read_abacus_input_kpt(
+    abacus_inputs_dir: Path,
+) -> Dict[str, Any]:
+    """
+    Read ABACUS INPUT file and k-points information.
+    Args:
+        abacus_inputs_dir (str): Path to the directory containing the ABACUS input files.
+    Returns:
+        A dictionary containing the content of the INPUT file and k-points information.
+    Raises:
+        FileNotFoundError: If path of given INPUT file does not exist
+    """
+    try:
+        from abacustest.lib_prepare.comm import kspacing2kpt
+        from abacustest.lib_prepare.abacus import ReadKpt
+
+        input_file = os.path.join(abacus_inputs_dir, "INPUT")
+        if not os.path.isfile(input_file):
+            raise FileNotFoundError(f"INPUT file {input_file} does not exist.")
+
+        input_param = ReadInput(input_file)
+        return_result = {'input_params': input_param}
+
+        kpt_file = os.path.join(abacus_inputs_dir, input_param.get('kpt_file', 'KPT'))
+        if 'gamma_only' in input_param.keys() and input_param['gamma_only']:
+            # If only gamma-point is used, ignore KPT file
+            return_result['kpt'] = {'kpt_file': None,
+                                    'mode': 'gamma',
+                                    'kmesh': [1, 1, 1],
+                                    'offset': [0, 0, 0]}
+        elif 'kspacing' in input_param.keys() and input_param['kspacing']:\
+            # If kspacing is used, ignore KPT file
+            stru_file = input_param.get('stru_file', 'STRU')
+            stru = AbacusStru.ReadStru(os.path.join(abacus_inputs_dir, stru_file))
+            kmesh = kspacing2kpt(input_param['kspacing'], stru.get_cell())
+            return_result['kpt'] = {'kpt_file': None,
+                                    'mode': 'gamma',
+                                    'kmesh': kmesh,
+                                    'offset': [0, 0, 0]}
+        elif os.path.isfile(kpt_file):
+            return_result['kpt'] = {'kpt_file': kpt_file}
+            kpt_data, mode = ReadKpt(kpt_file)
+            return_result['kpt']['mode'] = mode
+            if mode == 'mp' or 'gamma':
+                # If Monkhorst-Pack or Gamma-centered grid, return kmesh and offset
+                kmesh, offset = kpt_data[:3], kpt_data[3:]
+                return_result['kpt']['kmesh'] = kmesh
+                return_result['kpt']['offset'] = offset
+            else:
+                # If k-points are given explicitly
+                return_result['kpt']['kpoints_data'] = kpt_data
+
+        return return_result
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {'message': f"Read ABACUS INPUT file failed: {e}"}
