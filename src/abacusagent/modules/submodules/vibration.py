@@ -52,7 +52,7 @@ def abacus_vibration_analysis(abacus_inputs_dir: Path,
         run_abacus(job_paths)
         
         vib_results = post_abacus_vibration_analysis_onejob(work_path, temperature=temperature)
-        vib_results['vib_analysis_work_dir'] = Path(work_path).absolute()
+        vib_results['vib_analysis_work_path'] = Path(work_path).absolute()
         return vib_results
     except Exception as e:
         import traceback

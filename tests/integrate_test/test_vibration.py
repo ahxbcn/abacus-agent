@@ -40,7 +40,7 @@ class TestAbacusVibrationAnalysis(unittest.TestCase):
                                             temperature=400)
         print(outputs)
         
-        self.assertIsInstance(outputs['vib_analysis_work_dir'], get_path_type())
+        self.assertIsInstance(outputs['vib_analysis_work_path'], get_path_type())
 
         for freq_output, freq_ref in zip(outputs['frequencies'], ref_results['frequencies']):
             self.assertAlmostEqual(freq_output, freq_ref, places=2)
@@ -66,8 +66,8 @@ class TestAbacusVibrationAnalysis(unittest.TestCase):
                                             stepsize = 0.01,
                                             temperature=400)
         print(outputs)
-        
-        self.assertIsInstance(outputs['vib_analysis_work_dir'], get_path_type())
+
+        self.assertIsInstance(outputs['vib_analysis_work_path'], get_path_type())
 
         for freq_output, freq_ref in zip(outputs['frequencies'], ref_results['frequencies']):
             self.assertAlmostEqual(freq_output, freq_ref, places=2)
