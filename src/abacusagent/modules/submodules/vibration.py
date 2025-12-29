@@ -1,71 +1,10 @@
-import os
-from typing import Dict, List, Optional, Any
+from typing import List, Optional
 from pathlib import Path
-from itertools import groupby
-
-from ase.io import read
-from ase.calculators.abacus import Abacus, AbacusProfile
-from ase.io.abacus import read_kpt
-from abacustest.lib_prepare.abacus import AbacusStru, ReadInput
 from abacustest.lib_model.comm import check_abacus_inputs
 from abacustest.lib_model.model_019_vibration import prepare_abacus_vibration_analysis, post_abacus_vibration_analysis_onejob
 
-from abacusagent.modules.util.comm import get_physical_cores, generate_work_path, link_abacusjob, run_abacus
+from abacusagent.modules.util.comm import generate_work_path, link_abacusjob, run_abacus
 
-def set_ase_abacus_calculator(abacus_inputs_dir: Path,
-                              work_path: Path,
-                              extra_input_params: Optional[Dict[str, Any]]) -> Abacus:
-    """
-    To be deprecated
-    Set Abacus calculator using input files in ABACUS input directory. 
-    ABACUS will be executed in pure MPI parallalized mode.
-    """
-    # Parallel settings
-    os.environ["OMP_NUM_THREADS"] = "1"
-    profile = AbacusProfile(command=f"mpirun -np {get_physical_cores()} abacus")
-    out_directory = os.path.join(work_path, "SCF")
-
-    # Read INPUT, STRU
-    input_params = ReadInput(os.path.join(abacus_inputs_dir, "INPUT"))
-    input_params.update(extra_input_params)
-    stru_file = input_params.get('stru_file', "STRU")
-    stru = read(os.path.join(abacus_inputs_dir, stru_file))
-    abacus_stru = AbacusStru.ReadStru(os.path.join(abacus_inputs_dir, stru_file))
-
-    # Read KPT
-    # TODO: If gamma_only is set and kspacing is not set, absense of KPT file will raise an error
-    if 'gamma_only' in input_params.keys():
-        kpts = {'gamma_only': input_params['gamma_only']}
-    elif 'kspacing' in input_params.keys():
-        kpts = {'kspacing': input_params['kspacing']}
-    else:
-        kpt_file = input_params.get('kpt_file', 'KPT')
-        kpt_info = read_kpt(os.path.join(abacus_inputs_dir, kpt_file))
-        # Set kpoint information required by `ase.calculators.calculator.kpts2sizeandoffsets`
-        # used by ase-abacus
-        kpts = {'size': kpt_info['kpts']}
-        if kpt_info['mode'] in ['Gamma']:
-            kpts['gamma'] = True
-
-    # Get pp and orb from provided STRU file
-    pseudo_dir = Path(abacus_inputs_dir).absolute()
-    orbital_dir = Path(abacus_inputs_dir).absolute()
-    pp_list, orb_list = abacus_stru.get_pp(), abacus_stru.get_orb()
-    elements = [key for key, _ in groupby(stru.get_chemical_symbols())]
-    pp = {element: ppfile for element, ppfile in zip(elements, pp_list)}
-    basis = {element: orbfile for element, orbfile in zip(elements, orb_list)}
-
-    input_params['pseudo_dir'] = pseudo_dir
-    input_params['orbital_dir'] = orbital_dir
-
-    calc = Abacus(profile=profile,
-                  directory=out_directory,
-                  pp=pp,
-                  basis=basis,
-                  kpts=kpts,
-                  **input_params)
-    
-    return calc
 
 def abacus_vibration_analysis(abacus_inputs_dir: Path,
                               selected_atoms: Optional[List[int]] = None,
