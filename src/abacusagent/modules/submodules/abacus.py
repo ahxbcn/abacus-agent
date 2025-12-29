@@ -547,7 +547,7 @@ def read_abacus_input_kpt(
                                     'mode': 'gamma',
                                     'kmesh': [1, 1, 1],
                                     'offset': [0, 0, 0]}
-        elif 'kspacing' in input_param.keys() and input_param['kspacing']:\
+        elif 'kspacing' in input_param.keys() and input_param['kspacing']:
             # If kspacing is used, ignore KPT file
             stru_file = input_param.get('stru_file', 'STRU')
             stru = AbacusStru.ReadStru(os.path.join(abacus_inputs_dir, stru_file))
@@ -614,3 +614,45 @@ def read_abacus_stru(abacus_input_dir: Path):
                 'move': stru.get_move()}
     except Exception as e:
         return {'message': f"Read ABACUS STRU file failed: {e}"}
+
+def fix_atom_by_coord(abacus_inputs_dir: Path,
+                      min: float,
+                      max: float,
+                      cartesian: Optional[bool] = True,
+                      direction: Optional[Literal["x", "y", "z"]] = "z",
+                      move: Optional[Tuple[bool, bool, bool]] = (False, False, False),
+                      only: Optional[bool] = True
+) -> Dict[str, Any]:
+    """
+    Fix atom in ABACUS STRU file by coordinate range.
+    Args:
+        abacus_inputs_dir (Path): Path to the directory containing the ABACUS input files.
+        min (float): Minimum coordinate value.
+        max (float): Maximum coordinate value.
+        cartesian (bool): Coordinate type used of min and max. Defaults to True, which means cartesian coordinates.
+        direction (str): Direction of the coordinate. Defaults to "z", which means the z-direction.
+        move (tuple): Move flags of each direction. Defaults to (False, False, False), which means all 3 directions are fixed.
+        only (bool): If True, override move settings for all atoms in given STRU file. Unselected atoms will be allowed to move in all directions.
+    Returns:
+        A dictionary containing the following keys:
+            new_abacus_inputs_dir (Path): the path of abacus inputs directory containing the modified STRU file.
+            move (Tuple[bool, bool, bool]): the move flags of each atom in the modified STRU file.
+    Raises:
+        FileNotFoundError: If path of given STRU file does not exist
+    """
+    from abacustest.lib_prepare.stru import AbacusSTRU
+
+    input_params = ReadInput(os.path.join(abacus_inputs_dir, "INPUT"))
+    stru_file = os.path.join(abacus_inputs_dir, input_params.get('stru_file', "STRU"))
+    stru = AbacusSTRU.read(stru_file)
+    direction_map = {'x': 0, 'y': 1, 'z': 2}
+    stru.fix_atom_by_coord(min=min,
+                           max=max,
+                           cartesian=cartesian,
+                           direction=direction_map[direction],
+                           move=move,
+                           only=only)
+    stru.write(stru_file)
+
+    return {'new_abacus_inputs_dir': abacus_inputs_dir,
+            'move': stru.moves}

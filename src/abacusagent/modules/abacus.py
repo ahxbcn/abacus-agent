@@ -8,6 +8,7 @@ from abacusagent.modules.submodules.abacus import abacus_modify_input as _abacus
 from abacusagent.modules.submodules.abacus import abacus_modify_stru as _abacus_modify_stru
 from abacusagent.modules.submodules.abacus import read_abacus_input_kpt as _read_abacus_input_kpt
 from abacusagent.modules.submodules.abacus import read_abacus_stru as _read_abacus_stru
+from abacusagent.modules.submodules.abacus import fix_atom_by_coord as _fix_atom_by_coord
 
 
 @mcp.tool()
@@ -297,3 +298,31 @@ def read_abacus_stru(abacus_input_dir: Path):
         FileNotFoundError: If path of given STRU file does not exist
     """
     return _read_abacus_stru(abacus_input_dir)
+
+@mcp.tool()
+def fix_atom_by_coord(abacus_inputs_dir: Path,
+                      min: float,
+                      max: float,
+                      cartesian: Optional[bool] = True,
+                      direction: Optional[Literal["x", "y", "z"]] = "z",
+                      move: Optional[Tuple[bool, bool, bool]] = (False, False, False),
+                      only: Optional[bool] = True
+) -> Dict[str, Any]:
+    """
+    Fix atom in ABACUS STRU file by coordinate range.
+    Args:
+        abacus_inputs_dir (Path): Path to the directory containing the ABACUS input files.
+        min (float): Minimum coordinate value.
+        max (float): Maximum coordinate value.
+        cartesian (bool): Coordinate type used of min and max. Defaults to True, which means cartesian coordinates.
+        direction (str): Direction of the coordinate. Defaults to "z", which means the z-direction.
+        move (tuple): Move flags of each direction. Defaults to (False, False, False), which means all 3 directions are fixed.
+        only (bool): If True, override move settings for all atoms in given STRU file. Unselected atoms will be allowed to move in all directions.
+    Returns:
+        A dictionary containing the following keys:
+            new_abacus_inputs_dir (Path): the path of abacus inputs directory containing the modified STRU file.
+            move (Tuple[bool, bool, bool]): the move flags of each atom in the modified STRU file.
+    Raises:
+        FileNotFoundError: If path of given STRU file does not exist
+    """
+    return _fix_atom_by_coord(abacus_inputs_dir, min, max, cartesian, direction, move, only)
