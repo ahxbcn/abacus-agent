@@ -35,9 +35,8 @@ class TestAbacusVibrationAnalysis(unittest.TestCase):
         shutil.copy2(self.stru_h2_relaxed, test_work_dir / "STRU")
 
         outputs = abacus_vibration_analysis(test_work_dir,
-                                            selected_atoms = [0, 1],
+                                            selected_atoms = [1, 2],
                                             stepsize = 0.01,
-                                            nfree = 2,
                                             temperature=400)
         print(outputs)
         
@@ -63,9 +62,8 @@ class TestAbacusVibrationAnalysis(unittest.TestCase):
         shutil.copy2(self.stru_h2_relaxed, test_work_dir / "STRU")
 
         outputs = abacus_vibration_analysis(test_work_dir,
-                                            selected_atoms = [1],
+                                            selected_atoms = [2],
                                             stepsize = 0.01,
-                                            nfree = 2,
                                             temperature=400)
         print(outputs)
         
