@@ -25,10 +25,12 @@ def abacus_vibration_analysis(abacus_inputs_dir: Path,
         - 'frequencies': List of real frequencies from vibrational analysis. Imaginary frequencies are represented by negative 
             values. Units in cm^{-1}.
         - 'zero_point_energy': Zero-point energy summed over all modes. Units in eV.
-        - 'vib_entropy': Vibrational entropy using harmonic approximation. Units in eV/K.
-        - 'vib_free_energy': Vibrational Helmholtz free energy using harmonic approximation. Units in eV.
         - 'vib_analysis_work_path': Path to directory performing vibrational analysis. Containing animation of normal modes 
             with non-zero frequency in ASE traj format and `vib` directory containing collected forces.
+        - 'thermo_corr': Corrections to entropy and free energy from vibrations using harmonic approximation. Keys are temperatures.
+           For each temperature, contaning 2 quantities:
+           - 'entropy':  Vibrational entropy using harmonic approximation. Units in eV/K.
+           - 'free_energy': Free energy using harmonic approximation. Units in eV.
     """
     try:
         is_valid, msg = check_abacus_inputs(abacus_inputs_dir)
@@ -51,7 +53,7 @@ def abacus_vibration_analysis(abacus_inputs_dir: Path,
         # Run ABACUS calculation for all prepared jobs
         run_abacus(job_paths)
         
-        vib_results = post_abacus_vibration_analysis_onejob(work_path, temperature=temperature)
+        vib_results = post_abacus_vibration_analysis_onejob(work_path, temperature=[temperature])
         vib_results['vib_analysis_work_path'] = Path(work_path).absolute()
         return vib_results
     except Exception as e:

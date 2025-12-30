@@ -24,9 +24,11 @@ def abacus_vibration_analysis(abacus_inputs_dir: Path,
         - 'frequencies': List of real frequencies from vibrational analysis. Imaginary frequencies are represented by negative 
             values. Units in cm^{-1}.
         - 'zero_point_energy': Zero-point energy summed over all modes. Units in eV.
-        - 'vib_entropy': Vibrational entropy using harmonic approximation. Units in eV/K.
-        - 'vib_free_energy': Vibrational Helmholtz free energy using harmonic approximation. Units in eV.
         - 'vib_analysis_work_path': Path to directory performing vibrational analysis. Containing animation of normal modes 
             with non-zero frequency in ASE traj format and `vib` directory containing collected forces.
+        - 'thermo_corr': Corrections to entropy and free energy from vibrations using harmonic approximation. Keys are temperatures.
+           For each temperature, contaning 2 quantities:
+           - 'entropy':  Vibrational entropy using harmonic approximation. Units in eV/K.
+           - 'free_energy': Free energy using harmonic approximation. Units in eV.
     """
     return _abacus_vibration_analysis(abacus_inputs_dir, selected_atoms, stepsize, temperature)
