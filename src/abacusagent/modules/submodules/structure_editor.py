@@ -7,12 +7,12 @@ from abacustest.constant import A2BOHR
 from abacustest.lib_prepare.stru import AbacusSTRU
 
 def build_slab(stru_file: Path,
-               stru_type: Literal["cif", "poscar", "abacus/stru"],
-               miller_indices: Tuple[int, int, int],
+               stru_type: Literal["cif", "poscar", "abacus/stru"] = "cif",
+               miller_indices: Tuple[int, int, int] = (1, 0, 0),
                layers: int = 3,
                supercell_2d: Tuple[int, int] = (1, 1),
                vacuum: float = 10.0,
-               vacuum_direction: Literal['x', 'y', 'z'] = 'y'):
+               vacuum_direction: Literal['a', 'b', 'c'] = 'b'):
     """
     Build slab from given structure file.
 
@@ -46,13 +46,13 @@ def build_slab(stru_file: Path,
     stru_surface_abacusstru.sort()
     
     # Permute axis to set vacuum direction along given axis. The vacuum direction create by ase.build.surface is always along z axis.
-    if vacuum_direction == "x":
+    if vacuum_direction == "a":
         stru_surface_abacusstru.permute_lat_vec(mode="cab")
         stru_surface_abacusstru.permute_coord(mode="zxy")
-    elif vacuum_direction == "y":
+    elif vacuum_direction == "b":
         stru_surface_abacusstru.permute_lat_vec(mode="bca")
         stru_surface_abacusstru.permute_coord(mode="yzx")
-    elif vacuum_direction == "z":
+    elif vacuum_direction == "c":
         pass
 
     h, k, l = miller_indices

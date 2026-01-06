@@ -8,11 +8,11 @@ from abacusagent.modules.submodules.structure_editor import build_slab as _build
 @mcp.tool()
 def build_slab(stru_file: Path,
                stru_type: Literal["cif", "poscar", "abacus/stru"] = "cif",
-               miller_indices: Tuple[int, int, int] = (1, 1, 1),
+               miller_indices: Tuple[int, int, int] = (1, 0, 0),
                layers: int = 3,
                supercell_2d: Tuple[int, int] = (1, 1),
                vacuum: float = 10.0,
-               vacuum_direction: Literal['x', 'y', 'z'] = 'y'
+               vacuum_direction: Literal['a', 'b', 'c'] = 'b'
 ):
     """
     Build slab from given structure file.
