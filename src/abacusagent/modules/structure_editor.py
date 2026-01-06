@@ -19,10 +19,12 @@ def build_slab(stru_file: Path,
 
     Args:
         stru_file (Path): Path to structure file.
-        stru_type (Literal["cif", "poscar", "abacus/stru"]): Type of structure file.
-        miller_indices (Tuple[int, int, int]): Miller indices of the surface.
+        stru_type (Literal["cif", "poscar", "abacus/stru"]): Type of structure file. Defaults to "cif".
+        miller_indices (Tuple[int, int, int]): Miller indices of the surface. Defaults to (1, 0, 0), which means (100) surface of the structure.
         layers (int, optional): Number of layers of the surface. Note that the layers is number of equivalent layers, not number of layers of atoms. Defaults to 3.
-        vacuum (float, optional): Vacuum space between the surface and the bulk structure. Units in Angstrom. Defaults to 10.0 Angstrom.
+        supercell_2d (Tuple[int, int], optional): Supercell size of the surface. Default is (1, 1), which means no supercell.
+        vacuum (float, optional): Vacuum space along on both sides of the cleaved surface. The total vacuum size will be twice this value. Units in Angstrom. Defaults to 10.0. 
+        vacuum_direction (Literal['a', 'b', 'c']): The direction of the vacuum space. Defaults to 'b'.
     Returns:
         A dictionary containing the path to the surface structure file.
         Keys:
