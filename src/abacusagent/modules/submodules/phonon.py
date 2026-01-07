@@ -124,6 +124,7 @@ def abacus_phonon_dispersion(
 
         phonon.forces = force_sets
         phonon.produce_force_constants()
+        phonon.symmetrize_force_constants()
 
         phonon.run_mesh([20, 20, 20], with_eigenvectors=True, is_mesh_symmetry=False)
         phonon.run_thermal_properties(temperatures=[temperature])
