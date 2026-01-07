@@ -34,7 +34,7 @@ orbital_rep_map = {
     'dx^2-y^2': r'$d_{x^2-y^2}$',
     'fz^3': r'$f_{z^3}$',
     'fxz^2': r'$f_{xz^2}$',
-    'fyx^2': r'$f_{yx^2}$',
+    'fyz^2': r'$f_{yz^2}$',
     'fzx^2-zy^2': r'$f_{zx^2-zy^2}$',
     'fxyz': r'$f_{xyz}$',
     'fx^3-3*xy^2': r'$f_{x^3-3xy^2}$',
