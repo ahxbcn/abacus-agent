@@ -1,15 +1,26 @@
 [build-system]
-requires = ["setuptools>=45"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "abacusagent"
 dynamic = ["version"]
-description = "Abacus agent"
+readme = "README.md"
+license = { file = "LICENSE" }
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+description = "ABACUS agent tools for connecting LLMs to first-principles calculation workflows"
 requires-python = ">=3.11"
 
 dependencies = [
-       "abacustest>=0.4.50",
+       "abacustest>=0.4.51",
        "numpy<2.0",
        "pymatgen>=2025.5.28",
        "bohr-agent-sdk==0.1.121",
@@ -40,6 +51,5 @@ addopts = "-v"
 
 [project.optional-dependencies]
 dev = ["mcp>=1.10.0",
-       "abacustest>=0.4.49",
        "science-agent-sdk"
 ]
