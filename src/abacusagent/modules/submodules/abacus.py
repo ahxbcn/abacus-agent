@@ -498,7 +498,7 @@ def abacus_collect_data(
     except Exception as e:
         return {'message': f'Collectiong results from ABACUS output files failed: {e}'}
 
-#@mcp.tool()
+
 def run_abacus_onejob(
     abacus_inputs_dir: Path,
 ) -> Dict[str, Any]:
@@ -517,3 +517,100 @@ def run_abacus_onejob(
     except Exception as e:
         return {'message': f"Run ABACUS using given input file failed: {e}"}
 
+def read_abacus_input_kpt(
+    abacus_inputs_dir: Path,
+) -> Dict[str, Any]:
+    """
+    Read ABACUS INPUT file and k-points information.
+    Args:
+        abacus_inputs_dir (str): Path to the directory containing the ABACUS input files.
+    Returns:
+        A dictionary containing the content of the INPUT file and k-points information.
+    Raises:
+        FileNotFoundError: If path of given INPUT file does not exist
+    """
+    try:
+        from abacustest.lib_prepare.comm import kspacing2kpt
+        from abacustest.lib_prepare.abacus import ReadKpt
+
+        input_file = os.path.join(abacus_inputs_dir, "INPUT")
+        if not os.path.isfile(input_file):
+            raise FileNotFoundError(f"INPUT file {input_file} does not exist.")
+
+        input_param = ReadInput(input_file)
+        return_result = {'input_params': input_param}
+
+        kpt_file = os.path.join(abacus_inputs_dir, input_param.get('kpt_file', 'KPT'))
+        if 'gamma_only' in input_param.keys() and input_param['gamma_only']:
+            # If only gamma-point is used, ignore KPT file
+            return_result['kpt'] = {'kpt_file': None,
+                                    'mode': 'gamma',
+                                    'kmesh': [1, 1, 1],
+                                    'offset': [0, 0, 0]}
+        elif 'kspacing' in input_param.keys() and input_param['kspacing']:\
+            # If kspacing is used, ignore KPT file
+            stru_file = input_param.get('stru_file', 'STRU')
+            stru = AbacusStru.ReadStru(os.path.join(abacus_inputs_dir, stru_file))
+            kmesh = kspacing2kpt(input_param['kspacing'], stru.get_cell())
+            return_result['kpt'] = {'kpt_file': None,
+                                    'mode': 'gamma',
+                                    'kmesh': kmesh,
+                                    'offset': [0, 0, 0]}
+        elif os.path.isfile(kpt_file):
+            return_result['kpt'] = {'kpt_file': kpt_file}
+            kpt_data, mode = ReadKpt(kpt_file)
+            return_result['kpt']['mode'] = mode
+            if mode == 'mp' or 'gamma':
+                # If Monkhorst-Pack or Gamma-centered grid, return kmesh and offset
+                kmesh, offset = kpt_data[:3], kpt_data[3:]
+                return_result['kpt']['kmesh'] = kmesh
+                return_result['kpt']['offset'] = offset
+            else:
+                # If k-points are given explicitly
+                return_result['kpt']['kpoints_data'] = kpt_data
+
+        return return_result
+    except Exception as e:
+        return {'message': f"Read ABACUS INPUT file failed: {e}"}
+
+def read_abacus_stru(abacus_input_dir: Path):
+    """
+    Read ABACUS STRU file.
+    Args:
+        abacus_input_dir (str): Path to the directory containing the ABACUS input files.
+    Returns:
+        A dictionary containing information from the STRU file. Containing the following keys:
+            cell: the cell of the structure
+            atom_kinds: a dict, keys are atom labels, values are dicts containing the following keys:
+                pp: the pseudopotential file name
+                orb: the orbital file name
+                element: the element name
+                number: the number of atoms with this label
+                atommag: the magnetic moment of each atom with this label
+            coord: the coordinates of each atom
+            move: the movable flags of each atom
+    Raises:
+        FileNotFoundError: If path of given STRU file does not exist
+    """
+    try:
+        input_params = ReadInput(os.path.join(abacus_input_dir, "INPUT"))
+        stru_file = os.path.join(abacus_input_dir, input_params.get('stru_file', "STRU"))
+        if not os.path.isfile(stru_file):
+            raise FileNotFoundError(f"STRU file {stru_file} does not exist.")
+
+        stru = AbacusStru.ReadStru(stru_file)
+        atom_kinds = {}
+        for idx, label in enumerate(stru.get_label(total=False)):
+            atom_kinds[label] = {
+                'pp': stru.get_pp()[idx],
+                'orb': stru.get_orb()[idx] if stru.get_orb() is not None else None,
+                'element': stru.get_element(number=False,total=False)[idx],
+                'number': stru.get_label().count(label),
+                'atommag': stru.get_atommag()[idx],
+            }
+        return {'cell': stru.get_cell(),
+                'atom_kinds': atom_kinds,
+                'coord': stru.get_coord(),
+                'move': stru.get_move()}
+    except Exception as e:
+        return {'message': f"Read ABACUS STRU file failed: {e}"}

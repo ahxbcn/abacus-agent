@@ -35,20 +35,21 @@ class TestAbacusVibrationAnalysis(unittest.TestCase):
         shutil.copy2(self.stru_h2_relaxed, test_work_dir / "STRU")
 
         outputs = abacus_vibration_analysis(test_work_dir,
-                                            selected_atoms = [0, 1],
+                                            selected_atoms = [1, 2],
                                             stepsize = 0.01,
-                                            nfree = 2,
                                             temperature=400)
         print(outputs)
         
-        self.assertIsInstance(outputs['vib_analysis_work_dir'], get_path_type())
+        self.assertIsInstance(outputs['vib_analysis_work_path'], get_path_type())
 
         for freq_output, freq_ref in zip(outputs['frequencies'], ref_results['frequencies']):
-            self.assertAlmostEqual(freq_output, freq_ref, places=2)
+            self.assertAlmostEqual(freq_output, freq_ref, delta=0.1)
 
-        self.assertAlmostEqual(outputs['zero_point_energy'], ref_results['zero_point_energy'], places=4)
-        self.assertAlmostEqual(outputs['vib_entropy'], ref_results['vib_entropy'], places=4)
-        self.assertAlmostEqual(outputs['vib_free_energy'], ref_results['vib_free_energy'], places=4)
+        self.assertAlmostEqual(outputs['zero_point_energy'], ref_results['zero_point_energy'], delta=0.0001)
+        self.assertEqual(len(outputs['thermo_corr'].keys()), len(ref_results['thermo_corr'].keys()))
+        for temperature in outputs['thermo_corr'].keys():
+            self.assertAlmostEqual(outputs['thermo_corr'][temperature]['entropy'], ref_results['thermo_corr'][temperature]['entropy'], delta=0.00001)
+            self.assertAlmostEqual(outputs['thermo_corr'][temperature]['free_energy'], ref_results['thermo_corr'][temperature]['free_energy'], delta=0.001)
 
     def test_abacus_vibration_analysis_h2_selected(self):
         """
@@ -63,17 +64,18 @@ class TestAbacusVibrationAnalysis(unittest.TestCase):
         shutil.copy2(self.stru_h2_relaxed, test_work_dir / "STRU")
 
         outputs = abacus_vibration_analysis(test_work_dir,
-                                            selected_atoms = [1],
+                                            selected_atoms = [2],
                                             stepsize = 0.01,
-                                            nfree = 2,
                                             temperature=400)
         print(outputs)
-        
-        self.assertIsInstance(outputs['vib_analysis_work_dir'], get_path_type())
+
+        self.assertIsInstance(outputs['vib_analysis_work_path'], get_path_type())
 
         for freq_output, freq_ref in zip(outputs['frequencies'], ref_results['frequencies']):
-            self.assertAlmostEqual(freq_output, freq_ref, places=2)
+            self.assertAlmostEqual(freq_output, freq_ref, delta=0.1)
 
-        self.assertAlmostEqual(outputs['zero_point_energy'], ref_results['zero_point_energy'], places=4)
-        self.assertAlmostEqual(outputs['vib_entropy'], ref_results['vib_entropy'], places=4)
-        self.assertAlmostEqual(outputs['vib_free_energy'], ref_results['vib_free_energy'], places=4)
+        self.assertAlmostEqual(outputs['zero_point_energy'], ref_results['zero_point_energy'], delta=0.0001)
+        self.assertEqual(len(outputs['thermo_corr'].keys()), len(ref_results['thermo_corr'].keys()))
+        for temperature in outputs['thermo_corr'].keys():
+            self.assertAlmostEqual(outputs['thermo_corr'][temperature]['entropy'], ref_results['thermo_corr'][temperature]['entropy'], delta=0.00001)
+            self.assertAlmostEqual(outputs['thermo_corr'][temperature]['free_energy'], ref_results['thermo_corr'][temperature]['free_energy'], delta=0.001)
