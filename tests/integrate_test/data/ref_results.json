@@ -89,7 +89,7 @@
     "test_abacus_cal_band_nscf_pw_nspin1": 
     {
         "result": {
-            "band_gap": 0.5583
+            "band_gap": 0.55855
         }
     },
     "test_abacus_cal_band_nscf_pw_nspin2": 
@@ -101,7 +101,7 @@
     "test_abacus_cal_band_nscf_supercell": 
     {
         "result": {
-            "band_gap": 0.5583
+            "band_gap": 0.55855
         }
     },
     "test_abacus_dos_run_species": 

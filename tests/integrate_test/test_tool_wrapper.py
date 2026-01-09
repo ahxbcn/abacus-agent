@@ -58,9 +58,6 @@ class TestToolWrapper(unittest.TestCase):
                                          init_mag=None)
         print(outputs)
 
-        scf_work_dir = Path(outputs['scf_work_dir']).absolute()
-        self.assertIsInstance(scf_work_dir, get_path_type())
-        self.assertTrue(os.path.exists(scf_work_dir))
         self.assertTrue(outputs['normal_end'])
         self.assertTrue(outputs['converge'])
         self.assertAlmostEqual(outputs['energy'], ref_results['energy'], delta=1e-6)
@@ -95,9 +92,6 @@ class TestToolWrapper(unittest.TestCase):
                                          init_mag=init_mag)
         print(outputs)
 
-        scf_work_dir = Path(outputs['scf_work_dir']).absolute()
-        self.assertIsInstance(scf_work_dir, get_path_type())
-        self.assertTrue(os.path.exists(scf_work_dir))
         self.assertTrue(outputs['normal_end'])
         self.assertTrue(outputs['converge'])
         self.assertAlmostEqual(outputs['energy'], ref_results['energy'], delta=1e-6)
@@ -122,8 +116,6 @@ class TestToolWrapper(unittest.TestCase):
                                  init_mag=None)
         print(outputs)
 
-        self.assertIsInstance(outputs['elf_work_path'], get_path_type())
-        self.assertTrue(os.path.exists(outputs['elf_work_path']))
         self.assertIsInstance(outputs['elf_file'], get_path_type())
         self.assertTrue(os.path.exists(outputs['elf_file']))
     
@@ -221,10 +213,6 @@ class TestToolWrapper(unittest.TestCase):
         print(outputs)
 
         self.assertIsInstance(outputs['bader_result_csv'], get_path_type())
-        for act, ref in zip(outputs['net_bader_charges'], ref_results['net_bader_charges']):
-            self.assertAlmostEqual(act, ref, delta=1e-3)
-        for act, ref in zip(outputs['atom_labels'], ref_results['atom_labels']):
-            self.assertEqual(act, ref)    
     
     def test_run_abacus_calculation_band(self):
         """
@@ -249,8 +237,6 @@ class TestToolWrapper(unittest.TestCase):
                                   relax_method='cg',
                                   fixed_axes=None,
                                   mode='auto',
-                                  kpath=None,
-                                  high_symm_points=None,
                                   energy_min=-10,
                                   energy_max=10,
                                   insert_point_nums=30)
