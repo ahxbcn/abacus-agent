@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 import unittest
 import tempfile
+import pytest
 import inspect
 from utils import initilize_test_env, load_test_ref_result, get_path_type
 from abacusagent.modules.relax import abacus_do_relax
@@ -23,7 +24,8 @@ class TestAbacusDoRelax(unittest.TestCase):
 
     def tearDown(self):
         os.chdir(self.original_cwd)
-
+    
+    @pytest.mark.smoke
     def test_abacus_do_relax_relax_cell(self):
         """
         Test the abacus_do_relax function with relax_cell is True.

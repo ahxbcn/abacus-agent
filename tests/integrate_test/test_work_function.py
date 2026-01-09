@@ -28,6 +28,7 @@ class TestAbacusWorkFunction(unittest.TestCase):
     def tearDown(self):
         os.chdir(self.original_cwd)
     
+    @pytest.mark.smoke
     def test_abacus_cal_work_function_al110(self):
         """
         Calculate the work function of Al(100) surface.

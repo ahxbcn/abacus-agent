@@ -38,6 +38,7 @@ class TestToolWrapper(unittest.TestCase):
     def tearDown(self):
         os.chdir(self.original_cwd)
     
+    @pytest.mark.smoke
     def test_run_abacus_calculation_scf(self):
         """
         Test the wrapper function of doing SCF calculation.

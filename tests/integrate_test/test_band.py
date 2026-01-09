@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 import unittest
 import tempfile
+import pytest
 import inspect
 from utils import initilize_test_env, load_test_ref_result, get_path_type
 from abacusagent.modules.band import abacus_cal_band
@@ -28,7 +29,8 @@ class TestAbacusCalBand(unittest.TestCase):
 
     def tearDown(self):
         os.chdir(self.original_cwd)
-
+    
+    @pytest.mark.smoke
     def test_abacus_cal_band_pyatb_nspin1(self):
         """
         Test plot band structure in PYATB mode in nspin=1 case
@@ -66,7 +68,8 @@ class TestAbacusCalBand(unittest.TestCase):
         self.assertIsInstance(band_calc_dir, get_path_type())
         self.assertIsInstance(band_picture, get_path_type())
         self.assertAlmostEqual(outputs['band_gap'], ref_results['band_gap'], places=4)
-
+    
+    @pytest.mark.smoke
     def test_abacus_cal_band_nscf_nspin1(self):
         """
         Test plot band structure in NSCF mode in nspin=1 case
@@ -233,6 +236,7 @@ class TestAbacusCalBandPw(unittest.TestCase):
         outputs = abacus_cal_band(test_work_dir, mode='pyatb')
         self.assertEqual(outputs['message'], ref_results['message'])
 
+    @pytest.mark.smoke
     def test_abacus_cal_band_nscf_pw_nspin1(self):
         """
         Test plot band structure in NSCF mode using PW basis in nspin=1 case

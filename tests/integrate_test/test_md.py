@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 import unittest
 import tempfile
+import pytest
 import inspect
 from utils import initilize_test_env, load_test_ref_result, get_path_type
 from abacusagent.modules.md import abacus_run_md
@@ -26,6 +27,7 @@ class TestAbacusRunMd(unittest.TestCase):
     def tearDown(self):
         os.chdir(self.original_cwd)
     
+    @pytest.mark.smoke
     def test_abacus_run_md_nve(self):
         """
         Test the abacus_run_md function running molecule dynamics in NVE ensemble.

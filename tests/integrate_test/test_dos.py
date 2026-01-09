@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 import unittest
 import tempfile
+import pytest
 import inspect
 from utils import initilize_test_env, load_test_ref_result, get_path_type
 from abacusagent.modules.dos import abacus_dos_run
@@ -28,6 +29,7 @@ class TestAbacusDosRun(unittest.TestCase):
     def tearDown(self):
         os.chdir(self.original_cwd)
     
+    @pytest.mark.smoke
     def test_abacus_dos_run_species(self):
         """
         Test the abacus_dos_run function with PDOS plotting mode set to different species.
@@ -185,6 +187,7 @@ class TestAbacusDosRun(unittest.TestCase):
         self.assertTrue(outputs['nscf_normal_end'])
         self.assertAlmostEqual(outputs['scf_energy'], ref_results['scf_energy'])
     
+    @pytest.mark.smoke
     def test_abacus_dos_run_pw_nspin1(self):
         """
         Test the abacus_dos_run function with nspin=1 case with pw basis
