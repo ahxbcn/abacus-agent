@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 import unittest
 import tempfile
+import pytest
 import inspect
 from utils import initilize_test_env, load_test_ref_result, get_path_type
 from abacusagent.modules.bader import abacus_badercharge_run
@@ -25,6 +26,7 @@ class TestAbacusBaderchargeRun(unittest.TestCase):
     def tearDown(self):
         os.chdir(self.original_cwd)
     
+    @pytest.mark.smoke
     def test_abacus_badercharge_run_nspin1(self):
         """
         Test Bader charge calculation for nspin=1 case.

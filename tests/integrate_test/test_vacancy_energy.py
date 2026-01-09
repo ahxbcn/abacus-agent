@@ -11,7 +11,7 @@ from abacusagent.modules.vacancy import abacus_cal_vacancy_formation_energy
 initilize_test_env()
 
 @pytest.mark.long
-class TestAbacusEos(unittest.TestCase):
+class TestAbacusVacFormEner(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.TemporaryDirectory()
         self.addCleanup(self.test_dir.cleanup)
@@ -44,7 +44,7 @@ class TestAbacusEos(unittest.TestCase):
         
         print(outputs)
 
-        self.assertTrue(outputs['supercell_job_relax_converge'])
+        self.assertTrue(outputs['original_stru_job_relax_converge'])
         self.assertTrue(outputs['defect_supercell_job_relax_converge'])
         self.assertAlmostEqual(outputs['vac_formation_energy'], ref_results['vac_formation_energy'], places=2)
 

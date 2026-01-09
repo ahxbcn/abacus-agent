@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 import unittest
 import tempfile
+import pytest
 import inspect
 from abacusagent.modules.scf import abacus_calculation_scf
 from utils import initilize_test_env, load_test_ref_result
@@ -24,6 +25,7 @@ class TestAbacusCalculationScf(unittest.TestCase):
     def tearDown(self):
         os.chdir(self.original_cwd)
     
+    @pytest.mark.smoke
     def test_abacus_calculation_scf(self):
         """
         Test the abacus_calculation_scf function.

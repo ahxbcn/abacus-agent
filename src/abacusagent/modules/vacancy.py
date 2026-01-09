@@ -29,9 +29,9 @@ def abacus_cal_vacancy_formation_energy(
     Returns:
         A dictionary containing:
         - "vacancy_formation_energy": Calculated vacancy formation energy.
-        - "supercell_jobpath": Path to the supercell calculation job directory.
-        - "defect_supercell_jobpath": Path to the defect supercell calculation job directory.
-        - "vacancy_element_crys_jobpath": Path to the most stable crystal structure calculation job directory.
+        - "work_path": Path to the work path of vacancy formation energy calculation.
+        - "original_stru_job_relax_converge": If the relax calculation of original structure is converged.
+        - "defect_supercell_job_relax_converge": If the defect supercell relax calculation is converged.
     """
     return _abacus_cal_vacancy_formation_energy(
         abacus_inputs_dir,

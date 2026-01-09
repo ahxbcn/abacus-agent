@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 import unittest
 import tempfile
+import pytest
 import inspect
 from utils import initilize_test_env, load_test_ref_result, get_path_type
 from abacusagent.modules.relax import abacus_do_relax
@@ -23,7 +24,8 @@ class TestAbacusDoRelax(unittest.TestCase):
 
     def tearDown(self):
         os.chdir(self.original_cwd)
-
+    
+    @pytest.mark.smoke
     def test_abacus_do_relax_relax_cell(self):
         """
         Test the abacus_do_relax function with relax_cell is True.
@@ -46,10 +48,10 @@ class TestAbacusDoRelax(unittest.TestCase):
         new_relax_work_path = outputs['new_abacus_inputs_dir']
         self.assertIsInstance(relax_work_path, get_path_type())
         self.assertIsInstance(new_relax_work_path, get_path_type())
-        self.assertTrue(outputs['result']['normal_end'])
-        self.assertTrue(outputs['result']['relax_converge'])
-        self.assertTrue(outputs['result']['largest_gradient'][-1] <= force_thr_ev)
-        self.assertTrue(outputs['result']['largest_gradient_stress'][-1] <= stress_thr)
+        self.assertTrue(outputs['normal_end'])
+        self.assertTrue(outputs['relax_converge'])
+        self.assertTrue(outputs['largest_gradient'][-1] <= force_thr_ev)
+        self.assertTrue(outputs['largest_gradient_stress'][-1] <= stress_thr)
 
         if os.path.exists(relax_work_path):
             shutil.rmtree(relax_work_path)
@@ -80,9 +82,9 @@ class TestAbacusDoRelax(unittest.TestCase):
         new_relax_work_path = outputs['new_abacus_inputs_dir']
         self.assertIsInstance(relax_work_path, get_path_type())
         self.assertIsInstance(new_relax_work_path, get_path_type())
-        self.assertTrue(outputs['result']['normal_end'])
-        self.assertTrue(outputs['result']['relax_converge'])
-        self.assertTrue(outputs['result']['largest_gradient'][-1] <= force_thr_ev)
+        self.assertTrue(outputs['normal_end'])
+        self.assertTrue(outputs['relax_converge'])
+        self.assertTrue(outputs['largest_gradient'][-1] <= force_thr_ev)
         
         if os.path.exists(relax_work_path):
             shutil.rmtree(relax_work_path)

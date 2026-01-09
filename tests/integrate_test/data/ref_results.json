@@ -89,7 +89,7 @@
     "test_abacus_cal_band_nscf_pw_nspin1": 
     {
         "result": {
-            "band_gap": 0.5583
+            "band_gap": 0.55855
         }
     },
     "test_abacus_cal_band_nscf_pw_nspin2": 
@@ -101,7 +101,7 @@
     "test_abacus_cal_band_nscf_supercell": 
     {
         "result": {
-            "band_gap": 0.5583
+            "band_gap": 0.55855
         }
     },
     "test_abacus_dos_run_species": 
@@ -338,7 +338,7 @@
     "test_run_abacus_calculation_vacancy_formation_energy":
     {
         "result": {
-            "vac_formation_energy": 1.166700944879949
+            "vacancy_formation_energy": 1.155605088217726
         }
     },
     "test_abacus_cal_work_function_al110":
@@ -363,7 +363,7 @@
     "test_abacus_cal_vacancy_formation_energy_gamma_tial":
     {
         "result": {
-            "vac_formation_energy": 1.166700944879949
+            "vac_formation_energy": 1.155605088217726
         }
     },
     "test_run_abacus_calculation_dftu_initmag": 

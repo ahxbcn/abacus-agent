@@ -33,7 +33,7 @@ def abacus_cal_vacancy_formation_energy(
         A dictionary containing:
         - "vacancy_formation_energy": Calculated vacancy formation energy.
         - "work_path": Path to the work path of vacancy formation energy calculation.
-        - "supercell_job_relax_converge": If the supercell relax calculation is converged.
+        - "original_stru_job_relax_converge": If the relax calculation of original structure is converged.
         - "defect_supercell_job_relax_converge": If the defect supercell relax calculation is converged.
     """
     try:

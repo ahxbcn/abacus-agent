@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 import unittest
 import tempfile
+import pytest
 import inspect
 from utils import initilize_test_env, load_test_ref_result, get_path_type
 from abacusagent.modules.vibration import abacus_vibration_analysis
@@ -22,7 +23,8 @@ class TestAbacusVibrationAnalysis(unittest.TestCase):
     
     def tearDown(self):
         os.chdir(self.original_cwd)
-
+    
+    @pytest.mark.smoke
     def test_abacus_vibration_analysis_h2(self):
         """
         Test the abacus_vibration_analysis function for relaxed H2 molecule.

@@ -26,7 +26,8 @@ class TestAbacusPhononDispersion(unittest.TestCase):
 
     def tearDown(self):
         os.chdir(self.original_cwd)
-
+    
+    @pytest.mark.smoke
     def test_abacus_phonon_dispersion_nspin1(self):
         """
         Test the abacus_phonon_dispersion function for Si primitive cell to test nspin=1 case.
