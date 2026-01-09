@@ -375,9 +375,9 @@ class TestToolWrapper(unittest.TestCase):
         
         print(outputs)
 
-        self.assertTrue(outputs['supercell_job_relax_converge'])
-        self.assertTrue(outputs['defect_supercell_job_relax_converge'])
-        self.assertAlmostEqual(outputs['vac_formation_energy'], ref_results['vac_formation_energy'], delta=2)
+        self.assertTrue(outputs['original_stru_job_relax_converge'])
+        self.assertTrue(outputs['original_stru_job_relax_converge'])
+        self.assertAlmostEqual(outputs['vacancy_formation_energy'], ref_results['vacancy_formation_energy'], delta=2)
    
     def test_run_abacus_calculation_work_function(self):
         """

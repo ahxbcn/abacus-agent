@@ -896,7 +896,7 @@ def abacus_vacancy_formation_energy(
     Returns:
         A dictionary containing:
         - "vacancy_formation_energy": Calculated vacancy formation energy.
-        - "supercell_job_relax_converge": If the supercell relax calculation is converged.
+        - "original_stru_job_relax_converge": If the relax calculation of original structure is converged.
         - "defect_supercell_job_relax_converge": If the defect supercell relax calculation is converged.
     """
     dftu_param = transform_dftu_param(dftu_param) if dftu_param is not None else None
@@ -931,7 +931,7 @@ def abacus_vacancy_formation_energy(
                                                            vacancy_relax_precision)
     
     return {'vacancy_formation_energy': vacancy_outputs.get('vac_formation_energy', None),
-            'supercell_job_relax_converge': vacancy_outputs.get('supercell_job_relax_converge', None),
+            'original_stru_job_relax_converge': vacancy_outputs.get('original_stru_job_relax_converge', None),
             'defect_supercell_job_relax_converge': vacancy_outputs.get('defect_supercell_job_relax_converge', None),}
 
 @mcp.tool()
