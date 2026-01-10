@@ -3,16 +3,15 @@ from typing import Dict, Any, List, Literal
 
 from abacusagent.init_mcp import mcp
 from abacusagent.modules.submodules.dos import abacus_dos_run as _abacus_dos_run
+
 @mcp.tool()
 def abacus_dos_run(
     abacus_inputs_dir: Path,
     pdos_mode: Literal['species', 'species+shell', 'species+orbital'] = 'species+shell',
     dos_edelta_ev: float = 0.01,
     dos_sigma: float = 0.07,
-    dos_scale: float = 0.01,
-    dos_emin_ev: float = None,
-    dos_emax_ev: float = None,
-    dos_nche: int = None,
+    dos_emin_ev: float = -10.0,
+    dos_emax_ev: float = 10.0,
 ) -> Dict[str, Any]:
     """Run the DOS and PDOS calculation.
     
@@ -29,11 +28,8 @@ def abacus_dos_run(
             - "species+orbital": Orbital-resolved PDOS will be plotted. PDOS of orbitals in the same shell of a species will be plotted in a subplot.
         dos_edelta_ev: Step size in writing Density of States (DOS) in eV.
         dos_sigma: Width of the Gaussian factor when obtaining smeared Density of States (DOS) in eV. 
-        dos_scale: Defines the energy range of DOS output as (emax-emin)*(1+dos_scale), centered at (emax+emin)/2. 
-                   This parameter will be used when dos_emin_ev and dos_emax_ev are not set.
-        dos_emin_ev: Minimal range for Density of States (DOS) in eV.
-        dos_emax_ev: Maximal range for Density of States (DOS) in eV.
-        dos_nche: The order of Chebyshev expansions when using Stochastic Density Functional Theory (SDFT) to calculate DOS.
+        dos_emin_ev: Minimal range for Density of States (DOS) in eV. Default is -10.0.
+        dos_emax_ev: Maximal range for Density of States (DOS) in eV. Default is 10.0.
         
     Returns:
         Dict[str, Any]: A dictionary containing:
@@ -47,4 +43,4 @@ def abacus_dos_run(
             - nscf_work_path: Path to the work directory of NSCF calculation.
             - nscf_normal_end: If the SCF calculation ended normally.
     """
-    return _abacus_dos_run(abacus_inputs_dir, pdos_mode, dos_edelta_ev, dos_sigma, dos_scale, dos_emin_ev, dos_emax_ev, dos_nche)
+    return _abacus_dos_run(abacus_inputs_dir, pdos_mode, dos_edelta_ev, dos_sigma, dos_emin_ev, dos_emax_ev)
