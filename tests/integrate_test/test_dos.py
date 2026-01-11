@@ -46,9 +46,8 @@ class TestAbacusDosRun(unittest.TestCase):
                                  pdos_mode='species',
                                  dos_edelta_ev = 0.01,
                                  dos_sigma = 0.07,
-                                 dos_scale = 0.01,
-                                 dos_emin_ev = -20,
-                                 dos_emax_ev =  20)
+                                 dos_emin_ev=-20,
+                                 dos_emax_ev=20)
         
         dos_fig_path = outputs['dos_fig_path']
         pdos_fig_path = outputs['pdos_fig_path']
@@ -125,7 +124,6 @@ class TestAbacusDosRun(unittest.TestCase):
                                  pdos_mode='species',
                                  dos_edelta_ev = 0.01,
                                  dos_sigma = 0.07,
-                                 dos_scale = 0.01,
                                  dos_emin_ev = -20,
                                  dos_emax_ev =  20)
         
