@@ -175,8 +175,7 @@ class TestToolWrapper(unittest.TestCase):
                                  fixed_axes=None,
                                  pdos_mode='species+shell',
                                  dos_edelta_ev=0.01,
-                                 dos_sigma=0.07,
-                                 dos_scale=0.01)
+                                 dos_sigma=0.07)
         print(outputs)
 
         dos_fig_path = outputs['dos_fig_path']
