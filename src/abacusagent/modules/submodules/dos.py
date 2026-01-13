@@ -1,5 +1,6 @@
 import os
 import re
+import glob
 import numpy as np
 from numpy.typing import NDArray
 import matplotlib.pyplot as plt
@@ -176,12 +177,13 @@ def abacus_dos_run_nscf(abacus_inputs_dir: Path,
     work_path = generate_work_path()
     link_abacusjob(src=abacus_inputs_dir,
                    dst=work_path,
-                   copy_files=["INPUT", "KPT"],
+                   copy_files=["INPUT", "KPT"] + glob.glob(os.path.join(abacus_inputs_dir, "OUT.*")),
                    exclude=["*log", "*json"])
     
     input_param = ReadInput(os.path.join(work_path, "INPUT"))
     input_param["calculation"] = "nscf"
     input_param["init_chg"] = "file"
+    input_param["out_chg"] = -1
     if input_param.get("basis_type", "pw") == "lcao":
         input_param["out_dos"] = 2 # only for LCAO basis, and will output DOS and PDOS
     else:

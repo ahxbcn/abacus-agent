@@ -234,7 +234,7 @@ def link_abacusjob(src: str,
     exclude (Optional[List[str]]): List of files to exclude. If None, no files are excluded.
     copy_files (List[str]): List of files to copy from src to dst. Default is ["INPUT", "STRU", "KPT"].
     overwrite (bool): If True, existing files in the destination will be overwritten. Default is True.
-    exclude_directories (bool): If True, directories will be not copied. Default is False.
+    exclude_directories (bool): If True, directories will be excluded from linking or copying. Default is False.
     
     Notes: 
         - If somes files are included in both include and exclude, the file will be excluded.
@@ -257,13 +257,13 @@ def link_abacusjob(src: str,
         
     if exclude is None:
         exclude = []
-    exclude_files = []
+    exclude_paths = []
     for pattern in exclude:
-        exclude_files.extend(src.glob(pattern))
+        exclude_paths.extend(src.glob(pattern))
     
     os.makedirs(dst, exist_ok=True)
     # Remove excluded files from included files
-    include_paths = [f for f in include_paths if f not in exclude_files]
+    include_paths = [f for f in include_paths if f not in exclude_paths]
     if not include_paths:
         traceback.print_stack()
         print("No files to link after applying include and exclude patterns.\n",
@@ -274,29 +274,22 @@ def link_abacusjob(src: str,
         for path in include_paths:
             if path == dst:
                 continue
-            if exclude_directories and os.path.isdir(path):
+            if exclude_directories and path.is_dir():
                 continue
-            
-            if os.path.isfile(path):
-                dst_file = dst / path.name
-                if dst_file.exists():
-                    if overwrite:
-                        dst_file.unlink()
-                    else:
-                        continue
-                if str(path.name) in copy_files:
-                    os.system(f"cp {path} {dst_file}")
-                else:
-                    os.symlink(path, dst_file)
-            else:
-                dst_dir = dst / path.name
-                if dst_dir.exists():
-                    if overwrite:
-                        shutil.rmtree(dst_dir)
-                    shutil.copytree(path, dst_dir)
-                else:
-                    shutil.copytree(path, dst_dir) 
 
+            dst_path = dst / path.name
+            if dst_path.exists():
+                if overwrite:
+                    dst_path.unlink()
+                else:
+                    continue
+            if str(path.name) in copy_files or str(path) in copy_files:
+                if os.path.isfile(path):
+                    shutil.copy(path, dst_path)
+                else:
+                    shutil.copytree(path, dst_path)
+            else:
+                os.symlink(path, dst_path)
             
 def generate_work_path(create: bool = True) -> str:
     """
