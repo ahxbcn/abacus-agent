@@ -8,7 +8,7 @@ from abacustest.lib_collectdata.collectdata import RESULT
 from abacustest.lib_model.comm import check_abacus_inputs
 
 from pathlib import Path
-from typing import Dict, Any, List, Literal, Optional
+from typing import Dict, Any, List, Literal, Optional, Tuple
 
 from abacusagent.modules.util.comm import generate_work_path, link_abacusjob, run_abacus, has_chgfile, collect_metrics
 from abacusagent.modules.util.chemical_elements import MAX_ANGULAR_MOMENTUM_OF_ELEMENTS
@@ -44,7 +44,8 @@ orbital_rep_map = {
 
 def abacus_dos_run(
     abacus_inputs_dir: Path,
-    pdos_mode: Literal['species', 'species+shell', 'species+orbital'] = 'species+shell',
+    pdos_mode: Literal['atoms', 'species', 'species+shell', 'species+orbital'] = 'species+shell',
+    pdos_atom_indices: Optional[List[int]] = None,
     dos_edelta_ev: float = 0.01,
     dos_sigma: float = 0.07,
     dos_emin_ev: float = -10.0,
@@ -60,9 +61,11 @@ def abacus_dos_run(
     Args:
         abacus_inputs_dir: Path to the ABACUS input files, which contains the INPUT, STRU, KPT, and pseudopotential or orbital files.
         pdos_mode: Mode of plotted PDOS file.
+            - "atoms": PDOS of a list of atoms will be plotted.
             - "species": Total PDOS of any species will be plotted in a picture.
             - "species+shell": PDOS for any shell (s, p, d, f, g,...) of any species will be plotted. PDOS of a shell of a species willbe plotted in a subplot.
             - "species+orbital": Orbital-resolved PDOS will be plotted. PDOS of orbitals in the same shell of a species will be plotted in a subplot.
+        pdos_atom_indices: A list of atom indices, only used if pdos_mode is "atoms".
         dos_edelta_ev: Step size in writing Density of States (DOS) in eV.
         dos_sigma: Width of the Gaussian factor when obtaining smeared Density of States (DOS) in eV. 
         dos_emin_ev: Minimal range for Density of States (DOS) in eV. Default is -10.0.
@@ -101,6 +104,7 @@ def abacus_dos_run(
                                   metrics_nscf["nscf_work_path"],
                                   nspin,
                                   pdos_mode,
+                                  pdos_atom_indices,
                                   dos_emin_ev,
                                   dos_emax_ev)
 
@@ -115,6 +119,8 @@ def abacus_dos_run(
 
         return return_dict
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return {"message": f"Calculating DOS and PDOS failed: {e}"}
 
 def abacus_dos_run_scf(abacus_inputs_dir: Path,
@@ -320,6 +326,71 @@ def write_pdos_data_species_shell(energy: NDArray[np.float64],
                     line_spin_down += f"{pdos_data[i*2+1]:20.8f}"
                 f.write(line + line_spin_up + line_spin_down + "\n")
 
+def write_pdos_data_atom(energy: NDArray[np.float64],
+                         atom_pdos: List[Dict[str, NDArray[np.float64]]],
+                         atom_index: int,
+                         label_map: Dict[Tuple[int, str, int, int, int], str] = {},
+                         nspin: Literal[1, 2] = 1,
+                         output_dir: str = './') -> None:
+    # Initialize dict of pdos data for each orbital
+    orbital_label = {}
+    for (_, species, l, m, z), full_label in label_map.items():
+        if str(l) not in orbital_label.keys():
+            orbital_label[str(l)] = {}
+        if str(m) not in orbital_label[str(l)].keys():
+            orbital_name = full_label.split('(')[1].split(')')[0]
+            if orbital_name in orbital_rep_map.keys():
+                orbital_label[str(l)][str(m)] = orbital_rep_map[orbital_name]
+            else:
+                orbital_label[str(l)][str(m)] = orbital_name
+        else:
+            pass
+    
+    # Write PDOS data of an atom to file
+    atom_pdos_lms = {}
+    orbital_names = []
+    for orbital in atom_pdos:
+        if orbital['l'] <= angular_momentum_map.index(MAX_ANGULAR_MOMENTUM_OF_ELEMENTS[orbital['species']]):
+            if orbital['l'] not in atom_pdos_lms.keys():
+                atom_pdos_lms[orbital['l']] = {}
+                atom_pdos_lms[orbital['l']][orbital['m']] = orbital['data']
+                orbital_names.append(orbital_label[str(orbital['l'])][str(orbital['m'])])
+            else:
+                if orbital['m'] not in atom_pdos_lms[orbital['l']].keys():
+                    atom_pdos_lms[orbital['l']][orbital['m']] = orbital['data']
+                    orbital_names.append(orbital_label[str(orbital['l'])][str(orbital['m'])])
+                else:
+                    atom_pdos_lms[orbital['l']][orbital['m']] += orbital['data']
+
+    atom_species = atom_pdos[0]['species']
+    with open(os.path.join(output_dir, f"PDOS_{atom_species}{atom_index}.dat"), "w") as f:
+        if nspin == 1:
+            header_line = '   Energy (eV)'
+            for orbital_name in orbital_names:
+                header_line += f'{orbital_name.replace("$", ""):>20s}'
+            f.write(header_line + "\n")
+            for i in range(len(energy)):
+                line = f"{energy[i]:14.6f}"
+                for l, pdos_data in atom_pdos_lms.items():
+                    for m, pdos_data_m in pdos_data.items():
+                        line += f"{pdos_data_m[i]:20.8f}"
+                f.write(line + "\n")
+        elif nspin == 2:
+            header_spin_up, header_spin_down = '', ''
+            for orbital_name in orbital_names:
+                header_spin_up += f'{orbital_name.replace("$", ""):>17s}_up'
+                header_spin_down += f'{orbital_name.replace("$", ""):>17}_dn'
+            f.write(f"   Energy (eV){header_spin_up}{header_spin_down}\n")
+            for i in range(len(energy)):
+                line = f"{energy[i]:14.6f}"
+                line_spin_up, line_spin_down = '', ''
+                for l, pdos_data in atom_pdos_lms.items():
+                    for m, pdos_data_m in pdos_data.items():
+                        # even index for spin up, odd index for spin down
+                        line_spin_up += f"{pdos_data_m[i*2]:20.8f}"
+                        line_spin_down += f"{pdos_data_m[i*2+1]:20.8f}"
+                    f.write(line + line_spin_up + line_spin_down + "\n")
+
 def write_pdos_data_species_orbital(energy: NDArray[np.float64],
                                     species_pdos: Dict[str, NDArray[np.float64]],
                                     species: str,
@@ -359,7 +430,7 @@ def write_pdos_data_species_orbital(energy: NDArray[np.float64],
                         line_spin_down += f"{species_orbital_pdos[i*2+1]:20.8f}"
                 f.write(line + line_spin_up + line_spin_down + "\n")
 
-def plot_pdos(energy_values, orbitals, fermi_level, label_map, output_dir, nspin, mode, dos_emin_ev, dos_emax_ev, dpi=300):
+def plot_pdos(energy_values, orbitals, fermi_level, label_map, output_dir, nspin, mode, pdos_atom_indices, dos_emin_ev, dos_emax_ev, dpi=300):
     """Plot PDOS data separated by atom/species with custom labels."""
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
@@ -381,6 +452,8 @@ def plot_pdos(energy_values, orbitals, fermi_level, label_map, output_dir, nspin
         pdos_pic_file = plot_pdos_species_shell(shifted_energy, orbitals, output_dir, nspin, dos_emin_ev, dos_emax_ev, dpi)
     elif mode == "species+orbital":
         pdos_pic_file = plot_pdos_species_orbital(shifted_energy, orbitals, output_dir, nspin, label_map, dos_emin_ev, dos_emax_ev, dpi)
+    elif mode == "atoms":
+        pdos_pic_file = plot_pdos_atoms(shifted_energy, orbitals, output_dir, nspin, label_map, pdos_atom_indices, dos_emin_ev, dos_emax_ev, dpi)
     else:
         raise ValueError(f"Not allowed mode {mode}")
     
@@ -553,6 +626,61 @@ def plot_pdos_species_orbital(shifted_energy, orbitals, output_dir, nspin, label
 
     return Path(pdos_pic_file).absolute()
 
+def plot_pdos_atoms(shifted_energy, orbitals, output_dir, nspin, label_map, pdos_atom_indices, dos_emin_ev, dos_emax_ev, dpi):
+    # Plot PDOS for selected atoms
+    atom_pdoses = {}
+    for orbital in orbitals:
+        atom_index = orbital['atom_index']
+        if atom_index in pdos_atom_indices:
+            if atom_index not in atom_pdoses.keys():
+                atom_pdoses[atom_index] = [orbital]
+            else:
+                atom_pdoses[atom_index].append(orbital)
+    
+    fig, axes = plt.subplots(nrows=len(pdos_atom_indices), ncols=1, figsize=(8, 4*len(pdos_atom_indices)))
+    if len(pdos_atom_indices) == 1:
+        axes = [axes]
+    
+    for atom_index, atom_pdos in atom_pdoses.items():
+        # Write PDOS data of all legal orbitals for each selected atom to file
+        write_pdos_data_atom(shifted_energy, atom_pdos, atom_index, label_map, nspin, output_dir)
+        # Plot PDOS of all legal shells for each selected atom
+        atom_pdos_ls = {}
+        for orbital in atom_pdos:
+            orbital_l_name = angular_momentum_map[orbital['l']]
+            if orbital_l_name not in atom_pdos_ls.keys():
+                atom_pdos_ls[orbital_l_name] = orbital['data']
+            else:
+                atom_pdos_ls[orbital_l_name] += orbital['data']
+        
+        species = atom_pdos[0]['species']
+        ax = axes[pdos_atom_indices.index(atom_index)]
+        for l, pdos_data in atom_pdos_ls.items():
+            if angular_momentum_map.index(l) <= angular_momentum_map.index(MAX_ANGULAR_MOMENTUM_OF_ELEMENTS[species]):
+                if nspin == 1:
+                    ax.plot(shifted_energy, pdos_data, label=f'{species}{atom_index}-{l}', linewidth=1.0)
+                elif nspin == 2:
+                    ax.plot(shifted_energy, pdos_data[::2], color=color_map[l], label=f'{species}{atom_index}-{l} ' + r'$\uparrow$', linestyle='-', linewidth=1.0)
+                    ax.plot(shifted_energy, -pdos_data[1::2], color=color_map[l], label=f'{species}{atom_index}-{l} ' + r'$\downarrow$', linestyle='--', linewidth=1.0)
+        
+        ax.axvline(x=0, color='black', linestyle=':', linewidth=1.0)
+        ax.set_title(f'PDOS for {species}{atom_index}', fontsize=12, pad=10)
+        ax.set_ylabel(r"States ($eV^{-1}$)", fontsize=10)
+        ax.set_xlim(dos_emin_ev, dos_emax_ev)
+        if nspin == 1:
+            ax.set_ylim(bottom=0)
+        ax.legend(fontsize=8, ncol=nspin)
+        ax.grid(alpha=0.3)
+    
+    axes[-1].set_xlabel('Energy (eV)', fontsize=10)
+
+    plt.tight_layout()
+    pdos_pic_file = os.path.join(output_dir, 'PDOS.png')
+    plt.savefig(pdos_pic_file, dpi=dpi, bbox_inches='tight')
+    plt.close()
+
+    return Path(pdos_pic_file).absolute()
+
 def write_dos_data(energy: NDArray[np.float64],
                    dos: NDArray[np.float64],
                    dos_dn: Optional[NDArray[np.float64]] = None,
@@ -618,6 +746,7 @@ def plot_dos_pdos(scf_job_path: Path,
                   output_dir: Path,
                   nspin: Literal[1, 2] = 1,
                   mode: Literal['species', 'species+shell', 'species+orbital'] = 'species+shell',
+                  pdos_atom_indices: Optional[List[int]] = None,
                   dos_emin_ev: float = -10.0,
                   dos_emax_ev: float = 10.0,
                   dpi=300) -> List[str]:
@@ -669,7 +798,7 @@ def plot_dos_pdos(scf_job_path: Path,
         if basis_type != 'pw':
             label_map = parse_basref_file(basref_file)
             energy_values, orbitals = parse_pdos_file(pdos_file)
-            pdos_plot_file = plot_pdos(energy_values, orbitals, fermi_level, label_map, output_dir, nspin, mode, dos_emin_ev, dos_emax_ev, dpi)
+            pdos_plot_file = plot_pdos(energy_values, orbitals, fermi_level, label_map, output_dir, nspin, mode, pdos_atom_indices, dos_emin_ev, dos_emax_ev, dpi)
             
             # Combine file paths into a single list
             all_plot_files.append(pdos_plot_file)
