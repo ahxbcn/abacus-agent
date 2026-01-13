@@ -389,7 +389,7 @@ def write_pdos_data_atom(energy: NDArray[np.float64],
                         # even index for spin up, odd index for spin down
                         line_spin_up += f"{pdos_data_m[i*2]:20.8f}"
                         line_spin_down += f"{pdos_data_m[i*2+1]:20.8f}"
-                    f.write(line + line_spin_up + line_spin_down + "\n")
+                f.write(line + line_spin_up + line_spin_down + "\n")
 
 def write_pdos_data_species_orbital(energy: NDArray[np.float64],
                                     species_pdos: Dict[str, NDArray[np.float64]],
