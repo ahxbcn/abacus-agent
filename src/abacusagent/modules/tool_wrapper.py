@@ -445,6 +445,8 @@ def abacus_dos_run(
         Dict[str, Any]: A dictionary containing:
             - dos_fig_path: Path to the plotted DOS.
             - pdos_fig_path: Path to the plotted PDOS. Only for LCAO basis.
+            - dos_data_path: Path to the data used in plotting DOS.
+            - pdos_data_paths: Path to the data used in plotting PDOS. Only for LCAO basis.
             - scf_normal_end: If the SCF calculation ended normally.
             - scf_converge: If the SCF calculation converged.
             - scf_energy: The calculated energy of SCF calculation.
@@ -480,6 +482,8 @@ def abacus_dos_run(
     
     return {'dos_fig_path': dos_results.get('dos_fig_path', None),
             'pdos_fig_path': dos_results.get('pdos_fig_path', None),
+            'dos_data_path': dos_results.get('dos_data_path', None),
+            'pdos_data_paths': dos_results.get('pdos_data_paths', None),
             'scf_normal_end': dos_results.get('scf_normal_end', None),
             'scf_converge': dos_results.get('scf_converge', None),
             'scf_energy': dos_results.get('scf_energy', None),

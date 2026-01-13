@@ -34,5 +34,17 @@ def abacus_dos_run(
         dos_emin_ev: Minimal range for Density of States (DOS) in eV. Default is -10.0.
         dos_emax_ev: Maximal range for Density of States (DOS) in eV. Default is 10.0.
 
+    Returns:
+        Dict[str, Any]: A dictionary containing:
+            - dos_fig_path: Path to the plotted DOS.
+            - pdos_fig_path: Path to the plotted PDOS. Only for LCAO basis.
+            - dos_data_path: Path to the data used in plotting DOS.
+            - pdos_data_paths: Path to the data used in plotting PDOS. Only for LCAO basis.
+            - scf_work_path: Path to the work directory of SCF calculation.
+            - scf_normal_end: If the SCF calculation ended normally.
+            - scf_steps: Number of steps of SCF iteration.
+            - scf_converge: If the SCF calculation converged.
+            - scf_energy: The calculated energy of SCF calculation.
+            - nscf_work_path: Path to the work directory of NSCF calculation
     """
     return _abacus_dos_run(abacus_inputs_dir, pdos_mode, pdos_atom_indices, dos_edelta_ev, dos_sigma, dos_emin_ev, dos_emax_ev)

@@ -75,6 +75,8 @@ def abacus_dos_run(
         Dict[str, Any]: A dictionary containing:
             - dos_fig_path: Path to the plotted DOS.
             - pdos_fig_path: Path to the plotted PDOS. Only for LCAO basis.
+            - dos_data_path: Path to the data used in plotting DOS.
+            - pdos_data_paths: Path to the data used in plotting PDOS. Only for LCAO basis.
             - scf_work_path: Path to the work directory of SCF calculation.
             - scf_normal_end: If the SCF calculation ended normally.
             - scf_steps: Number of steps of SCF iteration.
@@ -99,18 +101,20 @@ def abacus_dos_run(
                                            dos_edelta_ev=dos_edelta_ev,
                                            dos_sigma=dos_sigma)
 
-        fig_paths = plot_dos_pdos(metrics_scf["scf_work_path"],
-                                  metrics_nscf["nscf_work_path"],
-                                  metrics_nscf["nscf_work_path"],
-                                  nspin,
-                                  pdos_mode,
-                                  pdos_atom_indices,
-                                  dos_emin_ev,
-                                  dos_emax_ev)
-
+        fig_paths, dos_pdos_data_paths = plot_dos_pdos(metrics_scf["scf_work_path"],
+                                                       metrics_nscf["nscf_work_path"],
+                                                       metrics_nscf["nscf_work_path"],
+                                                       nspin,
+                                                       pdos_mode,
+                                                       pdos_atom_indices,
+                                                       dos_emin_ev,
+                                                       dos_emax_ev)
+        
         return_dict = {"dos_fig_path": fig_paths[0]}
+        return_dict['dos_data_path'] = dos_pdos_data_paths[0]
         try:
             return_dict['pdos_fig_path'] = fig_paths[1]
+            return_dict['pdos_data_paths'] = dos_pdos_data_paths[1:]
         except:
             pass # Do nothing if PDOS file is not plotted 
 
@@ -267,7 +271,8 @@ def write_pdos_data_species(energy: NDArray[np.float64],
                             nspin: Literal[1, 2] = 1,
                             output_dir: str = './') -> None:
     """Write PDOS of species to file"""
-    with open(os.path.join(output_dir, "PDOS_species.dat"), 'w') as f:
+    pdos_data_file = Path(os.path.join(output_dir, "PDOS_species.dat")).absolute()
+    with open(pdos_data_file, 'w') as f:
         if nspin == 1:
             header_line = '   Energy (eV)'
             for species_name in species_pdos_data.keys():
@@ -293,6 +298,8 @@ def write_pdos_data_species(energy: NDArray[np.float64],
                     line_spin_down += f"{pdos_data[i*2+1]:20.8f}"
                 line += line_spin_up + line_spin_down
                 f.write(line + "\n")
+    
+    return pdos_data_file.absolute()
 
 def write_pdos_data_species_shell(energy: NDArray[np.float64],
                                   species_pdos_data_dict: Dict[str, NDArray[np.float64]],
@@ -300,6 +307,7 @@ def write_pdos_data_species_shell(energy: NDArray[np.float64],
                                   nspin: Literal[1, 2] = 1,
                                   output_dir: str = './') -> None:
     # Write PDOS of different shells (s, p, d...) for a species to file
+    pdos_data_file = Path(os.path.join(output_dir, f"PDOS_{species}.dat")).absolute()
     with open(os.path.join(output_dir, f"PDOS_{species}.dat"), "w") as f:
         if nspin == 1:
             header_line = '   Energy (eV)'
@@ -325,6 +333,8 @@ def write_pdos_data_species_shell(energy: NDArray[np.float64],
                     line_spin_up += f"{pdos_data[i*2]:20.8f}"
                     line_spin_down += f"{pdos_data[i*2+1]:20.8f}"
                 f.write(line + line_spin_up + line_spin_down + "\n")
+    
+    return Path(pdos_data_file).absolute()
 
 def write_pdos_data_atom(energy: NDArray[np.float64],
                          atom_pdos: List[Dict[str, NDArray[np.float64]]],
@@ -363,7 +373,8 @@ def write_pdos_data_atom(energy: NDArray[np.float64],
                     atom_pdos_lms[orbital['l']][orbital['m']] += orbital['data']
 
     atom_species = atom_pdos[0]['species']
-    with open(os.path.join(output_dir, f"PDOS_{atom_species}{atom_index}.dat"), "w") as f:
+    pdos_data_file = Path(os.path.join(output_dir, f"PDOS_{atom_species}{atom_index}.dat"))
+    with open(pdos_data_file, "w") as f:
         if nspin == 1:
             header_line = '   Energy (eV)'
             for orbital_name in orbital_names:
@@ -390,6 +401,8 @@ def write_pdos_data_atom(energy: NDArray[np.float64],
                         line_spin_up += f"{pdos_data_m[i*2]:20.8f}"
                         line_spin_down += f"{pdos_data_m[i*2+1]:20.8f}"
                 f.write(line + line_spin_up + line_spin_down + "\n")
+    
+    return pdos_data_file
 
 def write_pdos_data_species_orbital(energy: NDArray[np.float64],
                                     species_pdos: Dict[str, NDArray[np.float64]],
@@ -398,7 +411,8 @@ def write_pdos_data_species_orbital(energy: NDArray[np.float64],
                                     nspin: Literal[1, 2] = 1,
                                     output_dir: str = "./") -> None:
     # Write PDOS data of different orbitals of a species to file
-    with open(os.path.join(output_dir, f"PDOS_{species}.dat"), "w") as f:
+    pdos_data_file = Path(os.path.join(output_dir, f"PDOS_{species}.dat"))
+    with open(pdos_data_file, "w") as f:
         if nspin == 1:
             header_line = f"   Energy (eV)"
             for l, species_shell_pdos in species_pdos.items():
@@ -430,6 +444,8 @@ def write_pdos_data_species_orbital(energy: NDArray[np.float64],
                         line_spin_down += f"{species_orbital_pdos[i*2+1]:20.8f}"
                 f.write(line + line_spin_up + line_spin_down + "\n")
 
+    return pdos_data_file
+
 def plot_pdos(energy_values, orbitals, fermi_level, label_map, output_dir, nspin, mode, pdos_atom_indices, dos_emin_ev, dos_emax_ev, dpi=300):
     """Plot PDOS data separated by atom/species with custom labels."""
     # Create output directory if it doesn't exist
@@ -447,17 +463,17 @@ def plot_pdos(energy_values, orbitals, fermi_level, label_map, output_dir, nspin
         atom_species_groups[key].append(orbital)
     
     if mode == "species":
-        pdos_pic_file = plot_pdos_species(shifted_energy, orbitals, output_dir, nspin, dos_emin_ev, dos_emax_ev, dpi)
+        pdos_pic_file, pdos_data_files = plot_pdos_species(shifted_energy, orbitals, output_dir, nspin, dos_emin_ev, dos_emax_ev, dpi)
     elif mode == "species+shell":
-        pdos_pic_file = plot_pdos_species_shell(shifted_energy, orbitals, output_dir, nspin, dos_emin_ev, dos_emax_ev, dpi)
+        pdos_pic_file, pdos_data_files = plot_pdos_species_shell(shifted_energy, orbitals, output_dir, nspin, dos_emin_ev, dos_emax_ev, dpi)
     elif mode == "species+orbital":
-        pdos_pic_file = plot_pdos_species_orbital(shifted_energy, orbitals, output_dir, nspin, label_map, dos_emin_ev, dos_emax_ev, dpi)
+        pdos_pic_file, pdos_data_files = plot_pdos_species_orbital(shifted_energy, orbitals, output_dir, nspin, label_map, dos_emin_ev, dos_emax_ev, dpi)
     elif mode == "atoms":
-        pdos_pic_file = plot_pdos_atoms(shifted_energy, orbitals, output_dir, nspin, label_map, pdos_atom_indices, dos_emin_ev, dos_emax_ev, dpi)
+        pdos_pic_file, pdos_data_files = plot_pdos_atoms(shifted_energy, orbitals, output_dir, nspin, label_map, pdos_atom_indices, dos_emin_ev, dos_emax_ev, dpi)
     else:
         raise ValueError(f"Not allowed mode {mode}")
     
-    return pdos_pic_file
+    return pdos_pic_file, pdos_data_files
 
 def plot_pdos_species(shifted_energy, orbitals, output_dir, nspin, dos_emin_ev, dos_emax_ev, dpi):
     species = {}
@@ -468,7 +484,7 @@ def plot_pdos_species(shifted_energy, orbitals, output_dir, nspin, dos_emin_ev, 
         else:
             species[species_one] += orbital['data']
     
-    write_pdos_data_species(shifted_energy, species, nspin, output_dir)
+    pdos_data_files = [write_pdos_data_species(shifted_energy, species, nspin, output_dir)]
     # Plot PDOS of different species
     plt.plot(figsize=(10, 6))
     for species_name, pdos_data in species.items():
@@ -492,7 +508,7 @@ def plot_pdos_species(shifted_energy, orbitals, output_dir, nspin, dos_emin_ev, 
     plt.savefig(pdos_pic_file, dpi=dpi)
     plt.close()
 
-    return Path(pdos_pic_file).absolute()
+    return Path(pdos_pic_file).absolute(), pdos_data_files
 
 def plot_pdos_species_shell(shifted_energy, orbitals, output_dir, nspin, dos_emin_ev, dos_emax_ev, dpi):
     species_shells = {}
@@ -514,10 +530,12 @@ def plot_pdos_species_shell(shifted_energy, orbitals, output_dir, nspin, dos_emi
     fig, axes = plt.subplots(nrows=num_species, ncols=1, figsize=(8, 4*num_species))
     if num_species == 1:
         axes = [axes]
-
+    
+    pdos_data_files = []
     for species_idx, (species, pdos_data_dict) in enumerate(species_shells.items()):
         # Write PDOS data to the selected species to file
-        write_pdos_data_species_shell(shifted_energy, pdos_data_dict, species, nspin, output_dir)
+        pdos_data_file = write_pdos_data_species_shell(shifted_energy, pdos_data_dict, species, nspin, output_dir)
+        pdos_data_files.append(pdos_data_file)
         # Plot PDOS of different shells for a species
         ax = axes[species_idx]
         
@@ -544,7 +562,7 @@ def plot_pdos_species_shell(shifted_energy, orbitals, output_dir, nspin, dos_emi
     plt.savefig(pdos_pic_file, dpi=dpi, bbox_inches='tight')
     plt.close()
 
-    return Path(pdos_pic_file).absolute()
+    return Path(pdos_pic_file).absolute(), pdos_data_files
 
 def plot_pdos_species_orbital(shifted_energy, orbitals, output_dir, nspin, label_map, dos_emin_ev, dos_emax_ev, dpi):
 
@@ -593,9 +611,11 @@ def plot_pdos_species_orbital(shifted_energy, orbitals, output_dir, nspin, label
     fig, axes = plt.subplots(nrows=total_subplots, ncols=1, figsize=(8, 4*total_subplots))
 
     subplot_count = 0
+    pdos_data_files = []
     for species, species_pdos in species_orbitals.items():
         # Write PDOS data of orbitals of the selected species to file
-        write_pdos_data_species_orbital(shifted_energy, species_pdos, species, orbital_label, nspin, output_dir)
+        pdos_data_file = write_pdos_data_species_orbital(shifted_energy, species_pdos, species, orbital_label, nspin, output_dir)
+        pdos_data_files.append(pdos_data_file)
         for angular_momentum, species_shell_pdos in species_pdos.items():
             for m, species_orbital_pdos in species_shell_pdos.items():
                 ax = axes[subplot_count]
@@ -624,7 +644,7 @@ def plot_pdos_species_orbital(shifted_energy, orbitals, output_dir, nspin, label
     plt.savefig(pdos_pic_file, dpi=dpi, bbox_inches='tight')
     plt.close()
 
-    return Path(pdos_pic_file).absolute()
+    return Path(pdos_pic_file).absolute(), pdos_data_files
 
 def plot_pdos_atoms(shifted_energy, orbitals, output_dir, nspin, label_map, pdos_atom_indices, dos_emin_ev, dos_emax_ev, dpi):
     # Plot PDOS for selected atoms
@@ -641,9 +661,11 @@ def plot_pdos_atoms(shifted_energy, orbitals, output_dir, nspin, label_map, pdos
     if len(pdos_atom_indices) == 1:
         axes = [axes]
     
+    pdos_data_files = []
     for atom_index, atom_pdos in atom_pdoses.items():
         # Write PDOS data of all legal orbitals for each selected atom to file
-        write_pdos_data_atom(shifted_energy, atom_pdos, atom_index, label_map, nspin, output_dir)
+        pdos_data_file = write_pdos_data_atom(shifted_energy, atom_pdos, atom_index, label_map, nspin, output_dir)
+        pdos_data_files.append(pdos_data_file)
         # Plot PDOS of all legal shells for each selected atom
         atom_pdos_ls = {}
         for orbital in atom_pdos:
@@ -679,7 +701,7 @@ def plot_pdos_atoms(shifted_energy, orbitals, output_dir, nspin, label_map, pdos
     plt.savefig(pdos_pic_file, dpi=dpi, bbox_inches='tight')
     plt.close()
 
-    return Path(pdos_pic_file).absolute()
+    return Path(pdos_pic_file).absolute(), pdos_data_files
 
 def write_dos_data(energy: NDArray[np.float64],
                    dos: NDArray[np.float64],
@@ -697,6 +719,8 @@ def write_dos_data(energy: NDArray[np.float64],
             for i in range(len(energy)):
                 f.write(f"{energy[i]:16.6f}{dos[i]:16.6f}{dos_dn[i]:16.6f}\n")
     f.close()
+
+    return Path(out_filename).absolute()
 
 def plot_dos(file_path: List[Path],
              fermi_level: float, 
@@ -717,9 +741,9 @@ def plot_dos(file_path: List[Path],
     # Write shifted dos data to file
     dos_output_file = os.path.join(os.path.dirname(dos_plot_file), "DOS_shifted.dat")
     if nspin == 1:
-        write_dos_data(energy, dos, nspin=nspin, out_filename=dos_output_file)
+        dos_data_file = write_dos_data(energy, dos, nspin=nspin, out_filename=dos_output_file)
     elif nspin == 2:
-        write_dos_data(energy, dos, dos_dn, nspin=nspin, out_filename=dos_output_file)
+        dos_data_file = write_dos_data(energy, dos, dos_dn, nspin=nspin, out_filename=dos_output_file)
     # Create plot
     plt.figure(figsize=(8, 6))
     if nspin == 1:
@@ -739,7 +763,7 @@ def plot_dos(file_path: List[Path],
     plt.savefig(dos_plot_file, dpi=dpi, bbox_inches='tight')
     plt.close()
     
-    return Path(dos_plot_file).absolute()
+    return Path(dos_plot_file).absolute(), Path(dos_data_file).absolute()
 
 def plot_dos_pdos(scf_job_path: Path,
                   nscf_job_path: Path, 
@@ -788,8 +812,9 @@ def plot_dos_pdos(scf_job_path: Path,
     fermi_level = collect_metrics(scf_job_path, ['efermi'])['efermi']
     
     # Plot DOS and get file path
-    dos_plot_file = plot_dos(dos_file, fermi_level, dos_output, nspin, dos_emin_ev, dos_emax_ev, dpi)
+    dos_plot_file, dos_data_file = plot_dos(dos_file, fermi_level, dos_output, nspin, dos_emin_ev, dos_emax_ev, dpi)
     all_plot_files = [dos_plot_file]
+    dos_pdos_data_files = [dos_data_file]
     
     print("DOS file plotted")
 
@@ -798,10 +823,11 @@ def plot_dos_pdos(scf_job_path: Path,
         if basis_type != 'pw':
             label_map = parse_basref_file(basref_file)
             energy_values, orbitals = parse_pdos_file(pdos_file)
-            pdos_plot_file = plot_pdos(energy_values, orbitals, fermi_level, label_map, output_dir, nspin, mode, pdos_atom_indices, dos_emin_ev, dos_emax_ev, dpi)
+            pdos_plot_file, pdos_data_files = plot_pdos(energy_values, orbitals, fermi_level, label_map, output_dir, nspin, mode, pdos_atom_indices, dos_emin_ev, dos_emax_ev, dpi)
             
             # Combine file paths into a single list
             all_plot_files.append(pdos_plot_file)
+            dos_pdos_data_files += pdos_data_files
         else:
             print(f"Warning: PDOS calculation not supported for PW basis type, skipping PDOS plotting")
     elif os.path.exists(pdos_file) and not os.path.exists(basref_file):
@@ -815,4 +841,4 @@ def plot_dos_pdos(scf_job_path: Path,
     for file in all_plot_files:
         print(f"- {file}")
         
-    return all_plot_files
+    return all_plot_files, dos_pdos_data_files
