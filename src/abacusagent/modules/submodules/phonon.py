@@ -25,6 +25,16 @@ def get_ph_atoms(stru: AbacusStru):
         magnetic_moments=stru.get_atommag()
     )
 
+def get_supercell_size(stru: AbacusStru, min_supercell_length: float = 10.0):
+    """
+    Calculate the supercell size for phonon calculation
+    """
+    a, b, c = stru.to_ase().get_cell().lengths()
+    supercell = [int(np.ceil(min_supercell_length / a)),
+                 int(np.ceil(min_supercell_length / b)),
+                 int(np.ceil(min_supercell_length / c))]
+    return supercell
+
 def initialize_phonopy_calc(stru: AbacusStru, supercell: Optional[List[int]] = None, min_supercell_length: float = 10.0):
     """
     Initialize phonopy instance
@@ -33,10 +43,7 @@ def initialize_phonopy_calc(stru: AbacusStru, supercell: Optional[List[int]] = N
 
     # Determine supercell if not provided
     if supercell is None:
-        a, b, c = stru.to_ase().get_cell().lengths()
-        supercell = [int(np.ceil(min_supercell_length / a)),
-                     int(np.ceil(min_supercell_length / b)),
-                     int(np.ceil(min_supercell_length / c))]
+        supercell = get_supercell_size(stru, min_supercell_length)
 
     phonon = Phonopy(ph_atoms, supercell_matrix=supercell)
 
@@ -68,6 +75,8 @@ def prepare_phonon_dispersion(work_path: Path,
     print("Generated {} supercell structures with displacements.".format(len(phonon.supercells_with_displacements)) +
           " Doing SCF calculations for each supercell structure...")
     
+    if supercell is None:
+        supercell = get_supercell_size(stru, min_supercell_length)
     stru_supercell = stru.supercell(supercell)
     structure_index = 1
     displaced_job_dirs = []
@@ -249,4 +258,6 @@ def abacus_phonon_dispersion(
             "max_frequency_K": float(np.max(freqs) * THZ_TO_K),
         }
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return {"message": f"Calculating phonon spectrum failed: {e}"}
